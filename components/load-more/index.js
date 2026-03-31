@@ -43,7 +43,7 @@ Component({
   },
 
   methods: {
-    /** 点击处理 */
+    /** 点击处�*/
     tapHandle() {
       // 失败重试
       if (this.data.status === 3) {

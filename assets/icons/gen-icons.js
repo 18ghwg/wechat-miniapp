@@ -185,7 +185,7 @@ const icons = {
     <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="${FILL_ORANGE}" stroke="${BORDER}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   `),
 
-  // 考勤/历史页 操作按钮图标
+  // 考勤/历史�操作按钮图标
   'edit': wrap(`
     <path d="M11 4H4C2.89543 4 2 4.89543 2 6V20C2 21.1046 2.89543 22 4 22H18C19.1046 22 20 21.1046 20 20V13M18.5 2.5C19.3284 1.67157 20.6716 1.67157 21.5 2.5C22.3284 3.32843 22.3284 4.67157 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" fill="${FILL_LIGHT}" stroke="${BORDER}" stroke-width="2"/>
   `),
@@ -206,19 +206,19 @@ const icons = {
     <path d="M16 2V6" stroke="${BORDER}" stroke-width="2" stroke-linecap="round"/>
   `),
 
-  // Sparkles 图标 (闪光效果)
+  // Sparkles 图�(闪光效果)
   'sparkles': wrap(`
     <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" fill="${FILL_ORANGE}" stroke="${BORDER}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     <path d="M19 3L19.5 5L21.5 5.5L19.5 6L19 8L18.5 6L16.5 5.5L18.5 5L19 3Z" fill="${FILL_ORANGE}" stroke="${BORDER}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
     <path d="M5 17L5.5 19L7.5 19.5L5.5 20L5 22L4.5 20L2.5 19.5L4.5 19L5 17Z" fill="${FILL_ORANGE}" stroke="${BORDER}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
   `),
 
-  // Activity 图标 (电表/活动监测)
+  // Activity 图�(电表/活动监测)
   'activity': wrap(`
     <path d="M22 12H18L15 21L9 3L6 12H2" stroke="${BORDER}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
   `),
 
-  // CPU 图标 (芯片/电表)
+  // CPU 图�(芯片/电表)
   'cpu': wrap(`
     <rect x="4" y="4" width="16" height="16" rx="2" fill="${FILL_LIGHT}" stroke="${BORDER}" stroke-width="2"/>
     <path d="M9 9H15V15H9V9Z" stroke="${BORDER}" stroke-width="2"/>

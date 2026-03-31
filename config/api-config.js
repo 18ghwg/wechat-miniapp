@@ -24,7 +24,7 @@ function getUseMock() {
  */
 export const apiConfig = {
   /** 
-   * 后端API配置 
+   * 后端API配�
    */
   api: {
     /**

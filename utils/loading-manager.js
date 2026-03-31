@@ -270,7 +270,7 @@ class LoadingManager {
     
     const showBatchLoading = () => {
       this.showLoading(`batch_${batchId}`, {
-        title: `加载中 0/${operations.length}`,
+        title: `加载�0/${operations.length}`,
         priority: 'high'
       });
     };

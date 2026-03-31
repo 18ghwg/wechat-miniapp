@@ -9,7 +9,7 @@ const userInfo = {
 
 const customerServiceInfo = {
   servicePhone: '4006336868',
-  serviceTimeDuration: '每周三至周五 9:00-12:00  13:00-15:00',
+  serviceTimeDuration: '每周三至周�9:00-12:00  13:00-15:00',
 };
 
 export const genSimpleUserInfo = () => (Object.assign({}, userInfo));
