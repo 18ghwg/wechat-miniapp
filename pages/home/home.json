@@ -1,0 +1,11 @@
+{
+  "navigationBarTitleText": "无感tool",
+  "navigationBarBackgroundColor": "#FFF9F2",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#FFF9F2",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 50,
+  "usingComponents": {
+    "notice-modal": "/components/notice-modal/index"
+  }
+}

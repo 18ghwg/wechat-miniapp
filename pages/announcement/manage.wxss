@@ -1,0 +1,433 @@
+/* 公告管理页面样式 - Macaron Theme */
+@import '/style/macaron-theme.wxss';
+
+.manage-container {
+  padding: 0 30rpx 30rpx;
+  background-color: var(--background);
+  min-height: 100vh;
+}
+
+/* 页面标题 */
+.page-header {
+  padding: 40rpx 0 30rpx;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.header-icon-wrapper {
+  width: 100rpx;
+  height: 100rpx;
+  background: var(--color-peach-macaron);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20rpx;
+  border: 4rpx solid var(--foreground);
+  box-shadow: 6rpx 6rpx 0rpx var(--foreground);
+}
+
+.header-icon {
+  width: 56rpx;
+  height: 56rpx;
+}
+
+.page-title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-bottom: 12rpx;
+}
+
+.page-subtitle {
+  font-size: 26rpx;
+  color: var(--muted-foreground);
+}
+
+/* 添加按钮 */
+.add-button-container {
+  margin-bottom: 30rpx;
+}
+
+.add-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 88rpx;
+  font-size: 30rpx;
+  padding: 24rpx 40rpx;
+}
+
+.add-button::after {
+  border: none;
+}
+
+.add-icon {
+  font-size: 36rpx;
+  margin-right: 12rpx;
+  font-weight: var(--font-weight-bold);
+}
+
+.add-text {
+  font-weight: var(--font-weight-bold);
+}
+
+
+/* 加载状态 */
+.loading-state {
+  text-align: center;
+  padding: 80rpx 50rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 6rpx solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20rpx;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: var(--muted-foreground);
+}
+
+/* 公告列表 */
+.announcements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.announcement-card {
+  padding: var(--spacing-md);
+  position: relative;
+  overflow: visible;
+}
+
+.announcement-card.active-card {
+  background: linear-gradient(135deg, var(--color-mint-macaron) 0%, #d4fcd8 100%);
+  border-color: var(--foreground);
+}
+
+/* 卡片头部 */
+.card-header {
+  margin-bottom: 20rpx;
+}
+
+.title-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.title-wrapper {
+  flex: 1;
+  min-width: 200rpx;
+}
+
+.announcement-title {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.status-badges {
+  display: flex;
+  gap: 10rpx;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* 状态徽章 - 扩展 macaron-theme 中的 status-badge */
+.priority-badge {
+  background: var(--color-peach-macaron) !important;
+  color: var(--foreground) !important;
+}
+
+.popup-badge {
+  background: var(--color-yellow-macaron) !important;
+  color: var(--foreground) !important;
+}
+
+/* 卡片内容 */
+.card-content {
+  margin-bottom: 20rpx;
+}
+
+.announcement-content {
+  display: block;
+  font-size: 28rpx;
+  color: var(--foreground);
+  line-height: 1.6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+/* 卡片信息 */
+.card-info {
+  margin-bottom: 20rpx;
+  padding: 20rpx;
+  background: var(--color-orange-light);
+  border-radius: var(--radius-lg);
+  border: 3rpx solid var(--foreground);
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  font-size: 24rpx;
+  margin-bottom: 8rpx;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  color: var(--muted-foreground);
+}
+
+.info-value {
+  color: var(--foreground);
+}
+
+/* 卡片操作 */
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16rpx;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16rpx 24rpx;
+  font-size: 24rpx;
+  min-height: 88rpx;
+  min-width: 88rpx;
+}
+
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 80rpx 50rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.empty-icon {
+  font-size: 120rpx;
+  margin-bottom: 24rpx;
+  display: block;
+}
+
+.empty-icon-img {
+  width: 120rpx;
+  height: 120rpx;
+  margin-bottom: 24rpx;
+  opacity: 0.6;
+}
+
+.empty-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-bottom: 12rpx;
+}
+
+.empty-subtitle {
+  font-size: 26rpx;
+  color: var(--muted-foreground);
+}
+
+/* 弹窗样式 */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(94, 78, 62, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.popup-container {
+  width: 85%;
+  max-width: 600rpx;
+  max-height: 85vh;
+  background: var(--card);
+  overflow: visible;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 30rpx;
+  background-color: var(--color-orange-light);
+  border-bottom: 4rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon) var(--radius-cartoon) 0 0;
+}
+
+.popup-title {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.popup-close {
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88rpx;
+  min-height: 88rpx;
+}
+
+.close-icon-text {
+  font-size: 48rpx;
+  color: var(--foreground);
+  line-height: 1;
+}
+
+.popup-content {
+  flex: 1;
+  padding: 30rpx;
+  overflow-y: auto;
+}
+
+/* 表单样式 */
+.form-group {
+  margin-bottom: 30rpx;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-label {
+  display: block;
+  font-size: 28rpx;
+  font-weight: var(--font-weight-medium);
+  color: var(--foreground);
+  margin-bottom: 12rpx;
+}
+
+/* 文本区域 - 马卡龙风格 */
+.form-textarea-macaron {
+  width: 100%;
+  min-height: 200rpx;
+  padding: 24rpx 30rpx;
+  border: 4rpx solid var(--border);
+  border-radius: var(--radius-lg);
+  font-size: 28rpx;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  background: var(--card);
+  color: var(--foreground);
+  box-sizing: border-box;
+  line-height: 1.5;
+}
+
+.form-textarea-macaron:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 6rpx rgba(255, 159, 67, 0.1);
+  transform: translateY(-4rpx);
+}
+
+/* 选择器 - 马卡龙风格 */
+.picker-macaron {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 30rpx;
+  border: 4rpx solid var(--border);
+  border-radius: var(--radius-lg);
+  background-color: var(--card);
+  min-height: 88rpx;
+}
+
+.picker-text {
+  font-size: 28rpx;
+  color: var(--foreground);
+}
+
+.picker-arrow {
+  font-size: 24rpx;
+  color: var(--muted-foreground);
+}
+
+.form-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.form-row .form-label {
+  margin-bottom: 0;
+}
+
+/* 开关样式 */
+.macaron-switch {
+  transform: scale(1.1);
+}
+
+.popup-footer {
+  display: flex;
+  gap: 20rpx;
+  padding: 20rpx 30rpx 30rpx;
+  border-top: 2rpx solid var(--border);
+}
+
+.popup-btn {
+  flex: 1;
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+}
+
+/* 减少动画（可访问性） */
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation: none;
+  }
+  
+  .form-textarea-macaron,
+  .popup-container {
+    transition: none;
+  }
+}

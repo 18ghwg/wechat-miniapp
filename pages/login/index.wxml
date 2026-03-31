@@ -1,0 +1,173 @@
+<!--登录页面 - 完全匹配 Weixin-main 设计-->
+<view class="login-page">
+  <!-- 背景装饰圆圈 -->
+  <view class="bg-circle bg-circle-top"></view>
+  <view class="bg-circle bg-circle-bottom"></view>
+
+  <!-- 主内容卡片 -->
+  <view class="login-card">
+    <!-- Logo 和标题 -->
+    <view class="header-section">
+      <view class="logo-container">
+        <view class="logo-shine"></view>
+        <image class="logo-icon" src="/assets/icons/user.png" mode="aspectFit"/>
+      </view>
+      <text class="app-title">无感家居助手</text>
+      <text class="app-subtitle">Cartoon Style Assistant</text>
+    </view>
+
+    <!-- 登录表单 -->
+    <view class="login-form" wx:if="{{loginMode === 'account'}}">
+      <!-- 用户名输入 -->
+      <view class="input-wrapper">
+        <view class="input-icon">
+          <image class="input-icon-img" src="/assets/icons/user.png" mode="aspectFit"/>
+        </view>
+        <input 
+          class="cartoon-input" 
+          placeholder="请输入账号"
+          value="{{username}}"
+          bindinput="onUsernameInput"
+          maxlength="50"
+        />
+      </view>
+
+      <!-- 密码输入 -->
+      <view class="input-wrapper">
+        <view class="input-icon">
+          <image class="input-icon-img" src="/assets/icons/lock.png" mode="aspectFit"/>
+        </view>
+        <input 
+          class="cartoon-input" 
+          placeholder="请输入密码"
+          type="{{showPassword ? 'text' : 'password'}}"
+          value="{{password}}"
+          bindinput="onPasswordInput"
+          maxlength="50"
+        />
+        <view class="password-toggle" bindtap="togglePassword">
+          <image wx:if="{{showPassword}}" class="input-icon-img" src="/assets/icons/eye.png" mode="aspectFit"/>
+          <image wx:else class="input-icon-img" src="/assets/icons/eye-off.png" mode="aspectFit"/>
+        </view>
+      </view>
+
+       <!-- 记住账号和忘记密码 -->
+       <view class="form-options">
+         <label class="remember-checkbox">
+           <checkbox value="remember" checked="{{rememberMe}}" bindchange="onRememberChange" color="#FF9F43"/>
+           <text class="checkbox-label">记住账号</text>
+         </label>
+         <text class="forgot-password" bindtap="onForgotPassword">忘记密码？</text>
+       </view>
+
+         <!-- 用户协议勾选框 - 微信色审核要求 -->
+         <view class="agreement-section">
+           <view class="agreement-checkbox" bindtap="onAgreeToggle">
+             <checkbox class="agreement-checkbox-input" checked="{{agreed}}" color="#FF9F43"/>
+             <view class="agreement-text">
+               <text class="agreement-prefix">请勾选并同意</text>
+               <text class="agreement-link" catchtap="goToTerms">《用户服务协议》</text>
+               <text class="agreement-separator">和</text>
+               <text class="agreement-link" catchtap="goToPrivacy">《隐私政策》</text>
+             </view>
+           </view>
+         </view>
+
+       <!-- 登录按钮 -->
+       <button 
+         class="login-btn-main" 
+         bindtap="onAccountLogin"
+         disabled="{{loginLoading || !username || !password || !agreed}}"
+         loading="{{loginLoading}}"
+       >
+         <text class="btn-text">{{loginLoading ? '正在登录...' : '立即登录'}}</text>
+       </button>
+    </view>
+
+    <!-- 微信登录模式 -->
+    <view class="wechat-login-form" wx:if="{{loginMode === 'wechat'}}">
+      <!-- 用户信息展示 -->
+      <view class="user-info-display" wx:if="{{hasUserInfo}}">
+        <image class="user-avatar" src="{{userInfo.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill"></image>
+        <text class="user-nickname">{{userInfo.nickName || '微信用户'}}</text>
+      </view>
+
+       <!-- 微信登录按钮 -->
+       <button 
+         wx:if="{{!hasUserInfo}}"
+         class="login-btn-main" 
+         bindtap="getUserProfile"
+         disabled="{{loginLoading || !agreed}}"
+       >
+         <text class="btn-text">获取微信信息</text>
+       </button>
+
+       <button 
+         wx:if="{{hasUserInfo}}"
+         class="login-btn-main" 
+         bindtap="onWechatLogin"
+         disabled="{{loginLoading || !agreed}}"
+         loading="{{loginLoading}}"
+       >
+         <text class="btn-text">{{loginLoading ? '正在登录...' : '确认登录'}}</text>
+       </button>
+    </view>
+
+    <!-- 分隔线 -->
+    <view class="separator">
+      <view class="separator-line"></view>
+      <text class="separator-text">其他登录方式</text>
+      <view class="separator-line"></view>
+    </view>
+
+    <!-- 其他登录方式 -->
+    <view class="alternative-login">
+      <view class="alt-login-btn wechat-btn" bindtap="switchToWechat" wx:if="{{loginMode === 'account'}}">
+        <view class="alt-btn-icon">
+          <image class="alt-icon-img" src="/assets/icons/home.png" mode="aspectFit"/>
+        </view>
+        <text class="alt-btn-text">微信一键登录</text>
+      </view>
+
+      <view class="alt-login-btn account-btn" bindtap="switchToAccount" wx:if="{{loginMode === 'wechat'}}">
+        <view class="alt-btn-icon">
+          <image class="alt-icon-img" src="/assets/icons/user.png" mode="aspectFit"/>
+        </view>
+        <text class="alt-btn-text">账号密码登录</text>
+      </view>
+
+      <view class="alt-login-btn preview-btn" bindtap="skipLogin">
+        <view class="alt-btn-icon">
+          <image class="alt-icon-img" src="/assets/icons/eye.png" mode="aspectFit"/>
+        </view>
+        <text class="alt-btn-text">免登录预览</text>
+      </view>
+    </view>
+
+  </view>
+
+  <!-- 底部注册提示 -->
+  <view class="footer-register">
+    <text class="footer-text">还没有账号？</text>
+    <text class="register-link" bindtap="goToRegister">立即注册</text>
+  </view>
+</view>
+
+<!-- 滑块验证码模态窗口 -->
+<view class="captcha-modal" wx:if="{{showCaptchaModal}}" catchtouchmove="preventModalScroll">
+  <view class="modal-mask" catchtap="onCloseCaptchaModal"></view>
+  <view class="modal-content">
+    <view class="modal-header">
+      <text class="modal-title">滑动验证</text>
+      <view class="modal-close" catchtap="onCloseCaptchaModal">
+        <image class="modal-close-icon" src="/assets/icons/close.png" mode="aspectFit"/>
+      </view>
+    </view>
+    <view class="modal-body">
+      <slider-captcha 
+        bind:success="onCaptchaSuccess"
+        bind:fail="onCaptchaFail"
+      ></slider-captcha>
+    </view>
+  </view>
+</view>

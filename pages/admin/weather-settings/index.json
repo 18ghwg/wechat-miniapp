@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "天气设置",
+  "navigationBarBackgroundColor": "#FFF9F2",
+  "navigationBarTextStyle": "black",
+  "enablePullDownRefresh": false,
+  "backgroundColor": "#FFF9F2"
+}

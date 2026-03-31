@@ -1,0 +1,68 @@
+<view class="privacy-container">
+  <view class="privacy-header">
+    <text class="privacy-title">隐私政策</text>
+  </view>
+  
+  <scroll-view class="privacy-content" scroll-y="true">
+    <view class="section">
+      <text class="section-title">一、信息收集和使用</text>
+      <text class="section-content">
+        我们仅收集为用户提供服务所必需的信息，包括但不限于：微信授权的公开信息（昵称、头像），
+        以及您在使用服务过程中主动提交的相关信息。我们承诺不会收集任何敏感个人信息。
+      </text>
+    </view>
+    
+    <view class="section">
+      <text class="section-title">二、信息使用目的</text>
+      <text class="section-content">
+        收集的信息主要用于：提供个性化服务、改进小程序功能、保障账户安全、
+        以及向您提供相关的通知和服务支持。我们不会将您的信息用于本政策未明示的目的。
+      </text>
+    </view>
+    
+    <view class="section">
+      <text class="section-title">三、信息共享和披露</text>
+      <text class="section-content">
+        我们不会向任何无关第三方出售、交易或转让您的个人信息，
+        除非事先获得您的明确同意或法律要求披露。在法律要求的情况下，
+        我们可能会披露您的信息以保护自身合法权益。
+      </text>
+    </view>
+    
+    <view class="section">
+      <text class="section-title">四、数据安全</text>
+      <text class="section-content">
+        我们采用各种安全技术和程序，以防止未经授权访问、使用或泄露您的个人信息。
+        我们会定期评估和改进安全措施，以确保您的信息安全。
+      </text>
+    </view>
+    
+    <view class="section">
+      <text class="section-title">五、用户权利</text>
+      <text class="section-content">
+        您有权访问、更正或删除您的个人信息。如需行使这些权利，请联系我们。
+        您也有权撤回对个人信息使用的同意，但这可能会影响您使用部分服务功能。
+      </text>
+    </view>
+    
+    <view class="section">
+      <text class="section-title">六、政策更新</text>
+      <text class="section-content">
+        我们可能会根据法律法规变化或服务调整更新本隐私政策。
+        更新后的政策将在小程序内公布，并通过适当方式通知用户。
+      </text>
+    </view>
+    
+    <view class="section">
+      <text class="section-title">七、联系我们</text>
+      <text class="section-content">
+        如您对本隐私政策有任何疑问、意见或建议，请通过小程序内反馈功能与我们联系。
+        我们会在合理时间内回复您的询问。
+      </text>
+    </view>
+  </scroll-view>
+  
+  <view class="back-button">
+    <button class="back-btn" bindtap="goBack">返回</button>
+  </view>
+</view>

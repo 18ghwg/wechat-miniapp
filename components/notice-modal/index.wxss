@@ -1,0 +1,208 @@
+/* 公告弹窗组件样式 - 匹配 React NoticeModal */
+@import '/style/macaron-theme.wxss';
+
+.notice-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48rpx;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+}
+
+.notice-modal-card {
+  width: 100%;
+  max-width: 680rpx;
+  max-height: 80vh;
+  background: #fff;
+  border: 6rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon);
+  box-shadow: 12rpx 12rpx 0rpx var(--foreground);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header */
+.notice-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 36rpx;
+  border-bottom: 6rpx dashed #f0f0f0;
+  background: rgba(255, 243, 224, 0.3);
+}
+
+.notice-header-left {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.notice-header-icon-box {
+  width: 72rpx;
+  height: 72rpx;
+  background: var(--color-peach-macaron);
+  border: 4rpx solid var(--foreground);
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 4rpx 4rpx 0rpx var(--foreground);
+}
+
+.notice-header-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.notice-header-title {
+  font-size: 38rpx;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+.notice-close-btn {
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.notice-close-btn:active {
+  background: #f0f0f0;
+}
+
+.notice-close-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+/* Content */
+.notice-content {
+  flex: 1;
+  padding: 36rpx;
+  overflow-y: auto;
+  max-height: 50vh;
+}
+
+/* 时间线项 */
+.notice-item {
+  position: relative;
+  padding-left: 40rpx;
+  padding-bottom: 36rpx;
+  border-left: 6rpx solid rgba(255, 159, 67, 0.5);
+  margin-left: 12rpx;
+}
+
+.notice-item:last-child {
+  padding-bottom: 0;
+}
+
+/* 时间线圆点 */
+.timeline-dot {
+  position: absolute;
+  top: 0;
+  left: -14rpx;
+  width: 24rpx;
+  height: 24rpx;
+  background: var(--color-peach-macaron);
+  border: 4rpx solid var(--foreground);
+  border-radius: 50%;
+  box-shadow: 4rpx 4rpx 0rpx var(--foreground);
+}
+
+/* 标签 + 日期 */
+.notice-meta {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 10rpx;
+}
+
+.notice-tag {
+  font-size: 20rpx;
+  font-weight: 900;
+  color: #ea580c;
+  background: rgba(255, 200, 150, 0.2);
+  padding: 4rpx 14rpx;
+  border-radius: 10rpx;
+  border: 2rpx solid rgba(234, 88, 12, 0.2);
+}
+
+.notice-date {
+  font-size: 20rpx;
+  font-weight: 700;
+  color: #aaa;
+  font-family: monospace;
+}
+
+.notice-text {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--foreground);
+  line-height: 1.7;
+}
+
+/* 空状态 */
+.notice-empty {
+  padding: 80rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0.4;
+}
+
+.notice-empty-icon {
+  width: 80rpx;
+  height: 80rpx;
+  margin-bottom: 16rpx;
+}
+
+.notice-empty-text {
+  font-size: 28rpx;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+/* Footer */
+.notice-footer {
+  padding: 36rpx;
+  padding-top: 16rpx;
+}
+
+.notice-confirm-btn {
+  width: 100%;
+  padding: 24rpx 0;
+  background: var(--color-orange-light);
+  border: 6rpx solid var(--foreground);
+  border-radius: 28rpx;
+  text-align: center;
+  box-shadow: 6rpx 6rpx 0rpx var(--foreground);
+}
+
+.notice-confirm-btn:active {
+  transform: translate(3rpx, 3rpx);
+  box-shadow: 3rpx 3rpx 0rpx var(--foreground);
+}
+
+.notice-confirm-text {
+  font-size: 30rpx;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+/* 减少动画 */
+@media (prefers-reduced-motion: reduce) {
+  .notice-confirm-btn {
+    transition: none;
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "天气通知设置",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#FFF9F2",
+  "navigationBarBackgroundColor": "#FFF9F2",
+  "navigationBarTextStyle": "black",
+  "backgroundTextStyle": "dark",
+  "usingComponents": {}
+}

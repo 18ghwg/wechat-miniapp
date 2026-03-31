@@ -1,0 +1,10 @@
+{
+  "usingComponents": {
+    "t-toast": "tdesign-miniprogram/toast/toast"
+  },
+  "navigationBarTitleText": "设置",
+  "navigationBarBackgroundColor": "#fef9f3",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#fef9f3",
+  "enablePullDownRefresh": true
+}

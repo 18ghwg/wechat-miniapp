@@ -1,0 +1,376 @@
+<!-- 电费通知设置页面 - Macaron Theme -->
+<view class="container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <view class="header-icon-wrapper">
+      <text class="header-emoji">⚡</text>
+    </view>
+    <view class="page-title">
+      <text class="title-text">电费通知设置</text>
+      <view class="title-badge" wx:if="{{testMode}}">测试模式</view>
+    </view>
+    <text class="page-subtitle">控制查电费任务发送的消息类型</text>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-container" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载设置中...</text>
+  </view>
+
+  <!-- 设置内容 -->
+  <view class="settings-container" wx:else>
+    
+    <!-- 主开关 -->
+    <view class="setting-section main-section">
+      <view class="section-header">
+        <view class="section-icon-wrapper icon-peach">
+          <text class="section-icon">🔧</text>
+        </view>
+        <view class="section-title-group">
+          <text class="section-title">总开关</text>
+          <text class="section-desc">控制电费通知的全局开关</text>
+        </view>
+      </view>
+      
+      <view class="setting-item main-setting">
+        <view class="setting-info">
+          <text class="setting-name">启用电费通知</text>
+          <text class="setting-desc">关闭后将不发送任何电费通知消息</text>
+        </view>
+        <switch 
+          checked="{{settings.is_enabled}}" 
+          bindchange="onMainSwitchChange"
+          class="setting-switch main-switch"
+          color="#FF9F43"
+        />
+      </view>
+    </view>
+
+    <!-- 消息类型设置 -->
+    <view class="setting-section" wx:if="{{settings.is_enabled}}">
+      <view class="section-header">
+        <view class="section-icon-wrapper icon-mint">
+          <text class="section-icon">📋</text>
+        </view>
+        <view class="section-title-group">
+          <text class="section-title">消息类型</text>
+          <text class="section-desc">选择需要发送的消息内容</text>
+        </view>
+        <view class="section-actions">
+          <button class="action-btn" size="mini" bindtap="enableAll">全开</button>
+          <button class="action-btn" size="mini" bindtap="disableAll">全关</button>
+        </view>
+      </view>
+
+      <view class="setting-list">
+        <!-- 基本信息 -->
+        <view class="setting-item">
+          <view class="setting-info">
+            <text class="setting-name">📊 基本信息</text>
+            <text class="setting-desc">户号、户主、地址、供电所</text>
+          </view>
+          <switch 
+            checked="{{settings.send_basic_info}}" 
+            bindchange="onSubSwitchChange"
+            data-field="send_basic_info"
+            class="setting-switch"
+            color="#FF9F43"
+          />
+        </view>
+
+        <!-- 账户余额信息 -->
+        <view class="setting-item">
+          <view class="setting-info">
+            <text class="setting-name">💰 账户余额信息</text>
+            <text class="setting-desc">当前余额、年度累计电费、上月电费</text>
+          </view>
+          <switch 
+            checked="{{settings.send_balance_info}}" 
+            bindchange="onSubSwitchChange"
+            data-field="send_balance_info"
+            class="setting-switch"
+            color="#FF9F43"
+          />
+        </view>
+
+        <!-- 用电量统计 -->
+        <view class="setting-item">
+          <view class="setting-info">
+            <text class="setting-name">⚡ 用电量统计</text>
+            <text class="setting-desc">年度累计、上月用电、当月累计、今日用电</text>
+          </view>
+          <switch 
+            checked="{{settings.send_power_stats}}" 
+            bindchange="onSubSwitchChange"
+            data-field="send_power_stats"
+            class="setting-switch"
+            color="#FF9F43"
+          />
+        </view>
+
+        <!-- 年度分时用电量 -->
+        <view class="setting-item">
+          <view class="setting-info">
+            <text class="setting-name">🌅 年度分时用电量</text>
+            <text class="setting-desc">峰时、谷时、平时、尖时用电量</text>
+          </view>
+          <switch 
+            checked="{{settings.send_year_time_power}}" 
+            bindchange="onSubSwitchChange"
+            data-field="send_year_time_power"
+            class="setting-switch"
+            color="#FF9F43"
+          />
+        </view>
+
+        <!-- 当月分时用电量 -->
+        <view class="setting-item">
+          <view class="setting-info">
+            <text class="setting-name">📅 当月分时用电量</text>
+            <text class="setting-desc">当月各时段用电量统计</text>
+          </view>
+          <switch 
+            checked="{{settings.send_month_time_power}}" 
+            bindchange="onSubSwitchChange"
+            data-field="send_month_time_power"
+            class="setting-switch"
+            color="#FF9F43"
+          />
+        </view>
+
+        <!-- 最近5天用电详情 -->
+        <view class="setting-item">
+          <view class="setting-info">
+            <text class="setting-name">📊 最近5天用电详情</text>
+            <text class="setting-desc">每日用电量明细</text>
+          </view>
+          <switch 
+            checked="{{settings.send_recent_5days}}" 
+            bindchange="onSubSwitchChange"
+            data-field="send_recent_5days"
+            class="setting-switch"
+            color="#FF9F43"
+          />
+        </view>
+
+        <!-- 最近3个月用电详情 -->
+        <view class="setting-item">
+          <view class="setting-info">
+            <text class="setting-name">📈 最近3个月用电详情</text>
+            <text class="setting-desc">月度电费账单统计</text>
+          </view>
+          <switch 
+            checked="{{settings.send_recent_3months}}" 
+            bindchange="onSubSwitchChange"
+            data-field="send_recent_3months"
+            class="setting-switch"
+            color="#FF9F43"
+          />
+        </view>
+
+        <!-- 数据统计信息 -->
+        <view class="setting-item">
+          <view class="setting-info">
+            <text class="setting-name">📋 数据统计信息</text>
+            <text class="setting-desc">各类记录条数、更新时间</text>
+          </view>
+          <switch 
+            checked="{{settings.send_stats_info}}" 
+            bindchange="onSubSwitchChange"
+            data-field="send_stats_info"
+            class="setting-switch"
+            color="#FF9F43"
+          />
+        </view>
+      </view>
+    </view>
+
+    <!-- 图表通知设置 -->
+    <view class="setting-section" wx:if="{{settings.is_enabled}}">
+      <view class="section-header">
+        <view class="section-icon-wrapper icon-blue">
+          <text class="section-icon">📊</text>
+        </view>
+        <view class="section-title-group">
+          <text class="section-title">图表通知</text>
+          <text class="section-desc">发送用电量趋势图表</text>
+        </view>
+      </view>
+
+      <view class="setting-list">
+        <!-- 发送月用电量图表 -->
+        <view class="setting-item highlight-item">
+          <view class="setting-info">
+            <text class="setting-name">📈 发送月用电量趋势图</text>
+            <text class="setting-desc">最近3个月用电量和电费趋势对比图（从数据库历史记录生成）</text>
+          </view>
+          <switch 
+            checked="{{settings.send_monthly_chart}}" 
+            bindchange="onSubSwitchChange"
+            data-field="send_monthly_chart"
+            class="setting-switch"
+            color="#FF9F43"
+          />
+        </view>
+
+        <!-- 发送日用电量图表 -->
+        <view class="setting-item highlight-item">
+          <view class="setting-info">
+            <text class="setting-name">📊 发送日用电量趋势图</text>
+            <text class="setting-desc">当月每日用电量折线图，含峰谷分时数据（从数据库历史记录生成）</text>
+          </view>
+          <switch 
+            checked="{{settings.send_daily_chart}}" 
+            bindchange="onSubSwitchChange"
+            data-field="send_daily_chart"
+            class="setting-switch"
+            color="#FF9F43"
+          />
+        </view>
+      </view>
+
+      <view class="tip-section chart-tip">
+        <view class="tip-content">
+          <text class="tip-icon">💡</text>
+          <text class="tip-text">图表数据优先从数据库历史记录中获取，若数据库无数据则使用API返回数据。图表以高清PNG格式发送到群聊。</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 电费统计模式设置 -->
+    <view class="setting-section" wx:if="{{settings.is_enabled}}">
+      <view class="section-header">
+        <view class="section-icon-wrapper icon-lavender">
+          <text class="section-icon">📊</text>
+        </view>
+        <view class="section-title-group">
+          <text class="section-title">电费统计模式</text>
+          <text class="section-desc">选择适合您所在地区的统计模式</text>
+        </view>
+      </view>
+
+      <view class="billing-mode-section">
+        <radio-group class="radio-group" bindchange="onBillingModeChange">
+          <block wx:for="{{billingModeOptions}}" wx:key="value">
+            <label class="radio-item {{settings.billing_mode === item.value ? 'radio-item-active' : ''}}">
+              <radio 
+                value="{{item.value}}" 
+                checked="{{settings.billing_mode === item.value}}"
+                color="#FF9F43"
+              />
+              <view class="radio-content">
+                <text class="radio-label">{{item.label}}</text>
+                <text class="radio-desc">{{item.desc}}</text>
+              </view>
+            </label>
+          </block>
+        </radio-group>
+      </view>
+
+      <view class="tip-section billing-mode-tip">
+        <view class="tip-content">
+          <text class="tip-icon">💡</text>
+          <view class="tip-text-block">
+            <text class="tip-text">使用说明：</text>
+            <text class="tip-text">• 当月实时统计：适用于数据实时更新的地区，每月查询使用当月最新数据</text>
+            <text class="tip-text">• 上月统计模式：适用于数据存在延迟的地区（如月底几天用电量突然很高），系统会从下个月的记录中找到MonthUsage出现次数最多的值（众数）作为当月实际用电量</text>
+            <text class="tip-text-warning">⚠️ 原理：查询8月数据时，从9月的所有记录中统计MonthUsage的众数。这样可以排除月初几天可能残留的8月数据，获取更准确的8月实际用电量</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 欠费通知设置 -->
+    <view class="setting-section" wx:if="{{settings.is_enabled}}">
+      <view class="section-header">
+        <view class="section-icon-wrapper icon-pink">
+          <text class="section-icon">⚠️</text>
+        </view>
+        <view class="section-title-group">
+          <text class="section-title">欠费通知</text>
+          <text class="section-desc">余额为负时自动提醒</text>
+        </view>
+      </view>
+
+      <view class="setting-list">
+        <!-- 欠费通知开关 -->
+        <view class="setting-item highlight-item">
+          <view class="setting-info">
+            <text class="setting-name">🔔 启用欠费通知</text>
+            <text class="setting-desc">余额为负数时自动@指定用户提醒</text>
+          </view>
+          <switch 
+            checked="{{settings.send_arrears_alert}}" 
+            bindchange="onSubSwitchChange"
+            data-field="send_arrears_alert"
+            class="setting-switch"
+            color="#FF9F43"
+          />
+        </view>
+
+        <!-- 通知对象设置 -->
+        <view class="input-item" wx:if="{{settings.send_arrears_alert}}">
+          <view class="input-label">
+            <text class="label-icon">👤</text>
+            <text class="label-text">@通知对象</text>
+          </view>
+          <input 
+            class="input-field form-input-macaron"
+            type="text"
+            value="{{settings.arrears_alert_target}}"
+            placeholder="请输入微信昵称"
+            bindinput="onTargetInput"
+            maxlength="50"
+          />
+        </view>
+      </view>
+
+      <view class="tip-section arrears-tip" wx:if="{{settings.send_arrears_alert}}">
+        <view class="tip-content">
+          <text class="tip-icon">💡</text>
+          <view class="tip-text-block">
+            <text class="tip-text">设置说明：</text>
+            <text class="tip-text">• 请输入群成员的微信昵称，必须与群中显示的昵称完全一致</text>
+            <text class="tip-text">• 余额为负数时，系统会自动在群中@该用户并发送提醒消息</text>
+            <text class="tip-text-warning">⚠️ 如果@失败，请检查昵称是否正确或该用户是否在群中</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 提示信息（主开关关闭时显示） -->
+    <view class="tip-section" wx:if="{{!settings.is_enabled}}">
+      <view class="tip-content">
+        <text class="tip-icon">💡</text>
+        <text class="tip-text">电费通知已关闭，查电费任务将不发送任何消息到微信群</text>
+      </view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="action-section">
+      <button class="save-btn" bindtap="saveSettings">
+        保存设置
+      </button>
+      <button class="reset-btn" bindtap="resetSettings">
+        重置为默认
+      </button>
+    </view>
+
+    <!-- 帮助信息 -->
+    <view class="help-section">
+      <button class="help-btn" size="mini" bindtap="showHelp">
+        <text class="help-icon">❓</text>
+        <text class="help-text">功能说明</text>
+      </button>
+    </view>
+
+    <!-- 测试模式提示 -->
+    <view class="test-mode-tip" wx:if="{{testMode}}">
+      <view class="test-tip-content">
+        <text class="test-tip-icon">🧪</text>
+        <text class="test-tip-text">当前为测试模式，设置更改仅为模拟，不会实际保存到数据库</text>
+      </view>
+    </view>
+  </view>
+</view>

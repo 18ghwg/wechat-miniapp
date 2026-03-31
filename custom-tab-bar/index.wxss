@@ -1,0 +1,47 @@
+.custom-tabbar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: #ffffff;
+  border-top: 8rpx solid #5E4E3E;
+  padding: 20rpx 40rpx 40rpx;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 9999;
+  border-radius: 50rpx 50rpx 0 0;
+  box-shadow: 0 -20rpx 60rpx rgba(94,78,62,0.1);
+}
+.tab-item {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8rpx;
+  transform: scale(0.9); opacity: 0.6;
+  transition: all 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
+}
+.tab-item.active {
+  transform: scale(1.1) translateY(-12rpx);
+  opacity: 1;
+}
+.icon-wrapper {
+  width: 88rpx; height: 88rpx;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 32rpx;
+  border: 6rpx solid #5E4E3E;
+  background: #ffffff;
+  transition: all 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
+}
+.icon-wrapper.active { box-shadow: 8rpx 8rpx 0 #5E4E3E; }
+.tab-icon {
+  width: 48rpx; height: 48rpx;
+}
+.tab-label {
+  font-size: 22rpx; font-weight: 900;
+  color: #5E4E3E; opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.tab-label.active { opacity: 1; }
+.active-dot {
+  position: absolute; bottom: -8rpx;
+  width: 8rpx; height: 8rpx;
+  background: #5E4E3E; border-radius: 50%;
+}

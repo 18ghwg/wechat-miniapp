@@ -1,0 +1,110 @@
+<!-- 定时任务管理列表页面 - 马卡龙风格 -->
+<view class="task-management-page">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <view class="header-content">
+      <image class="header-icon" src="/assets/icons/clock.png" mode="aspectFit" />
+      <view class="header-text">
+        <text class="page-title">定时任务管理</text>
+        <text class="page-subtitle">共 {{tasks.length}} 个任务</text>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 任务列表 -->
+  <view class="task-list" wx:if="{{tasks.length > 0 && !loading}}">
+    <view class="cartoon-card task-card" wx:for="{{tasks}}" wx:key="id">
+      <!-- 任务头部 -->
+      <view class="task-header">
+        <view class="task-info">
+          <text class="task-name">{{item.task_name}}</text>
+          <view class="status-badge {{item.status === 'running' ? 'status-active' : 'status-inactive'}}">
+            <text class="status-dot"></text>
+            <text>{{item.status === 'running' ? '运行中' : item.status === 'paused' ? '已暂停' : '已停止'}}</text>
+          </view>
+        </view>
+        
+        <switch 
+          class="macaron-switch"
+          checked="{{item.is_enabled}}" 
+          bindchange="onToggleTask"
+          data-task-id="{{item.task_id}}"
+          data-index="{{index}}"
+          disabled="{{loading}}"
+          color="#FF9F43"
+        />
+      </view>
+      
+      <!-- 任务描述 -->
+      <view class="task-description">
+        <text>{{item.task_description || '暂无描述'}}</text>
+      </view>
+      
+      <!-- 任务详情 -->
+      <view class="task-details">
+        <view class="detail-item">
+          <image class="detail-icon" src="/assets/icons/clock.png" mode="aspectFit" />
+          <text class="detail-label">下次执行:</text>
+          <text class="detail-value">{{item.next_run_time || '未安排'}}</text>
+        </view>
+        
+        <view class="detail-item">
+          <image class="detail-icon" src="/assets/icons/settings.png" mode="aspectFit" />
+          <text class="detail-label">触发器:</text>
+          <text class="detail-value">{{item.trigger_desc || '未知'}}</text>
+        </view>
+      </view>
+      
+      <!-- 操作按钮 -->
+      <view class="task-actions">
+        <view 
+          class="macaron-btn macaron-btn-blue action-btn"
+          bindtap="onEditTask"
+          data-task-id="{{item.task_id}}"
+        >
+          <text>📝 编辑</text>
+        </view>
+        
+        <view 
+          class="macaron-btn {{item.status === 'running' ? 'macaron-btn-yellow' : 'macaron-btn-mint'}} action-btn"
+          bindtap="onTogglePause"
+          data-task-id="{{item.task_id}}"
+          data-is-paused="{{item.status !== 'running'}}"
+          data-index="{{index}}"
+        >
+          <text>{{item.status === 'running' ? '⏸️ 暂停' : '▶️ 恢复'}}</text>
+        </view>
+        
+        <view 
+          class="macaron-btn macaron-btn-peach action-btn"
+          bindtap="onRunNow"
+          data-task-id="{{item.task_id}}"
+        >
+          <text>🚀 执行</text>
+        </view>
+        
+        <view 
+          class="macaron-btn macaron-btn-lavender action-btn"
+          bindtap="onViewLogs"
+          data-task-id="{{item.task_id}}"
+          data-task-name="{{item.task_name}}"
+        >
+          <text>📋 日志</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 空状态 -->
+  <view class="cartoon-card empty-state" wx:if="{{tasks.length === 0 && !loading}}">
+    <text class="empty-emoji">📭</text>
+    <text class="empty-text">暂无任务</text>
+    <text class="empty-hint">定时任务将在这里显示</text>
+  </view>
+  
+  <!-- 加载状态 -->
+  <view class="loading-state" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text>加载中...</text>
+  </view>
+</view>

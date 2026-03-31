@@ -1,0 +1,516 @@
+/* 微信通知群管理页面样式 - Macaron Theme */
+@import '/style/macaron-theme.wxss';
+
+.notification-group-container {
+  padding: 0 30rpx 30rpx;
+  background-color: var(--background);
+  min-height: 100vh;
+}
+
+/* 页面标题 */
+.page-header {
+  padding: 40rpx 0 30rpx;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.header-icon-wrapper {
+  width: 100rpx;
+  height: 100rpx;
+  background: var(--color-peach-macaron);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20rpx;
+  border: 4rpx solid var(--foreground);
+  box-shadow: 6rpx 6rpx 0rpx var(--foreground);
+}
+
+.header-icon {
+  width: 56rpx;
+  height: 56rpx;
+}
+
+.page-title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-bottom: 12rpx;
+}
+
+.page-subtitle {
+  font-size: 26rpx;
+  color: var(--muted-foreground);
+}
+
+/* 添加按钮 */
+.add-button-container {
+  margin-bottom: 30rpx;
+  display: flex;
+  justify-content: center;
+}
+
+.add-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  font-size: 32rpx;
+  padding: 24rpx 60rpx;
+}
+
+.add-icon {
+  font-size: 40rpx;
+  margin-right: 16rpx;
+  font-weight: var(--font-weight-bold);
+}
+
+.add-text {
+  font-weight: var(--font-weight-bold);
+  font-size: 32rpx;
+}
+
+/* 通知群列表 */
+.group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.group-item {
+  padding: var(--spacing-md);
+  position: relative;
+  overflow: visible;
+}
+
+.group-item.active-group {
+  background: linear-gradient(135deg, var(--color-mint-macaron) 0%, #d4fcd8 100%);
+  border-color: var(--foreground);
+}
+
+/* 群信息 */
+.group-info {
+  margin-bottom: 24rpx;
+}
+
+.group-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.group-name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex: 1;
+  min-width: 200rpx;
+}
+
+.group-icon {
+  width: 44rpx;
+  height: 44rpx;
+}
+
+.group-name {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  word-break: break-all;
+}
+
+.status-badges {
+  display: flex;
+  gap: 12rpx;
+  flex-wrap: wrap;
+}
+
+/* Status Badge 样式已在 macaron-theme.wxss 中定义 */
+.active-badge {
+  background: var(--color-peach-macaron) !important;
+  color: var(--foreground) !important;
+}
+
+.group-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  padding-left: 56rpx;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  font-size: 26rpx;
+}
+
+.detail-label {
+  color: var(--muted-foreground);
+}
+
+.detail-value {
+  color: var(--foreground);
+}
+
+/* 操作按钮 */
+.group-actions {
+  display: flex;
+  gap: 16rpx;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  padding: 16rpx 24rpx;
+  font-size: 24rpx;
+  min-height: 88rpx;
+  min-width: 88rpx;
+}
+
+.btn-icon {
+  width: 32rpx;
+  height: 32rpx;
+}
+
+.btn-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 80rpx 50rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.empty-icon {
+  width: 120rpx;
+  height: 120rpx;
+  margin-bottom: 24rpx;
+  opacity: 0.6;
+}
+
+.empty-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-bottom: 12rpx;
+}
+
+.empty-subtitle {
+  font-size: 26rpx;
+  color: var(--muted-foreground);
+}
+
+/* 加载状态 */
+.loading-state {
+  text-align: center;
+  padding: 80rpx 50rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 6rpx solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20rpx;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: var(--muted-foreground);
+}
+
+/* 弹窗样式 */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(94, 78, 62, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.popup-container {
+  width: 85%;
+  max-width: 600rpx;
+  background: var(--card);
+  overflow: visible;
+  padding: 0;
+}
+
+.popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 30rpx;
+  background-color: var(--color-orange-light);
+  border-bottom: 4rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon) var(--radius-cartoon) 0 0;
+}
+
+.popup-title {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.popup-close {
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border: 3rpx solid var(--foreground);
+}
+
+.popup-close:active {
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(0.95);
+}
+
+.close-icon {
+  width: 44rpx;
+  height: 44rpx;
+}
+
+.popup-content {
+  padding: 30rpx;
+}
+
+/* 表单样式 */
+.form-group {
+  margin-bottom: 30rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: 28rpx;
+  font-weight: var(--font-weight-medium);
+  color: var(--foreground);
+  margin-bottom: 12rpx;
+}
+
+/* form-input-macaron 样式已在 macaron-theme.wxss 中定义 */
+
+.form-hint {
+  display: block;
+  font-size: 24rpx;
+  color: var(--muted-foreground);
+  margin-top: 10rpx;
+}
+
+/* 自定义下拉选择器样式 */
+.status-group {
+  position: relative;
+}
+
+.custom-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 30rpx;
+  border: 4rpx solid var(--border);
+  border-radius: var(--radius-lg);
+  background-color: var(--card);
+  min-height: 88rpx;
+}
+
+.select-text {
+  font-size: 28rpx;
+  color: var(--foreground);
+}
+
+.select-arrow {
+  font-size: 24rpx;
+  color: var(--muted-foreground);
+  transition: transform 0.3s ease;
+}
+
+.select-arrow.rotate {
+  transform: rotate(180deg);
+}
+
+/* 下拉选项样式 */
+.dropdown-options {
+  position: absolute;
+  top: calc(100% + 8rpx);
+  left: 0;
+  right: 0;
+  background-color: var(--card);
+  border: 4rpx solid var(--foreground);
+  border-radius: var(--radius-lg);
+  box-shadow: 8rpx 8rpx 0rpx var(--foreground);
+  z-index: 10000;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  transform: translateY(-10rpx);
+}
+
+.dropdown-options.show {
+  opacity: 1;
+  max-height: 300rpx;
+  transform: translateY(0);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 30rpx;
+  border-bottom: 2rpx solid var(--border);
+  min-height: 88rpx;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:active {
+  background-color: var(--color-orange-light);
+}
+
+.dropdown-item.selected {
+  background-color: var(--color-mint-macaron);
+}
+
+.item-text {
+  font-size: 28rpx;
+  color: var(--foreground);
+}
+
+.item-check {
+  color: var(--primary);
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+}
+
+.popup-footer {
+  display: flex;
+  gap: 20rpx;
+  padding: 20rpx 30rpx 30rpx;
+  border-top: 2rpx solid var(--border);
+}
+
+.popup-btn {
+  flex: 1;
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+}
+
+/* 确认对话框 */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(94, 78, 62, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+}
+
+.dialog-container {
+  width: 75%;
+  max-width: 500rpx;
+  background: var(--card);
+  overflow: visible;
+  padding: 0;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 30rpx 30rpx 20rpx;
+  border-bottom: 2rpx solid var(--border);
+}
+
+.dialog-icon {
+  width: 48rpx;
+  height: 48rpx;
+}
+
+.dialog-title {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.dialog-content {
+  padding: 30rpx;
+}
+
+.dialog-message {
+  font-size: 28rpx;
+  color: var(--foreground);
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.dialog-footer {
+  display: flex;
+  gap: 20rpx;
+  padding: 20rpx 30rpx 30rpx;
+  border-top: 2rpx solid var(--border);
+}
+
+.dialog-btn {
+  flex: 1;
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+}
+
+/* 减少动画（可访问性） */
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation: none;
+  }
+  
+  .select-arrow,
+  .dropdown-options,
+  .dropdown-item {
+    transition: none;
+  }
+}

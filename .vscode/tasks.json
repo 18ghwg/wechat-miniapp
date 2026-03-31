@@ -1,0 +1,32 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "启动浏览器工具 (Browser Tools)",
+      "type": "shell",
+      "command": "npm run browser-tools",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": false,
+        "showReuseMessage": false
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      },
+      "isBackground": true,
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "停止浏览器工具",
+      "type": "shell",
+      "command": "echo '请按 Ctrl+C 停止服务'",
+      "problemMatcher": []
+    }
+  ]
+}
+

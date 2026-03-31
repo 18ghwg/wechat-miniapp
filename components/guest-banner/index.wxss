@@ -1,0 +1,72 @@
+/* 游客模式提示横幅组件样式 - Macaron风格 */
+.guest-banner {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--color-orange-light);
+  border: 6rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon);
+  box-shadow: var(--shadow-cartoon);
+  padding: 24rpx 30rpx;
+  margin: 0 40rpx 30rpx 40rpx;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.banner-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 16rpx;
+}
+
+.banner-eye-icon {
+  width: 40rpx;
+  height: 40rpx;
+  flex-shrink: 0;
+}
+
+.banner-text {
+  flex: 1;
+  font-size: 26rpx;
+  color: var(--foreground);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.5;
+}
+
+.banner-login-btn {
+  background: var(--card);
+  color: var(--foreground);
+  border: 4rpx solid var(--foreground);
+  border-radius: 999rpx;
+  padding: 12rpx 24rpx;
+  font-size: 24rpx;
+  font-weight: var(--font-weight-bold);
+  box-shadow: 4rpx 4rpx 0rpx var(--foreground);
+  transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  white-space: nowrap;
+}
+
+.banner-login-btn:active {
+  transform: translate(2rpx, 2rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+.banner-close {
+  font-size: 32rpx;
+  color: var(--foreground);
+  padding: 0 10rpx;
+  margin-left: 10rpx;
+  font-weight: var(--font-weight-bold);
+  transition: transform 0.2s ease;
+}
+
+.banner-close:active {
+  transform: scale(0.9);
+}

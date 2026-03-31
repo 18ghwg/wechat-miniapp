@@ -1,0 +1,146 @@
+<!-- 漏打卡补交页面 - 匹配 Figma / React MissingCheckInPage 设计 -->
+<view class="page-container">
+  <!-- Header -->
+  <view class="page-header">
+    <view class="back-btn" bindtap="goBack">
+      <image class="back-icon" src="/assets/icons/chevron-left.png" mode="aspectFit"/>
+    </view>
+    <text class="page-title">漏打卡补交</text>
+  </view>
+  <view class="header-divider"></view>
+
+  <scroll-view class="page-body" scroll-y>
+    <!-- Step 1: 选择漏打卡日期 -->
+    <view class="step-section">
+      <view class="step-title">
+        <image class="step-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
+        <text class="step-text">1. 选择漏打卡日期 (可多选)</text>
+      </view>
+      <view class="date-grid">
+        <view wx:for="{{missedDateList}}" wx:key="dateStr" class="card-wrap">
+          <view
+            class="date-card {{item.selected ? 'date-card-selected' : ''}}"
+            bindtap="onToggleDate"
+            data-index="{{index}}"
+          >
+            <text class="date-card-date">{{item.display}}</text>
+            <text class="date-card-weekday">{{item.weekday}}</text>
+            <view class="date-check-badge" wx:if="{{item.selected}}">
+              <image class="date-check-icon" src="/assets/icons/check.png" mode="aspectFit"/>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- Step 2: 补卡类型 -->
+    <view class="step-section">
+      <view class="step-title">
+        <image class="step-icon" src="/assets/icons/clock.png" mode="aspectFit"/>
+        <text class="step-text">2. 补卡类型</text>
+      </view>
+      <view class="type-grid">
+        <view class="type-col">
+          <view wx:for="{{typeOptions}}" wx:key="id" wx:if="{{index % 2 === 0}}">
+            <view
+              class="type-card {{selectedType === item.id ? 'type-card-selected' : ''}}"
+              style="{{selectedType === item.id ? 'background:' + item.selectedBg + ';' : ''}}"
+              bindtap="onSelectType"
+              data-type="{{item.id}}"
+            >
+              <view class="type-icon-box" style="background:{{item.iconBg}};">
+                <image class="type-icon" src="{{item.iconPath}}" mode="aspectFit"/>
+              </view>
+              <text class="type-label">{{item.label}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="type-col">
+          <view wx:for="{{typeOptions}}" wx:key="id" wx:if="{{index % 2 === 1}}">
+            <view
+              class="type-card {{selectedType === item.id ? 'type-card-selected' : ''}}"
+              style="{{selectedType === item.id ? 'background:' + item.selectedBg + ';' : ''}}"
+              bindtap="onSelectType"
+              data-type="{{item.id}}"
+            >
+              <view class="type-icon-box" style="background:{{item.iconBg}};">
+                <image class="type-icon" src="{{item.iconPath}}" mode="aspectFit"/>
+              </view>
+              <text class="type-label">{{item.label}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 出差专属字段 -->
+    <view class="trip-fields" wx:if="{{selectedType === 'domestic' || selectedType === 'international'}}">
+      <view class="field-row">
+        <view class="field-group field-flex">
+          <text class="field-label">出差地点</text>
+          <view class="field-input-wrap">
+            <image class="field-input-icon" src="/assets/icons/map-pin.png" mode="aspectFit"/>
+            <input class="field-input" placeholder="请输入城市或基地名称" value="{{locationStr}}" bindinput="onLocationInput"/>
+          </view>
+        </view>
+        <view class="field-group field-subsidy">
+          <text class="field-label">补贴 (元)</text>
+          <view class="field-input-wrap">
+            <image class="field-input-icon" src="/assets/icons/dollar.png" mode="aspectFit"/>
+            <input class="field-input" type="digit" placeholder="0" value="{{subsidy}}" bindinput="onSubsidyInput"/>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部间距 -->
+    <view style="height: 200rpx;"></view>
+  </scroll-view>
+
+  <!-- 底部提交按钮 -->
+  <view class="submit-bar">
+    <view
+      class="submit-btn {{selectedCount > 0 && !isSubmitting ? 'submit-btn-active' : 'submit-btn-disabled'}}"
+      bindtap="onSubmit"
+    >
+      <text class="submit-btn-text">{{isSubmitting ? '正在批量处理...' : '提交申请 (' + selectedCount + ')'}}</text>
+    </view>
+  </view>
+</view>
+
+<!-- 进度弹窗 -->
+<view class="progress-overlay" wx:if="{{isSubmitting}}">
+  <view class="progress-card" catchtap="">
+    <text class="progress-title">正在提交申请</text>
+    <text class="progress-desc">正在处理：{{currentProcessingDate}}</text>
+    <view class="progress-bar-wrap">
+      <view class="progress-bar-bg">
+        <view class="progress-bar-fill" style="width: {{progress}}%;"></view>
+      </view>
+      <text class="progress-percent">{{progress}}%</text>
+    </view>
+    <text class="progress-tip">请不要离开页面，系统正在同步数据至服务器...</text>
+  </view>
+</view>
+
+<!-- 结果弹窗 -->
+<view class="result-overlay" wx:if="{{showResult}}" bindtap="onCloseResult">
+  <view class="result-card" catchtap="">
+    <view class="result-close" catchtap="onCloseResult">
+      <image class="result-close-icon" src="/assets/icons/close.png" mode="aspectFit"/>
+    </view>
+    <view class="result-icon-wrap {{resultSuccess ? 'result-icon-success' : 'result-icon-fail'}}">
+      <view class="result-icon-inner">
+        <image class="result-icon-img" src="{{resultSuccess ? '/assets/icons/check-circle.png' : '/assets/icons/alert-circle.png'}}" mode="aspectFit"/>
+      </view>
+    </view>
+    <view class="result-title-row">
+      <text class="result-title">{{resultSuccess ? '申请已提交' : '提交失败'}}</text>
+      <image wx:if="{{resultSuccess}}" class="result-title-sparkle" src="/assets/icons/sparkles.png" mode="aspectFit"/>
+    </view>
+    <text class="result-msg">{{resultMsg}}</text>
+    <view class="result-confirm-btn" catchtap="onCloseResult">
+      <text class="result-confirm-text">确 定</text>
+    </view>
+  </view>
+</view>

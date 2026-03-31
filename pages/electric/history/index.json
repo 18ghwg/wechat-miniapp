@@ -1,0 +1,10 @@
+{
+  "navigationBarTitleText": "电费历史记录",
+  "navigationBarBackgroundColor": "#FFF9F2",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#FFF9F2",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "t-toast": "tdesign-miniprogram/toast/toast"
+  }
+}

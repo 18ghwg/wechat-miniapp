@@ -1,0 +1,538 @@
+/* 用户绑定页面样式 - 马卡龙风格 */
+/* 使用 macaron-theme.wxss 主题样式 */
+@import '/style/macaron-theme.wxss';
+
+page {
+  background: var(--background);
+}
+
+/* 绑定页面容器 */
+.bind-container {
+  min-height: 100vh;
+  padding: 40rpx;
+  padding-bottom: 120rpx;
+}
+
+/* ===== 标签切换 - cartoon-card 样式 ===== */
+.tab-container {
+  display: flex;
+  background: var(--card);
+  border: 6rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon);
+  padding: 12rpx;
+  margin-bottom: 40rpx;
+  box-shadow: var(--shadow-cartoon);
+}
+
+.tab-item {
+  flex: 1;
+  height: 80rpx;
+  line-height: 80rpx;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: var(--font-weight-bold);
+  border-radius: 30rpx;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  color: var(--foreground);
+  /* 确保最小触摸区域 88rpx × 88rpx */
+  min-height: 88rpx;
+}
+
+.tab-item.active {
+  background: var(--color-peach-macaron);
+  border: 4rpx solid var(--foreground);
+  box-shadow: 4rpx 4rpx 0rpx var(--foreground);
+}
+
+.tab-item:active {
+  transform: scale(0.98);
+}
+
+/* ===== 状态卡片 - cartoon-card 样式 ===== */
+/* 需求 6.1: 将绑定页面转换为 cartoon-card 表单样式 */
+.status-card {
+  background: var(--card);
+  border: 6rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon);
+  padding: 40rpx;
+  margin-bottom: 40rpx;
+  box-shadow: var(--shadow-cartoon);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.status-card:active {
+  transform: translate(6rpx, 6rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+.status-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+/* ===== 状态徽章 - status-badge 样式 ===== */
+/* 需求 6.2: 将绑定状态指示器转换为 status-badge 样式 */
+.status-icon-wrapper {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+  border: 3rpx solid var(--foreground);
+}
+
+.status-icon-wrapper.bound {
+  background: var(--color-mint-macaron);
+}
+
+.status-icon-wrapper.unbound {
+  background: var(--color-yellow-macaron);
+}
+
+.status-icon-img {
+  width: 28rpx;
+  height: 28rpx;
+}
+
+.status-text {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.status-detail {
+  padding-left: 68rpx;
+}
+
+.bound-username {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 12rpx;
+}
+
+.bound-username-badge {
+  padding: 10rpx 24rpx;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+  font-weight: var(--font-weight-bold);
+  background: var(--color-blue-macaron);
+  color: var(--foreground);
+  border: 3rpx solid var(--foreground);
+}
+
+.status-desc {
+  display: block;
+  font-size: 26rpx;
+  color: var(--foreground);
+  opacity: 0.7;
+  line-height: 1.5;
+}
+
+/* ===== 绑定表单 - cartoon-card 样式 ===== */
+.bind-form {
+  background: var(--card);
+  border: 6rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon);
+  padding: 40rpx;
+  margin-bottom: 40rpx;
+  box-shadow: var(--shadow-cartoon);
+}
+
+.form-title {
+  font-size: 36rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-bottom: 40rpx;
+  text-align: center;
+}
+
+/* 隐私说明 - macaron 风格 */
+.privacy-notice {
+  display: flex;
+  align-items: flex-start;
+  padding: 24rpx;
+  background: var(--color-blue-macaron);
+  border: 4rpx solid var(--foreground);
+  border-radius: var(--radius-lg);
+  margin-bottom: 40rpx;
+}
+
+.privacy-notice .notice-icon {
+  width: 32rpx;
+  height: 32rpx;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+  margin-top: 4rpx;
+}
+
+.privacy-notice .notice-text {
+  flex: 1;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: var(--foreground);
+  font-weight: var(--font-weight-medium);
+}
+
+.form-group {
+  margin-bottom: 32rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: 28rpx;
+  color: var(--foreground);
+  margin-bottom: 16rpx;
+  font-weight: var(--font-weight-bold);
+}
+
+/* 输入框 - form-input-macaron 样式 */
+.form-input {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 30rpx;
+  background: var(--input-background);
+  border: 4rpx solid var(--border);
+  border-radius: var(--radius-lg);
+  font-size: 28rpx;
+  color: var(--foreground);
+  box-sizing: border-box;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.form-input:focus {
+  background: var(--card);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 6rpx rgba(255, 159, 67, 0.1);
+  transform: translateY(-4rpx);
+}
+
+/* ===== 绑定按钮 - macaron-btn 样式 ===== */
+/* 需求 6.3: 转换绑定/解绑按钮为 macaron-btn 样式 */
+.bind-btn {
+  width: 100%;
+  height: 96rpx;
+  border: 6rpx solid var(--foreground);
+  border-radius: 999rpx;
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  margin: 40rpx 0 32rpx;
+  box-shadow: var(--shadow-btn);
+  transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 确保最小触摸区域 88rpx × 88rpx */
+  min-height: 88rpx;
+}
+
+.bind-btn::after {
+  border: none;
+}
+
+.bind-btn.primary {
+  background: var(--color-peach-macaron);
+  color: var(--foreground);
+}
+
+.bind-btn:active {
+  transform: translate(4rpx, 4rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+.bind-btn[disabled] {
+  opacity: 0.6;
+}
+
+/* 提示信息 - macaron 风格 */
+.bind-tips {
+  display: flex;
+  align-items: flex-start;
+  padding: 24rpx;
+  background: var(--color-yellow-macaron);
+  border: 4rpx solid var(--foreground);
+  border-radius: var(--radius-lg);
+}
+
+.tip-icon {
+  width: 28rpx;
+  height: 28rpx;
+  margin-right: 16rpx;
+  margin-top: 4rpx;
+  flex-shrink: 0;
+}
+
+.tip-text {
+  font-size: 24rpx;
+  color: var(--foreground);
+  line-height: 1.6;
+  flex: 1;
+  font-weight: var(--font-weight-medium);
+}
+
+/* ===== 已绑定操作 - cartoon-card 样式 ===== */
+/* 需求 6.4: 实现已绑定状态的信息卡片和解绑按钮 */
+.bound-actions {
+  background: var(--card);
+  border: 6rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon);
+  padding: 40rpx;
+  margin-bottom: 40rpx;
+  box-shadow: var(--shadow-cartoon);
+}
+
+.action-title {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-bottom: 30rpx;
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 0;
+  border-bottom: 3rpx solid rgba(94, 78, 62, 0.1);
+  /* 确保最小触摸区域 88rpx × 88rpx */
+  min-height: 88rpx;
+}
+
+.action-item:last-child {
+  border-bottom: none;
+}
+
+.action-info {
+  flex: 1;
+}
+
+.action-name {
+  display: block;
+  font-size: 28rpx;
+  color: var(--foreground);
+  margin-bottom: 8rpx;
+  font-weight: var(--font-weight-bold);
+}
+
+.action-desc {
+  display: block;
+  font-size: 24rpx;
+  color: var(--foreground);
+  opacity: 0.6;
+}
+
+/* 解绑按钮 - macaron-btn danger 样式 */
+.action-btn {
+  min-width: 120rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  font-size: 26rpx;
+  font-weight: var(--font-weight-bold);
+  border-radius: 999rpx;
+  text-align: center;
+  border: 4rpx solid var(--foreground);
+  box-shadow: 4rpx 4rpx 0rpx var(--foreground);
+  transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  padding: 0 24rpx;
+  /* 确保最小触摸区域 88rpx × 88rpx */
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn::after {
+  border: none;
+}
+
+.action-btn:active {
+  transform: translate(2rpx, 2rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+.action-btn.danger {
+  background: var(--color-pink-macaron);
+  color: var(--foreground);
+  border-color: var(--destructive);
+}
+
+.action-btn.small {
+  min-width: 100rpx;
+  height: 64rpx;
+  line-height: 64rpx;
+  font-size: 24rpx;
+  min-height: 88rpx;
+}
+
+/* ===== 国网账号列表 - cartoon-card 样式 ===== */
+.grid-accounts {
+  background: var(--card);
+  border: 6rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon);
+  padding: 40rpx;
+  margin-bottom: 40rpx;
+  box-shadow: var(--shadow-cartoon);
+}
+
+.accounts-title {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-bottom: 30rpx;
+}
+
+.account-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  background: var(--color-orange-light);
+  border: 4rpx solid var(--foreground);
+  border-radius: var(--radius-lg);
+  transition: all 0.15s ease;
+  /* 确保最小触摸区域 88rpx × 88rpx */
+  min-height: 88rpx;
+}
+
+.account-item:last-child {
+  margin-bottom: 0;
+}
+
+.account-item:active {
+  transform: scale(0.98);
+}
+
+.account-info {
+  flex: 1;
+}
+
+.account-phone {
+  font-size: 28rpx;
+  color: var(--foreground);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: 8rpx;
+}
+
+.account-name {
+  font-size: 24rpx;
+  color: var(--foreground);
+  opacity: 0.7;
+}
+
+/* ===== 权限说明 - cartoon-card 样式 ===== */
+.permission-guide {
+  background: var(--card);
+  border: 6rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon);
+  padding: 40rpx;
+  box-shadow: var(--shadow-cartoon);
+}
+
+.guide-title {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-bottom: 30rpx;
+  text-align: center;
+}
+
+.guide-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 24rpx;
+  padding: 24rpx;
+  background: var(--color-orange-light);
+  border: 4rpx solid var(--foreground);
+  border-radius: var(--radius-lg);
+  transition: all 0.15s ease;
+}
+
+.guide-item:last-child {
+  margin-bottom: 0;
+}
+
+.guide-item:active {
+  transform: scale(0.98);
+}
+
+.guide-icon {
+  width: 48rpx;
+  height: 48rpx;
+  margin-right: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.guide-icon-wrapper {
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.guide-icon-img {
+  width: 32rpx;
+  height: 32rpx;
+}
+
+.guide-content {
+  flex: 1;
+}
+
+.guide-name {
+  display: block;
+  font-size: 28rpx;
+  color: var(--foreground);
+  margin-bottom: 8rpx;
+  font-weight: var(--font-weight-bold);
+}
+
+.guide-desc {
+  display: block;
+  font-size: 24rpx;
+  color: var(--foreground);
+  opacity: 0.7;
+  line-height: 1.5;
+}
+
+/* ===== 响应式设计 ===== */
+@media (max-width: 375px) {
+  .bind-container {
+    padding: 30rpx;
+  }
+  
+  .status-card,
+  .bind-form,
+  .bound-actions,
+  .grid-accounts,
+  .permission-guide {
+    padding: 30rpx;
+  }
+  
+  .form-title {
+    font-size: 32rpx;
+  }
+}
+
+/* ===== 减少动画（可访问性）===== */
+@media (prefers-reduced-motion: reduce) {
+  .tab-container,
+  .tab-item,
+  .status-card,
+  .bind-form,
+  .form-input,
+  .bind-btn,
+  .action-btn,
+  .account-item,
+  .guide-item {
+    animation: none;
+    transition: none;
+  }
+}

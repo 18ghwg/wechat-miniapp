@@ -1,0 +1,1089 @@
+/* 电费查询页面 */
+@import "../../style/macaron-theme.wxss";
+
+.electric-container {
+  min-height: 100vh;
+  background-color: var(--background);
+  padding: 32rpx;
+  padding-bottom: 180rpx;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+.electric-content {
+  display: flex;
+  flex-direction: column;
+  gap: 48rpx;
+}
+
+/* ==================== Header ==================== */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16rpx;
+}
+
+.header-left {
+  flex: 1;
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 8rpx;
+}
+
+.title-text {
+  font-size: 60rpx;
+  font-weight: 900;
+  color: var(--foreground);
+  letter-spacing: -1rpx;
+}
+
+.title-icon {
+  width: 48rpx;
+  height: 48rpx;
+}
+
+.page-subtitle {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+.header-actions {
+  display: flex;
+  gap: 16rpx;
+}
+
+.action-btn {
+  width: 36rpx;
+  height: 36rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+}
+
+.action-btn:active {
+  transform: translate(6rpx, 6rpx);
+  box-shadow: none;
+}
+
+.action-icon {
+  width: 32rpx;
+  height: 32rpx;
+}
+
+/* ==================== Hero Card ==================== */
+.hero-card {
+  background: linear-gradient(135deg, var(--peach-macaron) 0%, var(--orange-light) 100%);
+  padding: 48rpx;
+  position: relative;
+  overflow: visible;
+}
+
+.hero-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 16rpx;
+  background-color: var(--peach-macaron);
+  border-radius: 32rpx 32rpx 0 0;
+}
+
+/* Account Selector */
+.account-selector-wrapper {
+  position: relative;
+  margin-bottom: 40rpx;
+  z-index: 10;
+}
+
+.account-selector {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32rpx;
+  background-color: rgba(255, 255, 255, 0.6);
+  border: 4rpx solid var(--foreground);
+  border-radius: 32rpx;
+  box-sizing: border-box;
+}
+
+.account-selector:active {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+.selector-left {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.account-icon {
+  width: 80rpx;
+  height: 80rpx;
+  min-width: 80rpx;
+  background-color: var(--yellow-macaron);
+  border: 4rpx solid var(--foreground);
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.acct-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.account-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  min-width: 0;
+  flex: 1;
+}
+
+.account-label {
+  font-size: 20rpx;
+  font-weight: 900;
+  color: var(--muted-foreground);
+}
+
+.account-address {
+  font-size: 28rpx;
+  font-weight: 900;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-number {
+  font-size: 20rpx;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+.selector-arrow {
+  font-size: 48rpx;
+  font-weight: 900;
+  color: var(--foreground);
+  transition: transform 0.3s;
+  flex-shrink: 0;
+}
+
+.selector-arrow.rotated {
+  transform: rotate(90deg);
+}
+
+/* Account Picker Dropdown */
+.account-picker {
+  position: absolute;
+  top: calc(100% + 16rpx);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background-color: white;
+  border: 6rpx solid var(--foreground);
+  border-radius: 32rpx;
+  box-shadow: 12rpx 12rpx 0rpx var(--foreground);
+  overflow: hidden;
+}
+
+.picker-item {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  padding: 32rpx;
+  border-bottom: 2rpx solid #f1f5f9;
+}
+
+.picker-item:last-child {
+  border-bottom: none;
+}
+
+.picker-item:active {
+  background-color: var(--orange-light);
+}
+
+.picker-item.selected {
+  background-color: rgba(255, 159, 67, 0.2);
+}
+
+.picker-icon {
+  width: 32rpx;
+  height: 32rpx;
+  flex-shrink: 0;
+}
+
+.picker-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.picker-address {
+  font-size: 28rpx;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+.picker-details {
+  font-size: 20rpx;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+.picker-balance {
+  font-size: 24rpx;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.picker-balance.positive {
+  color: #16a34a;
+}
+
+.picker-balance.negative {
+  color: #dc2626;
+}
+
+/* Stats Row */
+.stats-row {
+  display: flex;
+  gap: 32rpx;
+  margin-bottom: 40rpx;
+}
+
+.stat-box {
+  flex: 1;
+  padding: 32rpx;
+  border-radius: 32rpx;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.owner-box {
+  background-color: rgba(255, 255, 255, 0.5);
+  border: 4rpx dashed var(--foreground);
+}
+
+.balance-box {
+  border: 4rpx solid var(--foreground);
+}
+
+.balance-box.positive {
+  background-color: var(--mint-macaron);
+}
+
+.balance-box.negative {
+  background-color: var(--pink-macaron);
+}
+
+.stat-label {
+  font-size: 20rpx;
+  font-weight: 900;
+  color: var(--foreground);
+  opacity: 0.6;
+}
+
+.owner-value {
+  font-size: 36rpx;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+.balance-value {
+  font-size: 36rpx;
+  font-weight: 900;
+}
+
+.balance-value.positive {
+  color: #15803d;
+}
+
+.balance-value.negative {
+  color: #b91c1c;
+}
+
+/* Query Button */
+.query-button {
+  width: 100%;
+  height: 96rpx;
+  background-color: white;
+  border: 4rpx solid var(--foreground);
+  border-radius: 48rpx;
+  box-shadow: 6rpx 6rpx 0 var(--foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  box-sizing: border-box;
+}
+
+.query-button:active {
+  transform: translate(6rpx, 6rpx);
+  box-shadow: none;
+}
+
+.query-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.query-text {
+  font-size: 36rpx;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+/* ==================== Chart Section ==================== */
+.chart-section {
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+}
+
+.section-header-simple {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 0 16rpx;
+}
+
+.section-icon {
+  width: 44rpx;
+  height: 44rpx;
+  flex-shrink: 0;
+}
+
+.section-title-simple {
+  font-size: 40rpx;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+.chart-card {
+  background-color: white;
+  padding: 48rpx;
+  height: 512rpx;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.chart-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Chart Tooltip - 与 Web 端一致的马卡龙风格 */
+.chart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.chart-tooltip.show {
+  opacity: 1;
+}
+
+.tooltip-indicator {
+  width: 4rpx;
+  background-color: #5E4E3E;
+  opacity: 0.3;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.tooltip-content {
+  background-color: #ffffff;
+  border-radius: 32rpx;
+  border: 6rpx solid #5E4E3E;
+  box-shadow: 8rpx 8rpx 0rpx #5E4E3E;
+  padding: 24rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12rpx;
+  white-space: nowrap;
+}
+
+.tooltip-date {
+  font-size: 28rpx;
+  font-weight: 900;
+  color: #5E4E3E;
+}
+
+.tooltip-value {
+  font-size: 32rpx;
+  font-weight: 900;
+  color: #FF9F43;
+}
+
+/* ==================== Records Section ==================== */
+.records-section {
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16rpx;
+}
+
+.section-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.section-title {
+  font-size: 40rpx;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+.view-all-btn {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.view-all-text {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: var(--peach-macaron);
+}
+
+.view-all-arrow {
+  font-size: 32rpx;
+  font-weight: 900;
+  color: var(--peach-macaron);
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80rpx 0;
+}
+
+.loading-spinner {
+  width: 64rpx;
+  height: 64rpx;
+  border: 6rpx solid var(--foreground);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  margin-top: 24rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+/* Records List */
+.records-list {
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+}
+
+.record-card {
+  background-color: white;
+  padding: 40rpx;
+}
+
+/* Row 1: 户号 + 查询时间 */
+.record-row-1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.record-account {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.record-account-no {
+  font-size: 28rpx;
+  font-weight: 900;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-time {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+  margin-left: 16rpx;
+}
+
+/* Row 2: 数据日期 */
+.record-row-2 {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+
+.record-date {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+/* Row 3: Usage + Balance */
+.record-row-3 {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 24rpx;
+}
+
+.record-usage {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.record-balance {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  align-items: flex-end;
+}
+
+.record-usage-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4rpx;
+}
+
+.record-label {
+  font-size: 24rpx;
+  font-weight: 900;
+  color: var(--muted-foreground);
+}
+
+.record-usage-value {
+  font-size: 40rpx;
+  font-weight: 900;
+  color: var(--peach-macaron);
+}
+
+.record-balance-value {
+  font-size: 40rpx;
+  font-weight: 900;
+}
+
+.record-balance-value.positive {
+  color: #16a34a;
+}
+
+.record-balance-value.negative {
+  color: #dc2626;
+}
+
+/* Row 4: Address + Owner */
+.record-row-4 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 24rpx;
+  border-top: 4rpx dashed #f1f5f9;
+}
+
+.record-address,
+.record-owner {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.record-small-icon {
+  width: 28rpx;
+  height: 28rpx;
+  flex-shrink: 0;
+}
+
+.record-small-text {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+/* Empty State */
+.empty-state {
+  background-color: white;
+  padding: 128rpx 64rpx;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.empty-icon {
+  width: 96rpx;
+  height: 96rpx;
+  margin-bottom: 16rpx;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  font-weight: 900;
+  color: var(--muted-foreground);
+}
+
+/* ==================== Physical Meters ==================== */
+.physical-meters-section {
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+}
+
+.section-header-with-badge {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16rpx;
+}
+
+.section-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.section-icon-large {
+  width: 44rpx;
+  height: 44rpx;
+}
+
+.section-title-large {
+  font-size: 40rpx;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 8rpx 20rpx;
+  border-radius: 999rpx;
+  border: 4rpx solid var(--border);
+  background-color: white;
+  box-shadow: 4rpx 4rpx 0px var(--border);
+}
+
+.status-badge.offline {
+  border-color: #fca5a5;
+}
+
+.meter-stats-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.status-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background-color: #22c55e;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.status-dot-offline {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background-color: #ef4444;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.status-text {
+  font-size: 20rpx;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+.meters-grid-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32rpx;
+  /* 为 box-shadow 留出右侧和底部空间 */
+  padding-right: 12rpx;
+  padding-bottom: 12rpx;
+}
+
+.meter-card {
+  padding: 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.meter-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 4rpx;
+}
+
+.meter-icon-wrapper {
+  width: 48rpx;
+  height: 48rpx;
+  min-width: 48rpx;
+  background-color: #F5F5F5;
+  border-radius: 12rpx;
+  border: 3rpx solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.meter-icon {
+  width: 24rpx;
+  height: 24rpx;
+}
+
+.meter-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2rpx;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.meter-area {
+  font-size: 20rpx;
+  font-weight: 900;
+  color: #8B7E74;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meter-serial {
+  font-size: 20rpx;
+  font-weight: 900;
+  color: var(--foreground);
+  word-break: break-all;
+}
+
+.meter-status {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  padding: 4rpx 10rpx;
+  border-radius: 999rpx;
+  background-color: rgba(185, 251, 192, 0.2);
+  border: 2rpx solid rgba(185, 251, 192, 0.5);
+  flex-shrink: 0;
+}
+
+.status-label {
+  font-size: 16rpx;
+  font-weight: 900;
+  color: #15803d;
+}
+
+.meter-data-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.data-box {
+  padding: 16rpx;
+  border-radius: 16rpx;
+  border: 2rpx solid #E5E5E5;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.data-label {
+  font-size: 18rpx;
+  font-weight: 700;
+  color: #8B7E74;
+}
+
+.data-value-wrapper {
+  display: flex;
+  align-items: baseline;
+  gap: 6rpx;
+}
+
+.data-value {
+  font-size: 32rpx;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--foreground);
+}
+
+.data-unit {
+  font-size: 18rpx;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.meter-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  padding-top: 16rpx;
+  border-top: 3rpx dashed #E5E5E5;
+}
+
+.footer-text {
+  font-size: 20rpx;
+  font-weight: 900;
+  color: #8B7E74;
+}
+
+.footer-arrow {
+  font-size: 20rpx;
+  color: #8B7E74;
+  transition: transform 0.3s ease;
+}
+
+.footer-arrow.expanded {
+  transform: rotate(180deg);
+}
+
+.meter-expanded {
+  padding-top: 24rpx;
+  border-top: 4rpx dashed #E5E5E5;
+  margin-top: 8rpx;
+}
+
+.expanded-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.expanded-item {
+  background-color: #F5F5F5;
+  padding: 12rpx;
+  border-radius: 12rpx;
+  border: 2rpx solid #E5E5E5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.expanded-label {
+  font-size: 14rpx;
+  font-weight: 900;
+  color: #8B7E74;
+  margin-bottom: 2rpx;
+}
+
+.expanded-value {
+  font-size: 20rpx;
+  font-weight: 900;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.expanded-info {
+  background-color: rgba(221, 214, 254, 0.1);
+  padding: 16rpx;
+  border-radius: 16rpx;
+  border: 2rpx solid rgba(221, 214, 254, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  overflow: hidden;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16rpx;
+  font-weight: 900;
+}
+
+.info-label {
+  color: #8B7E74;
+  flex-shrink: 0;
+}
+
+.info-value {
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex-shrink: 1;
+  margin-left: 8rpx;
+}
+
+/* ==================== 走表动画效果 ==================== */
+
+/* 数据更新时卡片闪烁 */
+.meter-updating {
+  animation: meterFlash 0.5s ease-out;
+}
+
+@keyframes meterFlash {
+  0% { background-color: rgba(255, 159, 67, 0.15); }
+  100% { background-color: var(--card); }
+}
+
+/* 扫描线效果 */
+.meter-scanline {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60rpx;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: skewX(-12deg);
+  animation: scanlineMove 0.6s ease-out forwards;
+  pointer-events: none;
+  z-index: 5;
+}
+
+@keyframes scanlineMove {
+  0% { left: -20%; opacity: 1; }
+  100% { left: 120%; opacity: 0; }
+}
+
+/* 卡片需要 relative 定位来承载扫描线 */
+.meter-card {
+  position: relative;
+  overflow: hidden;
+}
+
+/* 在线状态圆点 - 电表卡片内 */
+.status-dot-meter {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background-color: #22c55e;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  transition: transform 0.3s ease;
+}
+
+.status-dot-meter-offline {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background-color: #ef4444;
+}
+
+.meter-status.offline .status-label {
+  color: #ef4444;
+}
+
+.status-dot-pulse {
+  transform: scale(1.8);
+  animation: none;
+  background-color: #16a34a;
+}
+
+/* 数据盒子背景色区分 */
+.data-box-energy {
+  background-color: rgba(255, 159, 67, 0.08);
+  border-color: rgba(255, 159, 67, 0.2);
+}
+
+.data-box-power {
+  background-color: rgba(255, 217, 61, 0.08);
+  border-color: rgba(255, 217, 61, 0.2);
+}
+
+/* rolling-number 组件在不同位置的样式 */
+.rolling-energy {
+  font-size: 32rpx;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--primary);
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+}
+
+.rolling-power {
+  font-size: 32rpx;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--foreground);
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+}
+
+/* 展开详情中的数值+单位包装 */
+.expanded-value-wrapper {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2rpx;
+}
+
+.expanded-unit {
+  font-size: 16rpx;
+  font-weight: 700;
+  color: var(--foreground);
+}
+

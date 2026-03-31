@@ -1,0 +1,343 @@
+<!-- 天气通知设置页面 - Macaron Theme -->
+<view class="weather-notification-container">
+  <!-- 测试模式提示 -->
+  <view wx:if="{{testMode}}" class="cartoon-card test-mode-banner">
+    <image class="test-mode-icon" src="/assets/icons/alert-circle.png" mode="aspectFit" />
+    <text class="test-mode-text">测试模式 - 当前显示的是模拟数据</text>
+  </view>
+
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <view class="header-icon-wrapper">
+      <image class="header-icon" src="/assets/icons/cloud-sun.png" mode="aspectFit" />
+    </view>
+    <text class="page-title">天气通知设置</text>
+    <text class="page-subtitle">配置天气预报和预警通知</text>
+  </view>
+
+  <!-- 加载状态 -->
+  <view wx:if="{{loading}}" class="loading-container">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 主内容区 -->
+  <scroll-view wx:else class="content" scroll-y>
+    <!-- 总开关 -->
+    <view class="section-container">
+      <view class="section-header">
+        <view class="section-icon-wrapper icon-peach">
+          <image class="section-icon" src="/assets/icons/cloud-sun.png" mode="aspectFit" />
+        </view>
+        <view class="section-title-group">
+          <text class="section-title">天气通知总开关</text>
+        </view>
+      </view>
+      <view class="cartoon-card setting-card main-switch-card">
+        <view class="setting-item">
+          <view class="setting-left">
+            <text class="setting-label">启用天气通知</text>
+            <text class="setting-desc">关闭后将停止所有天气通知消息</text>
+          </view>
+          <switch 
+            checked="{{settings.is_enabled}}" 
+            bindchange="onMainSwitchChange"
+            color="#FF9F43"
+          />
+        </view>
+      </view>
+    </view>
+
+    <!-- 地区设置 -->
+    <view class="section-container">
+      <view class="section-header">
+        <view class="section-icon-wrapper icon-mint">
+          <image class="section-icon" src="/assets/icons/map-pin.png" mode="aspectFit" />
+        </view>
+        <view class="section-title-group">
+          <text class="section-title">地区设置</text>
+        </view>
+      </view>
+      <view class="cartoon-card setting-card">
+        <view class="setting-item location-search-item">
+          <view class="setting-left">
+            <text class="setting-label">天气查询地区</text>
+            <text class="setting-desc">输入城市名称进行搜索</text>
+          </view>
+          <view class="location-input-wrapper">
+            <input 
+              class="form-input-macaron location-input"
+              type="text"
+              value="{{locationSearchInput}}"
+              placeholder="请输入城市名称"
+              bindinput="onLocationInput"
+              bindfocus="onLocationFocus"
+              bindblur="onLocationBlur"
+              disabled="{{!settings.is_enabled}}"
+            />
+            <text wx:if="{{searchingLocation}}" class="search-loading">搜索中...</text>
+          </view>
+        </view>
+
+        <!-- 搜索结果列表 -->
+        <view wx:if="{{showLocationResults && locationSearchResults.length > 0}}" class="location-results">
+          <view 
+            wx:for="{{locationSearchResults}}" 
+            wx:key="id"
+            class="location-result-item"
+            data-index="{{index}}"
+            bindtap="onLocationSelect"
+          >
+            <view class="location-name">{{item.name}}</view>
+            <view class="location-detail">{{item.adm2}} · {{item.adm1}}</view>
+          </view>
+        </view>
+
+        <!-- 无结果提示 -->
+        <view wx:if="{{showLocationResults && locationSearchResults.length === 0 && !searchingLocation}}" class="no-results">
+          <text>未找到相关城市</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 天气预报设置 -->
+    <view class="section-container">
+      <view class="section-header">
+        <view class="section-icon-wrapper icon-blue">
+          <image class="section-icon" src="/assets/icons/bar-chart.png" mode="aspectFit" />
+        </view>
+        <view class="section-title-group">
+          <text class="section-title">天气预报消息</text>
+        </view>
+      </view>
+      <view class="cartoon-card setting-card">
+        <view class="setting-item">
+          <view class="setting-left">
+            <text class="setting-label">今日天气</text>
+            <text class="setting-desc">发送当天天气信息</text>
+          </view>
+          <switch 
+            checked="{{settings.send_today_weather}}" 
+            bindchange="onSubSwitchChange"
+            data-field="send_today_weather"
+            disabled="{{!settings.is_enabled}}"
+            color="#FF9F43"
+          />
+        </view>
+
+        <view class="setting-item">
+          <view class="setting-left">
+            <text class="setting-label">8小时天气预报</text>
+            <text class="setting-desc">发送未来8小时天气预报</text>
+          </view>
+          <switch 
+            checked="{{settings.send_8hour_forecast}}" 
+            bindchange="onSubSwitchChange"
+            data-field="send_8hour_forecast"
+            disabled="{{!settings.is_enabled}}"
+            color="#FF9F43"
+          />
+        </view>
+
+        <view class="setting-item">
+          <view class="setting-left">
+            <text class="setting-label">7天天气预报</text>
+            <text class="setting-desc">发送未来7天天气预报</text>
+          </view>
+          <switch 
+            checked="{{settings.send_daily_forecast}}" 
+            bindchange="onSubSwitchChange"
+            data-field="send_daily_forecast"
+            disabled="{{!settings.is_enabled}}"
+            color="#FF9F43"
+          />
+        </view>
+      </view>
+    </view>
+
+    <!-- 天气预警设置 -->
+    <view class="section-container">
+      <view class="section-header">
+        <view class="section-icon-wrapper icon-yellow">
+          <image class="section-icon" src="/assets/icons/alert-triangle.png" mode="aspectFit" />
+        </view>
+        <view class="section-title-group">
+          <text class="section-title">天气预警设置</text>
+        </view>
+      </view>
+      <view class="cartoon-card setting-card">
+        <view class="setting-item">
+          <view class="setting-left">
+            <text class="setting-label">启用天气预警</text>
+            <text class="setting-desc">检测并通知恶劣天气变化</text>
+          </view>
+          <switch 
+            checked="{{settings.enable_weather_alert}}" 
+            bindchange="onSubSwitchChange"
+            data-field="enable_weather_alert"
+            disabled="{{!settings.is_enabled}}"
+            color="#FF9F43"
+          />
+        </view>
+
+        <view class="setting-item">
+          <view class="setting-left">
+            <view class="label-with-icon">
+              <image class="label-icon" src="/assets/icons/zap.png" mode="aspectFit" />
+              <text class="setting-label">官方天气灾害预警</text>
+            </view>
+            <text class="setting-desc">接收和风天气官方发布的灾害预警</text>
+          </view>
+          <switch 
+            checked="{{settings.enable_official_warning}}" 
+            bindchange="onSubSwitchChange"
+            data-field="enable_official_warning"
+            disabled="{{!settings.is_enabled}}"
+            color="#FF9F43"
+          />
+        </view>
+
+        <view class="setting-item picker-item">
+          <view class="setting-left">
+            <text class="setting-label">预警严重程度阈值</text>
+            <text class="setting-desc">达到此级别及以上才发送预警</text>
+          </view>
+          <picker 
+            mode="selector" 
+            range="{{severityOptions}}"
+            range-key="label"
+            value="{{severityIndex}}"
+            bindchange="onSeverityChange"
+            disabled="{{!settings.is_enabled || !settings.enable_weather_alert}}"
+          >
+            <view class="picker-value-macaron">
+              <text>{{severityOptions[severityIndex].label}}</text>
+              <image class="picker-arrow-icon" src="/assets/icons/chevron-left.png" mode="aspectFit" />
+            </view>
+          </picker>
+        </view>
+
+        <view class="setting-item">
+          <view class="setting-left">
+            <text class="setting-label">夜间静默模式</text>
+            <text class="setting-desc">夜间不发送一般预警，仅汇总极端天气</text>
+          </view>
+          <switch 
+            checked="{{settings.enable_night_quiet_mode}}" 
+            bindchange="onSubSwitchChange"
+            data-field="enable_night_quiet_mode"
+            disabled="{{!settings.is_enabled || !settings.enable_weather_alert}}"
+            color="#FF9F43"
+          />
+        </view>
+
+        <view class="setting-item input-item">
+          <view class="setting-left">
+            <text class="setting-label">静默时间缓冲</text>
+            <text class="setting-desc">日落后和日出前的缓冲时间（分钟）</text>
+          </view>
+          <view class="input-wrapper-macaron">
+            <input 
+              type="number" 
+              value="{{settings.quiet_hours_buffer}}" 
+              bindinput="onBufferTimeInput"
+              disabled="{{!settings.is_enabled || !settings.enable_weather_alert || !settings.enable_night_quiet_mode}}"
+              class="setting-input-macaron"
+              placeholder="0-120"
+            />
+            <text class="input-unit">分钟</text>
+          </view>
+        </view>
+
+        <view class="setting-item">
+          <view class="setting-left">
+            <text class="setting-label">晨间极端天气汇总</text>
+            <text class="setting-desc">在早晨汇总夜间的极端天气预警</text>
+          </view>
+          <switch 
+            checked="{{settings.send_morning_summary}}" 
+            bindchange="onSubSwitchChange"
+            data-field="send_morning_summary"
+            disabled="{{!settings.is_enabled || !settings.enable_weather_alert || !settings.enable_night_quiet_mode}}"
+            color="#FF9F43"
+          />
+        </view>
+
+        <view class="setting-item picker-item">
+          <view class="setting-left">
+            <text class="setting-label">极端天气阈值</text>
+            <text class="setting-desc">达到此级别才在晨间汇总</text>
+          </view>
+          <picker 
+            mode="selector" 
+            range="{{severityOptions}}"
+            range-key="label"
+            value="{{extremeIndex}}"
+            bindchange="onExtremeChange"
+            disabled="{{!settings.is_enabled || !settings.enable_weather_alert || !settings.enable_night_quiet_mode || !settings.send_morning_summary}}"
+          >
+            <view class="picker-value-macaron">
+              <text>{{severityOptions[extremeIndex].label}}</text>
+              <image class="picker-arrow-icon" src="/assets/icons/chevron-left.png" mode="aspectFit" />
+            </view>
+          </picker>
+        </view>
+      </view>
+    </view>
+
+    <!-- 说明信息 -->
+    <view class="cartoon-card info-section">
+      <view class="info-header">
+        <view class="info-icon-wrapper icon-lavender">
+          <image class="info-icon" src="/assets/icons/alert-circle.png" mode="aspectFit" />
+        </view>
+        <text class="info-title">功能说明</text>
+      </view>
+      <view class="info-content">
+        <view class="info-item">
+          <image class="info-item-icon" src="/assets/icons/map-pin.png" mode="aspectFit" />
+          <text class="info-text">地区设置：选择天气查询的地区，未设置则使用默认地区</text>
+        </view>
+        <view class="info-item">
+          <image class="info-item-icon" src="/assets/icons/sun.png" mode="aspectFit" />
+          <text class="info-text">今日天气：发送当天实时天气状况</text>
+        </view>
+        <view class="info-item">
+          <image class="info-item-icon" src="/assets/icons/clock.png" mode="aspectFit" />
+          <text class="info-text">8小时预报：发送未来8小时逐时天气预报</text>
+        </view>
+        <view class="info-item">
+          <image class="info-item-icon" src="/assets/icons/calendar.png" mode="aspectFit" />
+          <text class="info-text">7天预报：发送未来7天每日天气预报</text>
+        </view>
+        <view class="info-item">
+          <image class="info-item-icon" src="/assets/icons/alert-triangle.png" mode="aspectFit" />
+          <text class="info-text">天气预警：检测天气变化并通知恶劣天气</text>
+        </view>
+        <view class="info-item">
+          <image class="info-item-icon" src="/assets/icons/zap.png" mode="aspectFit" />
+          <text class="info-text">官方预警：接收气象部门发布的官方灾害预警（台风、暴雨等）</text>
+        </view>
+        <view class="info-item">
+          <image class="info-item-icon" src="/assets/icons/trending-up.png" mode="aspectFit" />
+          <text class="info-text">严重程度：1-轻度，2-一般，3-较重，4-严重，5-极严重</text>
+        </view>
+        <view class="info-item">
+          <image class="info-item-icon" src="/assets/icons/eye-off.png" mode="aspectFit" />
+          <text class="info-text">夜间静默：避免夜间打扰，仅汇总极端天气</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部占位 -->
+    <view class="bottom-placeholder"></view>
+  </scroll-view>
+
+  <!-- 保存按钮 -->
+  <view class="button-group">
+    <button class="macaron-btn macaron-btn-peach save-btn" bindtap="saveSettings">
+      <image class="btn-icon" src="/assets/icons/check-circle.png" mode="aspectFit" />
+      <text>保存设置</text>
+    </button>
+  </view>
+</view>

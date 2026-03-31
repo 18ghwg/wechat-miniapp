@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "漏打卡补交",
+  "navigationBarBackgroundColor": "#FFF9F2",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#FFF9F2",
+  "disableScroll": true,
+  "enablePullDownRefresh": false,
+  "usingComponents": {}
+}

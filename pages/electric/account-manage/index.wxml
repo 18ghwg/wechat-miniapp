@@ -1,0 +1,533 @@
+<!-- 国网账号管理页面 - Macaron Theme -->
+<view class="account-manage-container page-enter">
+  <!-- 页面标题 -->
+  <view class="page-header card-enter">
+    <view class="header-icon-wrapper">
+      <image class="header-icon" src="/assets/icons/zap.png" mode="aspectFit" />
+    </view>
+    <text class="page-title">国网账号管理</text>
+    <text class="page-subtitle" wx:if="{{isAdmin}}">管理系统中所有国网电费查询账号</text>
+    <text class="page-subtitle" wx:else>管理您绑定的国网电费查询账号</text>
+  </view>
+
+  <!-- 统计卡片区域 -->
+  <view class="stats-cards card-enter card-enter-delay-1" wx:if="{{!loading && gridAccounts.length > 0}}">
+    <view class="cartoon-card stat-card">
+      <image class="stat-icon-img" src="/assets/icons/bar-chart.png" mode="aspectFit" />
+      <view class="stat-content">
+        <text class="stat-value">{{totalAccounts}}</text>
+        <text class="stat-label">{{isAdmin ? '系统账号' : '绑定账号'}}</text>
+      </view>
+    </view>
+    
+    <view class="cartoon-card stat-card" wx:if="{{isAdmin}}">
+      <image class="stat-icon-img" src="/assets/icons/check-circle.png" mode="aspectFit" />
+      <view class="stat-content">
+        <text class="stat-value">{{activeAccounts}}</text>
+        <text class="stat-label">使用中</text>
+      </view>
+    </view>
+    
+    <view class="cartoon-card stat-card" wx:if="{{isAdmin}}">
+      <image class="stat-icon-img" src="/assets/icons/lock.png" mode="aspectFit" />
+      <view class="stat-content">
+        <text class="stat-value">{{inactiveAccounts}}</text>
+        <text class="stat-label">未使用</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 操作按钮区域 -->
+  <view class="action-section card-enter card-enter-delay-2">
+    <view class="action-top-btn add-button" bindtap="showAddAccount">
+      <text class="btn-icon-text">+</text>
+      <text class="btn-text">添加账号</text>
+    </view>
+    <view class="action-top-btn refresh-button" bindtap="onRefresh">
+      <image class="btn-icon-img" src="/assets/icons/history.png" mode="aspectFit" />
+      <text class="btn-text">刷新</text>
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="cartoon-card loading-state" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 账号列表 -->
+  <view class="account-list card-enter card-enter-delay-3" wx:elif="{{gridAccounts && gridAccounts.length > 0}}">
+    <view 
+      class="cartoon-card account-card {{item.IsActive ? 'active-account' : ''}}" 
+      wx:for="{{gridAccounts}}" 
+      wx:for-item="item"
+      wx:for-index="index"
+      wx:key="id"
+    >
+      <!-- 卡片头部 -->
+      <view class="card-header">
+        <view class="avatar-wrapper">
+          <text class="avatar-text">{{item.avatarText}}</text>
+        </view>
+        <view class="account-info">
+          <view class="account-main-info">
+            <text class="phone-number">{{item.PhoneName}}</text>
+            <view class="status-badges">
+              <view class="status-badge status-active badge-with-icon" wx:if="{{item.IsActive}}">
+                <image class="badge-icon" src="/assets/icons/zap.png" mode="aspectFit" />
+                <text>使用中</text>
+              </view>
+              <view class="status-badge {{item.Status === '正常' || !item.Status ? 'status-active' : (item.Status === '禁用' ? 'status-warning' : 'status-error')}}">
+                {{item.Status || '正常'}}
+              </view>
+            </view>
+          </view>
+          <view class="account-details">
+            <view class="detail-item" wx:if="{{item.AccountName}}">
+              <image class="detail-icon" src="/assets/icons/edit.png" mode="aspectFit" />
+              <text>{{item.AccountName}}</text>
+            </view>
+            <view class="detail-item">
+              <image class="detail-icon" src="/assets/icons/clock.png" mode="aspectFit" />
+              <text>{{item.displayTime}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 实体电表关联区 -->
+      <view class="meter-section" wx:if="{{isAdmin}}">
+        <view class="meter-section-header">
+          <view class="meter-section-label">
+            <image class="meter-section-icon" src="/assets/icons/cpu.png" mode="aspectFit" />
+            <text>已关联实体电表 ({{item.PhysicalMeters.length || 0}})</text>
+          </view>
+          <view class="meter-add-link" bindtap="showAddMeterModal" data-account="{{item}}">
+            <text class="meter-add-plus">+</text>
+            <text>添加新电表</text>
+          </view>
+        </view>
+        <view class="meter-chips-wrap">
+          <view class="meter-chip" wx:for="{{item.PhysicalMeters}}" wx:for-item="meter" wx:for-index="mIdx" wx:key="url">
+            <view class="meter-chip-info">
+              <text class="meter-chip-area">{{meter.location}}</text>
+              <text class="meter-chip-ip">{{meter.displayIP}}</text>
+            </view>
+            <view class="meter-chip-actions">
+              <view class="meter-chip-edit" catchtap="showEditMeter" data-account-id="{{item.id}}" data-meter-index="{{mIdx}}">
+                <image class="meter-action-icon" src="/assets/icons/edit.png" mode="aspectFit" />
+              </view>
+              <view class="meter-chip-delete" catchtap="showDeleteMeterConfirm" data-account-id="{{item.id}}" data-meter-index="{{mIdx}}">
+                <text>×</text>
+              </view>
+            </view>
+          </view>
+          <view class="meter-chip-empty" wx:if="{{!item.PhysicalMeters || item.PhysicalMeters.length === 0}}">
+            <text>暂无实体电表</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 卡片操作区 -->
+      <view class="card-actions">
+        <view
+          class="action-btn-circle {{item.IsActive ? 'btn-disabled' : ''}}"
+          bindtap="{{item.IsActive ? '' : 'switchAccount'}}"
+          data-account="{{item}}"
+        >
+          <image class="action-icon-img" src="/assets/icons/{{item.IsActive ? 'check-circle' : 'zap'}}.png" mode="aspectFit" />
+          <text class="action-btn-text">{{item.IsActive ? '使用中' : '使用'}}</text>
+        </view>
+        <view
+          class="action-btn-circle"
+          bindtap="showEditAccount"
+          data-account="{{item}}"
+        >
+          <image class="action-icon-img" src="/assets/icons/edit.png" mode="aspectFit" />
+          <text class="action-btn-text">编辑</text>
+        </view>
+        <view
+          class="action-btn-circle"
+          bindtap="deleteAccount"
+          data-account="{{item}}"
+        >
+          <image class="action-icon-img" src="/assets/icons/trash.png" mode="aspectFit" />
+          <text class="action-btn-text">删除</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="cartoon-card empty-state" wx:else>
+    <image class="empty-icon-img" src="/assets/icons/user.png" mode="aspectFit" />
+    <text class="empty-title">暂无绑定账号</text>
+    <text class="empty-subtitle">点击上方"添加账号"按钮开始绑定国网账号</text>
+  </view>
+</view>
+
+
+<!-- 添加账号弹窗 -->
+<view class="popup-overlay" wx:if="{{showAddModal}}" bindtap="hideModal">
+  <view class="cartoon-card popup-container" catchtap="">
+    <view class="popup-header">
+      <text class="popup-title">添加国网账号</text>
+      <view class="popup-close" catchtap="hideModal">
+        <text class="close-icon">×</text>
+      </view>
+    </view>
+    
+    <view class="popup-content">
+      <view class="form-group">
+        <text class="form-label">手机号 *</text>
+        <input 
+          class="form-input-macaron {{formErrors.grid_phone ? 'input-error' : ''}}" 
+          type="number" 
+          placeholder="请输入国网注册手机号" 
+          value="{{formData.grid_phone}}"
+          bindinput="onInput"
+          data-field="grid_phone"
+          maxlength="11"
+        />
+        <text class="form-error" wx:if="{{formErrors.grid_phone}}">{{formErrors.grid_phone}}</text>
+      </view>
+      
+      <view class="form-group">
+        <text class="form-label">密码 *</text>
+        <input 
+          class="form-input-macaron {{formErrors.grid_password ? 'input-error' : ''}}" 
+          type="password" 
+          placeholder="请输入国网登录密码" 
+          value="{{formData.grid_password}}"
+          bindinput="onInput"
+          data-field="grid_password"
+        />
+        <text class="form-error" wx:if="{{formErrors.grid_password}}">{{formErrors.grid_password}}</text>
+      </view>
+      
+      <view class="form-group">
+        <text class="form-label">账号名称</text>
+        <input 
+          class="form-input-macaron {{formErrors.account_name ? 'input-error' : ''}}" 
+          type="text" 
+          placeholder="请输入账号备注名称（可选）" 
+          value="{{formData.account_name}}"
+          bindinput="onInput"
+          data-field="account_name"
+          maxlength="20"
+        />
+        <text class="form-error" wx:if="{{formErrors.account_name}}">{{formErrors.account_name}}</text>
+      </view>
+      
+      <view class="form-tips">
+        <view class="tips-content">
+          <image class="tips-icon" src="/assets/icons/alert-circle.png" mode="aspectFit" />
+          <text class="tips-text">提示：系统会验证账号密码的有效性，请确保信息准确</text>
+        </view>
+      </view>
+    </view>
+    
+    <view class="popup-footer">
+      <view class="macaron-btn macaron-btn-lavender popup-btn" catchtap="hideModal">
+        取消
+      </view>
+      <view 
+        class="macaron-btn macaron-btn-peach popup-btn {{submitting ? 'btn-disabled' : ''}}" 
+        catchtap="submitForm"
+      >
+        {{submitting ? '绑定中...' : '确认绑定'}}
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 编辑账号弹窗 -->
+<view class="popup-overlay" wx:if="{{showEditModal}}" bindtap="hideModal">
+  <view class="cartoon-card popup-container" catchtap="">
+    <view class="popup-header">
+      <text class="popup-title">编辑账号信息</text>
+      <view class="popup-close" catchtap="hideModal">
+        <image class="close-icon-img" src="/assets/icons/close.png" mode="aspectFit" />
+      </view>
+    </view>
+    
+    <view class="popup-content">
+      <view class="form-group">
+        <text class="form-label">手机号</text>
+        <input 
+          class="form-input-macaron input-disabled" 
+          type="number" 
+          value="{{formData.grid_phone}}"
+          disabled="true"
+        />
+        <text class="form-hint">手机号不可修改</text>
+      </view>
+      
+      <view class="form-group">
+        <text class="form-label">新密码</text>
+        <input 
+          class="form-input-macaron {{formErrors.grid_password ? 'input-error' : ''}}" 
+          type="password" 
+          placeholder="留空则不修改密码" 
+          value="{{formData.grid_password}}"
+          bindinput="onInput"
+          data-field="grid_password"
+        />
+        <text class="form-error" wx:if="{{formErrors.grid_password}}">{{formErrors.grid_password}}</text>
+        <text class="form-hint">如需修改密码，请输入新密码</text>
+      </view>
+      
+      <view class="form-group">
+        <text class="form-label">账号名称</text>
+        <input 
+          class="form-input-macaron {{formErrors.account_name ? 'input-error' : ''}}" 
+          type="text" 
+          placeholder="请输入账号备注名称（可选）" 
+          value="{{formData.account_name}}"
+          bindinput="onInput"
+          data-field="account_name"
+          maxlength="20"
+        />
+        <text class="form-error" wx:if="{{formErrors.account_name}}">{{formErrors.account_name}}</text>
+      </view>
+      
+      <view class="form-group status-group">
+        <text class="form-label">账号状态</text>
+        <picker 
+          mode="selector" 
+          range="{{['正常', '禁用', '异常']}}" 
+          value="{{statusPickerIndex}}"
+          bindchange="onStatusChange"
+        >
+          <view class="custom-select">
+            <text class="select-text">{{formData.status}}</text>
+            <text class="select-arrow">▼</text>
+          </view>
+        </picker>
+        <text class="form-hint">管理员可修改账号状态</text>
+      </view>
+
+      <!-- 设为使用账号 -->
+      <view class="form-group switch-group">
+        <view class="switch-header">
+          <text class="form-label">设为使用账号</text>
+          <switch 
+            class="macaron-switch" 
+            checked="{{currentAccount.IsActive}}" 
+            bindchange="onActiveSwitch"
+            color="#FF9F43"
+          />
+        </view>
+        <text class="form-hint">设置此账号为当前使用的查询账号（同时只能有一个账号为使用状态）</text>
+      </view>
+      
+      <view class="form-tips">
+        <view class="tips-content">
+          <image class="tips-icon" src="/assets/icons/alert-circle.png" mode="aspectFit" />
+          <text class="tips-text">可修改账号名称、密码、状态和使用状态，手机号不可修改</text>
+        </view>
+      </view>
+    </view>
+    
+    <view class="popup-footer">
+      <view class="macaron-btn macaron-btn-lavender popup-btn" catchtap="hideModal">
+        取消
+      </view>
+      <view 
+        class="macaron-btn macaron-btn-peach popup-btn {{submitting ? 'btn-disabled' : ''}}" 
+        catchtap="submitForm"
+      >
+        {{submitting ? '更新中...' : '确认更新'}}
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 添加实体电表弹窗 -->
+<view class="popup-overlay" wx:if="{{showMeterModal}}" bindtap="hideMeterModal">
+  <view class="cartoon-card popup-container" catchtap="stopPropagation">
+    <view class="popup-header">
+      <view class="popup-title-row">
+        <view class="popup-title-icon-wrapper">
+          <image class="popup-title-icon" src="/assets/icons/cpu.png" mode="aspectFit" />
+        </view>
+        <view class="popup-title-text-group">
+          <text class="popup-title">关联实体电表</text>
+          <text class="popup-subtitle-text">输入电表 IP 与区域信息</text>
+        </view>
+      </view>
+      <view class="popup-close" catchtap="hideMeterModal">
+        <image class="close-icon-img" src="/assets/icons/close.png" mode="aspectFit" />
+      </view>
+    </view>
+    
+    <view class="popup-content">
+      <!-- IP 地址输入 + 检测按钮 -->
+      <view class="form-group">
+        <view class="form-label-row">
+          <image class="form-label-icon" src="/assets/icons/link.png" mode="aspectFit" />
+          <text class="form-label">电表 IP 地址</text>
+        </view>
+        <view class="ip-input-row">
+          <input
+            class="form-input-macaron form-input-mono ip-input {{meterFormErrors.ip ? 'input-error' : ''}}"
+            type="text"
+            placeholder="192.168.1.xxx"
+            value="{{meterFormData.ip}}"
+            bindinput="onMeterInput"
+            data-field="ip"
+          />
+          <view
+            class="ip-check-btn {{meterCheckingIP ? 'ip-check-btn-loading' : ''}}"
+            catchtap="checkMeterIP"
+          >
+            <image wx:if="{{!meterCheckingIP}}" class="ip-check-icon" src="/assets/icons/search.png" mode="aspectFit" />
+            <view wx:else class="ip-check-spinner"></view>
+          </view>
+        </view>
+        <text class="form-error" wx:if="{{meterFormErrors.ip}}">{{meterFormErrors.ip}}</text>
+      </view>
+
+      <!-- SN 检测结果 -->
+      <view wx:if="{{meterDetectedSN}}" class="sn-result-box sn-result-success">
+        <image class="sn-result-icon" src="/assets/icons/check-circle.png" mode="aspectFit" />
+        <view class="sn-result-info">
+          <text class="sn-result-label">检测到 SN 号码</text>
+          <text class="sn-result-value">{{meterDetectedSN}}</text>
+        </view>
+        <view class="sn-online-badge">ONLINE</view>
+      </view>
+      <view wx:elif="{{meterIPStatus === 'error'}}" class="sn-result-box sn-result-error">
+        <image class="sn-result-icon" src="/assets/icons/warning.png" mode="aspectFit" />
+        <text class="sn-result-error-text">无法连接该 IP，请确认电表电源已开启</text>
+      </view>
+
+      <!-- 区域输入 -->
+      <view class="form-group">
+        <view class="form-label-row">
+          <image class="form-label-icon" src="/assets/icons/map-pin.png" mode="aspectFit" />
+          <text class="form-label">部署区域</text>
+        </view>
+        <input
+          class="form-input-macaron {{meterFormErrors.area ? 'input-error' : ''}}"
+          type="text"
+          placeholder="如：客厅、厨房主线"
+          value="{{meterFormData.area}}"
+          bindinput="onMeterInput"
+          data-field="area"
+          maxlength="20"
+        />
+        <text class="form-error" wx:if="{{meterFormErrors.area}}">{{meterFormErrors.area}}</text>
+      </view>
+    </view>
+    
+    <view class="popup-footer">
+      <view class="macaron-btn macaron-btn-lavender popup-btn" catchtap="hideMeterModal">
+        取消
+      </view>
+      <view
+        class="macaron-btn macaron-btn-peach popup-btn {{(meterSubmitting || !meterDetectedSN) ? 'btn-disabled' : ''}}"
+        catchtap="submitMeterForm"
+      >
+        {{meterSubmitting ? '添加中...' : '确认添加'}}
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 编辑电表弹窗 -->
+<view class="modal-overlay" wx:if="{{showEditMeterModal}}" catchtap="cancelEditMeter">
+  <view class="modal-container meter-modal" catchtouchmove="preventTouchMove" catchtap="stopPropagation">
+    <view class="popup-header">
+      <view class="popup-title-group">
+        <view class="popup-title-icon-wrapper">
+          <image class="popup-title-icon" src="/assets/icons/edit.png" mode="aspectFit" />
+        </view>
+        <view class="popup-title-text-group">
+          <text class="popup-title-text">修改电表信息</text>
+          <text wx:if="{{editingMeter}}" class="popup-subtitle-text">SN: {{editingMeter.meter.sn || '未知'}}</text>
+        </view>
+      </view>
+      <view class="popup-close" catchtap="cancelEditMeter">
+        <image class="close-icon-img" src="/assets/icons/close.png" mode="aspectFit" />
+      </view>
+    </view>
+
+    <view class="form-group-container">
+      <view class="form-group">
+        <view class="form-label-row">
+          <image class="form-label-icon" src="/assets/icons/map-pin.png" mode="aspectFit" />
+          <text class="form-label">修改区域</text>
+        </view>
+        <input
+          class="form-input"
+          type="text"
+          placeholder="如：客厅、厨房"
+          value="{{editMeterFormData.area}}"
+          bindinput="onEditMeterAreaInput"
+        />
+      </view>
+
+      <view class="form-group">
+        <view class="form-label-row">
+          <image class="form-label-icon" src="/assets/icons/link.png" mode="aspectFit" />
+          <text class="form-label">修改 IP 地址</text>
+        </view>
+        <view class="ip-input-row">
+          <input
+            class="form-input ip-input"
+            type="text"
+            placeholder="192.168.1.xxx"
+            value="{{editMeterFormData.ip}}"
+            bindinput="onEditMeterIPInput"
+          />
+          <view
+            class="ip-check-btn {{editMeterCheckingIP ? 'ip-check-btn-loading' : ''}}"
+            catchtap="checkEditMeterIP"
+          >
+            <image wx:if="{{!editMeterCheckingIP}}" class="ip-check-icon" src="/assets/icons/search.png" mode="aspectFit" />
+            <view wx:else class="ip-check-spinner"></view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 编辑弹窗 IP 检测结果 -->
+      <view wx:if="{{editMeterIPStatus === 'success'}}" class="sn-result-box sn-result-success">
+        <image class="sn-result-icon" src="/assets/icons/check-circle.png" mode="aspectFit" />
+        <text class="sn-result-label">连接正常：该 IP 设备目前在线</text>
+      </view>
+      <view wx:elif="{{editMeterIPStatus === 'error'}}" class="sn-result-box sn-result-error">
+        <image class="sn-result-icon" src="/assets/icons/warning.png" mode="aspectFit" />
+        <text class="sn-result-error-text">连接超时：请确认该 IP 对应的电表已联网</text>
+      </view>
+    </view>
+
+    <view class="modal-actions">
+      <view class="modal-btn modal-btn-cancel" catchtap="cancelEditMeter">
+        取消
+      </view>
+      <view class="modal-btn modal-btn-confirm" catchtap="handleUpdateMeter">
+        保存修改
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 删除确认弹窗 -->
+<view class="modal-overlay" wx:if="{{showDeleteMeterModal}}" catchtap="cancelDeleteMeter">
+  <view class="confirm-modal" catchtouchmove="preventTouchMove" catchtap="stopPropagation">
+    <view class="confirm-icon-wrapper">
+      <image class="confirm-icon" src="/assets/icons/alert-triangle.png" mode="aspectFit" />
+    </view>
+    <text class="confirm-title">确认删除？</text>
+    <text class="confirm-message" wx:if="{{deletingMeter}}">确定要移除位于"{{deletingMeter.location}}"的实体电表吗？此操作不可撤销。</text>
+    <view class="confirm-actions">
+      <view class="confirm-btn confirm-btn-danger" catchtap="deleteMeter">
+        确认删除
+      </view>
+      <view class="confirm-btn confirm-btn-cancel" catchtap="cancelDeleteMeter">
+        我再想想
+      </view>
+    </view>
+  </view>
+</view>

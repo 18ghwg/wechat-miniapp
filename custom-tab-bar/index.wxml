@@ -1,0 +1,16 @@
+<view class="custom-tabbar">
+  <view
+    class="tab-item {{active === index ? 'active' : ''}}"
+    wx:for="{{list}}"
+    wx:key="index"
+    bindtap="switchTab"
+    data-index="{{index}}"
+    data-url="{{item.url}}"
+  >
+    <view class="icon-wrapper {{active === index ? 'active' : ''}} icon-wrapper-{{item.color}}">
+      <image class="tab-icon" src="/assets/icons/{{item.icon === 'chart' ? 'zap' : item.icon}}.png" mode="aspectFit"/>
+    </view>
+    <text class="tab-label {{active === index ? 'active' : ''}}">{{item.text}}</text>
+    <view wx:if="{{active === index}}" class="active-dot"></view>
+  </view>
+</view>

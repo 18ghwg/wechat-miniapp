@@ -1,0 +1,395 @@
+<!-- 定时任务编辑页面 - 马卡龙风格 -->
+<view class="task-edit-page {{showCronEditor ? 'modal-open' : ''}}">
+  <view class="form-container" wx:if="{{!loading && taskData}}">
+    <!-- 基本信息 -->
+    <view class="cartoon-card form-section">
+      <view class="section-header">
+        <text class="section-emoji">ℹ️</text>
+        <text class="section-title">基本信息</text>
+      </view>
+      
+      <view class="form-item">
+        <text class="form-label">任务ID</text>
+        <input class="form-input-macaron disabled" value="{{taskData.task_id}}" disabled />
+      </view>
+      
+      <view class="form-item">
+        <text class="form-label">任务名称</text>
+        <input class="form-input-macaron disabled" value="{{taskData.task_name}}" disabled />
+      </view>
+      
+      <view class="form-item">
+        <text class="form-label">任务描述</text>
+        <textarea class="form-textarea-macaron disabled" value="{{taskData.task_description}}" disabled maxlength="500" />
+      </view>
+    </view>
+    
+    <!-- 触发类型选择 -->
+    <view class="cartoon-card form-section">
+      <view class="section-header">
+        <text class="section-emoji">🎯</text>
+        <text class="section-title">触发类型</text>
+      </view>
+      
+      <view class="trigger-type-selector">
+        <view 
+          class="trigger-option {{taskData.trigger_type === 'interval' ? 'active' : ''}}"
+          bindtap="switchTriggerType"
+          data-type="interval"
+        >
+          <text class="option-icon">⏱️</text>
+          <text class="option-text">间隔模式</text>
+        </view>
+        <view 
+          class="trigger-option {{taskData.trigger_type === 'cron' ? 'active' : ''}}"
+          bindtap="switchTriggerType"
+          data-type="cron"
+        >
+          <text class="option-icon">📅</text>
+          <text class="option-text">定时模式</text>
+        </view>
+      </view>
+      
+      <view class="trigger-type-hint">
+        <text wx:if="{{taskData.trigger_type === 'interval'}}">💡 间隔模式：按固定时间间隔（如每30分钟）执行任务</text>
+        <text wx:if="{{taskData.trigger_type === 'cron'}}">💡 定时模式：使用Cron表达式灵活配置执行时间（如每天13:00）</text>
+      </view>
+    </view>
+    
+    <!-- Cron配置 -->
+    <view class="cartoon-card form-section" wx:if="{{taskData.trigger_type === 'cron'}}">
+      <view class="section-header">
+        <text class="section-emoji">⏰</text>
+        <text class="section-title">执行时间配置</text>
+      </view>
+      
+      <!-- 使用Cron编辑器的字段 -->
+      <view class="cron-field-item" bindtap="editCronField" data-field="year">
+        <view class="field-header">
+          <text class="field-label">年份 (1970-2100)</text>
+          <text class="field-value">{{taskData.cron_year}}</text>
+        </view>
+        <text class="field-hint">点击使用表达式编辑器</text>
+      </view>
+
+      <view class="cron-field-item" bindtap="editCronField" data-field="month">
+        <view class="field-header">
+          <text class="field-label">月份 (1-12)</text>
+          <text class="field-value">{{taskData.cron_month}}</text>
+        </view>
+        <text class="field-hint">点击使用表达式编辑器</text>
+      </view>
+      
+      <view class="cron-field-item" bindtap="editCronField" data-field="week">
+        <view class="field-header">
+          <text class="field-label">ISO周 (1-53)</text>
+          <text class="field-value">{{taskData.cron_week}}</text>
+        </view>
+        <text class="field-hint">点击使用表达式编辑器</text>
+      </view>
+
+      <view class="cron-field-item" bindtap="editCronField" data-field="day">
+        <view class="field-header">
+          <text class="field-label">日期 (1-31)</text>
+          <text class="field-value">{{taskData.cron_day}}</text>
+        </view>
+        <text class="field-hint">点击使用表达式编辑器</text>
+      </view>
+      
+      <view class="cron-field-item" bindtap="editCronField" data-field="day_of_week">
+        <view class="field-header">
+          <text class="field-label">星期 (0-6)</text>
+          <text class="field-value">{{taskData.cron_day_of_week}}</text>
+        </view>
+        <text class="field-hint">点击使用表达式编辑器 (0=周日, 1=周一...)</text>
+      </view>
+      
+      <view class="cron-field-item" bindtap="editCronField" data-field="hour">
+        <view class="field-header">
+          <text class="field-label">小时 (0-23)</text>
+          <text class="field-value">{{taskData.cron_hour}}</text>
+        </view>
+        <text class="field-hint">点击使用表达式编辑器</text>
+      </view>
+      
+      <view class="cron-field-item" bindtap="editCronField" data-field="minute">
+        <view class="field-header">
+          <text class="field-label">分钟 (0-59)</text>
+          <text class="field-value">{{taskData.cron_minute}}</text>
+        </view>
+        <text class="field-hint">点击使用表达式编辑器</text>
+      </view>
+
+      <view class="cron-field-item" bindtap="editCronField" data-field="second">
+        <view class="field-header">
+          <text class="field-label">秒 (0-59)</text>
+          <text class="field-value">{{taskData.cron_second}}</text>
+        </view>
+        <text class="field-hint">点击使用表达式编辑器</text>
+      </view>
+      
+      <!-- Cron预览 -->
+      <view class="cron-preview {{cronValid ? 'valid' : 'invalid'}}">
+        <text class="preview-label">🔮 执行时间:</text>
+        <text class="preview-text">{{cronPreview}}</text>
+      </view>
+    </view>
+    
+    <!-- Interval配置 -->
+    <view class="cartoon-card form-section" wx:if="{{taskData.trigger_type === 'interval'}}">
+      <view class="section-header">
+        <text class="section-emoji">⏱️</text>
+        <text class="section-title">间隔配置</text>
+      </view>
+      
+      <view class="form-item">
+        <text class="form-label">间隔周数</text>
+        <input 
+          class="form-input-macaron" 
+          type="number"
+          value="{{taskData.interval_weeks}}" 
+          bindinput="onInputChange"
+          data-field="interval_weeks"
+          placeholder="输入周数（0表示不使用）"
+        />
+      </view>
+
+      <view class="form-item">
+        <text class="form-label">间隔天数</text>
+        <input 
+          class="form-input-macaron" 
+          type="number"
+          value="{{taskData.interval_days}}" 
+          bindinput="onInputChange"
+          data-field="interval_days"
+          placeholder="输入天数（0表示不使用）"
+        />
+      </view>
+
+      <view class="form-item">
+        <text class="form-label">间隔小时数</text>
+        <input 
+          class="form-input-macaron" 
+          type="number"
+          value="{{taskData.interval_hours}}" 
+          bindinput="onInputChange"
+          data-field="interval_hours"
+          placeholder="输入小时数（0表示不使用）"
+        />
+      </view>
+      
+      <view class="form-item">
+        <text class="form-label">间隔分钟数</text>
+        <input 
+          class="form-input-macaron" 
+          type="number"
+          value="{{taskData.interval_minutes}}" 
+          bindinput="onInputChange"
+          data-field="interval_minutes"
+          placeholder="输入分钟数（0表示不使用）"
+        />
+      </view>
+
+      <view class="form-item">
+        <text class="form-label">间隔秒数</text>
+        <input 
+          class="form-input-macaron" 
+          type="number"
+          value="{{taskData.interval_seconds}}" 
+          bindinput="onInputChange"
+          data-field="interval_seconds"
+          placeholder="输入秒数（0表示不使用）"
+        />
+      </view>
+      
+      <!-- Interval预览 -->
+      <view class="interval-preview">
+        <text class="preview-label">🔁 执行间隔:</text>
+        <text class="preview-text">{{intervalPreview}}</text>
+      </view>
+    </view>
+
+    <!-- 时间范围与时区配置 -->
+    <view class="cartoon-card form-section">
+      <view class="section-header">
+        <text class="section-emoji">📅</text>
+        <text class="section-title">时间范围与时区</text>
+      </view>
+      
+      <view class="form-item">
+        <text class="form-label">起始时间</text>
+        <picker 
+          mode="multiSelector" 
+          value="{{startDatePickerValue}}" 
+          range="{{datePickerRange}}" 
+          bindchange="onStartDateChange"
+        >
+          <view class="picker-display">
+            <text class="picker-text">{{taskData.start_date || '点击选择起始时间（可选）'}}</text>
+            <text class="picker-icon">📅</text>
+          </view>
+        </picker>
+        <text class="form-hint">任务开始执行的时间（留空表示立即开始）</text>
+      </view>
+
+      <view class="form-item">
+        <text class="form-label">结束时间</text>
+        <picker 
+          mode="multiSelector" 
+          value="{{endDatePickerValue}}" 
+          range="{{datePickerRange}}" 
+          bindchange="onEndDateChange"
+        >
+          <view class="picker-display">
+            <text class="picker-text">{{taskData.end_date || '点击选择结束时间（可选）'}}</text>
+            <text class="picker-icon">📅</text>
+          </view>
+        </picker>
+        <text class="form-hint">任务停止执行的时间（留空表示永久执行）</text>
+      </view>
+
+      <view class="form-item">
+        <text class="form-label">时区</text>
+        <picker 
+          mode="selector" 
+          value="{{timezoneIndex}}" 
+          range="{{timezones}}" 
+          range-key="label"
+          bindchange="onTimezoneChange"
+        >
+          <view class="picker-display">
+            <text class="picker-text">{{currentTimezone}}</text>
+            <text class="picker-icon">🌏</text>
+          </view>
+        </picker>
+        <text class="form-hint">任务执行所使用的时区</text>
+      </view>
+    </view>
+
+    <!-- 抖动与延迟配置 -->
+    <view class="cartoon-card form-section">
+      <view class="section-header">
+        <text class="section-emoji">⏳</text>
+        <text class="section-title">抖动与延迟</text>
+      </view>
+      
+      <view class="form-item">
+        <text class="form-label">触发抖动时间(秒)</text>
+        <input 
+          class="form-input-macaron" 
+          type="number"
+          value="{{taskData.jitter}}" 
+          bindinput="onInputChange"
+          data-field="jitter"
+          placeholder="0"
+        />
+        <text class="form-hint">在预定时间前后随机浮动的秒数，用于分散任务执行</text>
+      </view>
+
+      <view class="form-item">
+        <text class="form-label">随机延迟(分钟)</text>
+        <input 
+          class="form-input-macaron" 
+          type="number"
+          value="{{taskData.random_delay_minutes}}" 
+          bindinput="onInputChange"
+          data-field="random_delay_minutes"
+          placeholder="0"
+        />
+        <text class="form-hint">任务触发后随机延迟0到N分钟再执行，避免多任务同时运行</text>
+      </view>
+    </view>
+    
+    <!-- 执行策略配置 -->
+    <view class="cartoon-card form-section">
+      <view class="section-header">
+        <text class="section-emoji">⚙️</text>
+        <text class="section-title">执行策略</text>
+      </view>
+      
+      <view class="form-item">
+        <text class="form-label">延迟容忍时间(秒)</text>
+        <input 
+          class="form-input-macaron" 
+          type="number"
+          value="{{taskData.misfire_grace_time}}" 
+          bindinput="onInputChange"
+          data-field="misfire_grace_time"
+        />
+        <text class="form-hint">错过执行时间后，允许延迟执行的最大秒数</text>
+      </view>
+
+      <view class="form-item">
+        <text class="form-label">最大实例数</text>
+        <input 
+          class="form-input-macaron" 
+          type="number"
+          value="{{taskData.max_instances}}" 
+          bindinput="onInputChange"
+          data-field="max_instances"
+        />
+        <text class="form-hint">允许同时运行的任务实例数量（默认1）</text>
+      </view>
+
+      <view class="form-item switch-item">
+        <view class="switch-label-container">
+          <text class="form-label">合并错过的执行</text>
+          <text class="form-hint">错过多次执行时，是否合并为一次执行</text>
+        </view>
+        <switch 
+          class="macaron-switch"
+          checked="{{taskData.coalesce}}" 
+          bindchange="onSwitchChange"
+          data-field="coalesce"
+          color="#FF9F43"
+        />
+      </view>
+
+      <view class="form-item switch-item">
+        <view class="switch-label-container">
+          <text class="form-label">替换已存在任务</text>
+          <text class="form-hint">更新任务时是否替换调度器中的已存在任务</text>
+        </view>
+        <switch 
+          class="macaron-switch"
+          checked="{{taskData.replace_existing}}" 
+          bindchange="onSwitchChange"
+          data-field="replace_existing"
+          color="#FF9F43"
+        />
+      </view>
+    </view>
+  </view>
+  
+  <!-- 操作按钮 -->
+  <view class="action-buttons" wx:if="{{!loading && taskData}}">
+    <view class="macaron-btn macaron-btn-lavender btn-cancel" bindtap="onCancel">
+      <text>取消</text>
+    </view>
+    <view class="macaron-btn macaron-btn-peach btn-save {{saving ? 'loading' : ''}}" bindtap="onSave">
+      <text>{{saving ? '保存中...' : '保存并生效'}}</text>
+    </view>
+  </view>
+  
+  <!-- 加载状态 -->
+  <view class="loading-state" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text>加载中...</text>
+  </view>
+</view>
+
+<!-- Cron编辑器弹窗 -->
+<view class="modal-overlay" wx:if="{{showCronEditor}}" catchtap="closeCronEditor" catchtouchmove="preventTouchMove">
+  <view class="modal-content" catchtap="preventClose">
+    <cron-editor
+      title="编辑{{editingFieldName}}"
+      fieldName="{{editingFieldName}}"
+      unit="{{editingUnit}}"
+      min="{{editingMin}}"
+      max="{{editingMax}}"
+      defaultValue="{{editingValue}}"
+      bind:confirm="onCronEditorConfirm"
+      bind:cancel="closeCronEditor"
+    />
+  </view>
+</view>

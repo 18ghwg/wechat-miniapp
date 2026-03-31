@@ -1,0 +1,879 @@
+/* 用户中心样式 - 完全匹配 Weixin-main ProfilePage 设计 */
+/* 使用 macaron-theme.wxss 主题样式 */
+@import '/style/macaron-theme.wxss';
+
+page {
+  background: var(--background);
+}
+
+/* 用户中心容器 */
+.profile-page {
+  padding: 40rpx;
+  padding-bottom: 180rpx;
+}
+
+/* ===== 用户信息卡片 - cartoon-card 样式 (orange-light 背景) ===== */
+/* 需求 4.1: 将用户头像区域转换为 cartoon-card 样式，使用 orange-light 背景色 */
+.profile-header-card {
+  background: var(--color-orange-light);
+  border: 6rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon);
+  padding: 32rpx;
+  box-shadow: var(--shadow-cartoon);
+  margin-bottom: 40rpx;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* 卡片 :active 按压效果 */
+.profile-header-card:active {
+  transform: translate(6rpx, 6rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+/* 用户信息行 */
+.user-info-row {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  margin-bottom: 24rpx;
+}
+
+/* ===== 用户头像 - 带边框和阴影的圆角方形 ===== */
+/* 需求 4.2: 将用户头像转换为带边框和阴影的圆角方形样式 */
+.user-avatar-wrapper {
+  flex-shrink: 0;
+}
+
+.user-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  background: var(--color-mint-macaron);
+  border: 6rpx solid var(--foreground);
+  border-radius: 32rpx;
+  box-shadow: 8rpx 8rpx 0rpx var(--foreground);
+  display: block;
+  transition: all 0.2s ease;
+}
+
+.user-avatar:active {
+  transform: translate(4rpx, 4rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+/* 用户详情 */
+.user-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 8rpx;
+}
+
+.user-name {
+  font-size: 40rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.online-dot {
+  width: 16rpx;
+  height: 16rpx;
+  background: #4CAF50;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2rpx solid var(--foreground);
+}
+
+.user-register-info {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.register-icon {
+  width: 28rpx;
+  height: 28rpx;
+}
+
+.register-text {
+  font-size: 22rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  opacity: 0.6;
+}
+
+/* ===== 徽章行 - macaron 风格胶囊 ===== */
+/* 需求 4.3: 转换角色徽章、Web绑定徽章、实名徽章为 macaron 风格胶囊 */
+.badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.badge {
+  padding: 10rpx 24rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  font-weight: var(--font-weight-bold);
+  border: 3rpx solid var(--foreground);
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.badge:active {
+  transform: scale(0.95);
+}
+
+/* 角色徽章 - 深色背景 */
+.badge-role {
+  background: var(--foreground);
+  color: white;
+  border-color: var(--foreground);
+}
+
+/* Web绑定徽章 - 蓝色马卡龙 */
+.badge-web {
+  background: var(--color-blue-macaron);
+  color: var(--foreground);
+}
+
+/* 实名徽章 - 薄荷绿马卡龙 */
+.badge-verified {
+  background: var(--color-mint-macaron);
+  color: var(--foreground);
+}
+
+/* ===== 常用功能区 - 4 列网格布局 ===== */
+/* 需求 4.4: 将常用功能区域转换为 4 列网格布局 */
+.quick-functions-section {
+  margin-bottom: 40rpx;
+}
+
+.section-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0 8rpx;
+  margin-bottom: 20rpx;
+}
+
+.section-title-small {
+  font-size: 28rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.section-subtitle-small {
+  font-size: 18rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  opacity: 0.5;
+}
+
+/* 4 列网格布局 */
+.quick-functions-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20rpx;
+}
+
+.quick-function-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* 确保最小触摸区域 88rpx × 88rpx */
+  min-width: 88rpx;
+  min-height: 88rpx;
+  padding: 8rpx;
+}
+
+.function-icon-box {
+  position: relative;
+  width: 96rpx;
+  height: 96rpx;
+  border: 4rpx solid var(--foreground);
+  border-radius: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 6rpx 6rpx 0rpx var(--foreground);
+  margin-bottom: 12rpx;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.quick-function-item:active .function-icon-box {
+  transform: translate(3rpx, 3rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+.function-icon-img {
+  width: 44rpx;
+  height: 44rpx;
+}
+
+/* 使用次数徽章 */
+.usage-count-badge {
+  position: absolute;
+  top: -12rpx;
+  right: -12rpx;
+  min-width: 36rpx;
+  height: 32rpx;
+  background: var(--destructive);
+  border: 3rpx solid var(--foreground);
+  border-radius: 999rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8rpx;
+}
+
+.badge-count {
+  font-size: 16rpx;
+  font-weight: var(--font-weight-bold);
+  color: white;
+}
+
+.function-label {
+  font-size: 20rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* ===== 菜单组 - cartoon-card 列表样式 ===== */
+/* 需求 4.5: 将管理功能和账号管理菜单组转换为 cartoon-card 列表 */
+.menu-group {
+  margin-bottom: 40rpx;
+}
+
+.menu-group-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 0 8rpx;
+  margin-bottom: 20rpx;
+}
+
+.group-icon {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.group-title {
+  font-size: 28rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+/* 菜单列表卡片 - cartoon-card 样式 */
+.menu-list-card {
+  background: var(--card);
+  border: 6rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon);
+  overflow: hidden;
+  box-shadow: var(--shadow-cartoon);
+}
+
+.menu-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 32rpx;
+  transition: all 0.15s ease;
+  /* 确保最小触摸区域 88rpx × 88rpx */
+  min-height: 88rpx;
+}
+
+.menu-list-item.has-border {
+  border-bottom: 3rpx solid rgba(94, 78, 62, 0.1);
+}
+
+.menu-list-item:active {
+  background: rgba(255, 159, 67, 0.1);
+}
+
+.menu-item-left {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.menu-item-icon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 24rpx;
+  border: 4rpx solid var(--foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 4rpx 4rpx 0rpx rgba(94, 78, 62, 0.2);
+  transition: all 0.15s ease;
+}
+
+.menu-list-item:active .menu-item-icon {
+  transform: translate(2rpx, 2rpx);
+  box-shadow: 0rpx 0rpx 0rpx rgba(94, 78, 62, 0.2);
+}
+
+.menu-item-icon-img {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.menu-item-label {
+  font-size: 28rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.menu-item-arrow {
+  font-size: 40rpx;
+  font-weight: var(--font-weight-bold);
+  color: rgba(94, 78, 62, 0.3);
+  transition: all 0.15s ease;
+}
+
+.menu-list-item:active .menu-item-arrow {
+  color: var(--color-peach-macaron);
+  transform: translateX(4rpx);
+}
+
+/* ===== 危险操作样式 - 红色系 ===== */
+/* 需求 4.6: 危险操作项（退出登录、账号注销）使用红色系样式 */
+.menu-list-item.danger-item {
+  background: rgba(255, 77, 77, 0.05);
+}
+
+.menu-list-item.danger-item:active {
+  background: rgba(255, 77, 77, 0.15);
+}
+
+.menu-list-item.danger-item .menu-item-icon {
+  background: #FEE2E2 !important;
+  border-color: var(--destructive) !important;
+}
+
+.menu-list-item.danger-item .menu-item-icon-img {
+  /* 红色图标滤镜效果 */
+}
+
+.danger-label {
+  color: var(--destructive) !important;
+}
+
+.menu-list-item.danger-item .menu-item-arrow {
+  color: rgba(255, 77, 77, 0.4);
+}
+
+.menu-list-item.danger-item:active .menu-item-arrow {
+  color: var(--destructive);
+}
+
+/* 退出登录样式 - 橙色警告 */
+.menu-list-item.logout-item {
+  background: rgba(255, 140, 0, 0.05);
+}
+
+.menu-list-item.logout-item:active {
+  background: rgba(255, 140, 0, 0.15);
+}
+
+.menu-list-item.logout-item .menu-item-icon {
+  background: #FFF8F0 !important;
+  border-color: #FF8C00 !important;
+}
+
+.logout-text {
+  color: #FF8C00 !important;
+}
+
+/* 底部间距 */
+.bottom-spacer {
+  height: 64rpx;
+}
+
+/* ===== 账号注销确认弹窗 - macaron 风格 ===== */
+.delete-account-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(94, 78, 62, 0.7);
+}
+
+.dialog-content {
+  position: relative;
+  width: 640rpx;
+  max-height: 80vh;
+  background: var(--card);
+  border: 6rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon);
+  overflow: hidden;
+  box-shadow: var(--shadow-cartoon);
+}
+
+.dialog-header {
+  padding: 40rpx 40rpx 20rpx;
+  text-align: center;
+  border-bottom: 3rpx solid rgba(94, 78, 62, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dialog-icon {
+  width: 56rpx;
+  height: 56rpx;
+  margin-bottom: 16rpx;
+}
+
+.dialog-title {
+  font-size: 36rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--destructive);
+}
+
+.dialog-body {
+  padding: 40rpx;
+}
+
+.warning-text {
+  display: block;
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--destructive);
+  text-align: center;
+  margin-bottom: 30rpx;
+}
+
+.info-text {
+  display: block;
+  font-size: 28rpx;
+  color: var(--foreground);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: 20rpx;
+}
+
+.warning-list {
+  background: #FEE2E2;
+  border: 4rpx solid var(--destructive);
+  border-radius: var(--radius-lg);
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+}
+
+.warning-item {
+  display: block;
+  font-size: 26rpx;
+  color: var(--destructive);
+  line-height: 1.6;
+  margin-bottom: 12rpx;
+  font-weight: var(--font-weight-medium);
+}
+
+.warning-item:last-child {
+  margin-bottom: 0;
+}
+
+.bind-info {
+  background: var(--color-blue-macaron);
+  border: 4rpx solid var(--foreground);
+  border-radius: var(--radius-lg);
+  padding: 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.bind-icon {
+  width: 32rpx;
+  height: 32rpx;
+  margin-bottom: 8rpx;
+}
+
+.bind-text {
+  display: block;
+  font-size: 28rpx;
+  color: var(--foreground);
+  font-weight: var(--font-weight-bold);
+}
+
+.bind-desc {
+  font-size: 24rpx;
+  color: var(--foreground);
+  opacity: 0.7;
+  line-height: 1.4;
+}
+
+.dialog-footer {
+  display: flex;
+  border-top: 3rpx solid rgba(94, 78, 62, 0.1);
+}
+
+.cancel-btn {
+  flex: 1;
+  padding: 30rpx;
+  background: var(--muted);
+  color: var(--foreground);
+  border: none;
+  font-size: 30rpx;
+  font-weight: var(--font-weight-bold);
+  border-radius: 0;
+  transition: all 0.15s ease;
+}
+
+.cancel-btn::after {
+  border: none;
+}
+
+.cancel-btn:active {
+  background: rgba(94, 78, 62, 0.1);
+}
+
+.confirm-btn {
+  flex: 1;
+  padding: 30rpx;
+  border: none;
+  font-size: 30rpx;
+  font-weight: var(--font-weight-bold);
+  border-radius: 0;
+  transition: all 0.15s ease;
+}
+
+.confirm-btn.danger {
+  background: var(--destructive);
+  color: white;
+}
+
+.confirm-btn.danger:active {
+  background: #E53E3E;
+}
+
+.confirm-btn.disabled {
+  background: var(--muted);
+  color: rgba(94, 78, 62, 0.4);
+}
+
+.confirm-btn::after {
+  border: none;
+}
+
+/* ===== 响应式设计 ===== */
+/* 小屏幕适配 - 3 列网格 */
+@media (max-width: 375px) {
+  .quick-functions-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .function-icon-box {
+    width: 80rpx;
+    height: 80rpx;
+  }
+  
+  .function-icon-img {
+    width: 36rpx;
+    height: 36rpx;
+  }
+  
+  .function-label {
+    font-size: 18rpx;
+  }
+}
+
+/* ===== 减少动画（可访问性）===== */
+@media (prefers-reduced-motion: reduce) {
+  .profile-header-card,
+  .user-avatar,
+  .badge,
+  .function-icon-box,
+  .menu-list-item,
+  .menu-item-icon,
+  .menu-item-arrow,
+  .cancel-btn,
+  .confirm-btn {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* ===== 旧版样式兼容（保留） ===== */
+.menu-section {
+  margin-bottom: 30rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20rpx;
+  padding-left: 8rpx;
+}
+
+.menu-list {
+  background: white;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 32rpx 30rpx;
+  border-bottom: 1rpx solid #f5f5f5;
+  transition: background-color 0.2s ease;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-item:active {
+  background-color: #f8f8f8;
+}
+
+.menu-icon {
+  font-size: 36rpx;
+  margin-right: 24rpx;
+  width: 40rpx;
+  text-align: center;
+}
+
+.menu-text {
+  flex: 1;
+  font-size: 30rpx;
+  color: #333;
+}
+
+.menu-arrow {
+  font-size: 28rpx;
+  color: #c7c7cc;
+}
+
+/* 底部信息 */
+.footer-info {
+  text-align: center;
+  margin-top: 40rpx;
+  padding: 30rpx;
+  padding-bottom: 120rpx;
+}
+
+/* ===== 游客模式登录卡片 ===== */
+.guest-login-card {
+  background: var(--color-orange-light);
+  border: 6rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon);
+  padding: 32rpx;
+  box-shadow: var(--shadow-cartoon);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.15s ease;
+  min-height: 120rpx;
+}
+
+.guest-login-card:active {
+  transform: translate(6rpx, 6rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+.guest-login-content {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  flex: 1;
+}
+
+.guest-login-icon {
+  width: 64rpx;
+  height: 64rpx;
+  padding: 12rpx;
+  background: var(--card);
+  border: 4rpx solid var(--foreground);
+  border-radius: 20rpx;
+  box-shadow: 4rpx 4rpx 0rpx rgba(94, 78, 62, 0.2);
+}
+
+.guest-login-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.guest-login-title {
+  font-size: 30rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.guest-login-desc {
+  font-size: 24rpx;
+  color: rgba(94, 78, 62, 0.6);
+}
+
+.guest-login-btn {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 16rpx 24rpx;
+  background: var(--color-peach-macaron);
+  border: 4rpx solid var(--foreground);
+  border-radius: 40rpx;
+  box-shadow: 4rpx 4rpx 0rpx rgba(94, 78, 62, 0.2);
+  transition: all 0.15s ease;
+}
+
+.guest-login-card:active .guest-login-btn {
+  transform: translate(2rpx, 2rpx);
+  box-shadow: 0rpx 0rpx 0rpx rgba(94, 78, 62, 0.2);
+}
+
+.guest-login-btn-text {
+  font-size: 26rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.guest-login-arrow {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.version-text {
+  font-size: 28rpx;
+  color: #999;
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+.copyright-text {
+  font-size: 24rpx;
+  color: #ccc;
+}
+
+/* 系统信息弹窗 */
+.system-info-popup {
+  background: white;
+  border-radius: 20rpx;
+  padding: 50rpx 40rpx;
+  margin: 0 auto;
+  width: 80%;
+  max-width: 650rpx;
+  min-width: 480rpx;
+}
+
+.popup-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+  margin-bottom: 30rpx;
+}
+
+.info-list {
+  margin-bottom: 40rpx;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-size: 30rpx;
+  color: #666;
+}
+
+.info-value {
+  font-size: 30rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.status-healthy {
+  color: #34C759 !important;
+}
+
+.popup-actions {
+  text-align: center;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f0f0f0;
+  margin-top: 20rpx;
+}
+
+.popup-btn {
+  background: #007AFF;
+  color: white;
+  border: none;
+  border-radius: 16rpx;
+  padding: 28rpx 80rpx;
+  font-size: 32rpx;
+}
+
+/* 全局测试模式开关样式 */
+.switch-item {
+  padding: 24rpx !important;
+}
+
+.switch-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.switch-text-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-desc {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 4rpx;
+}
+
+.switch-area {
+  margin-left: 20rpx;
+}
+
+.info-icon {
+  margin-left: 16rpx;
+  padding: 8rpx;
+  font-size: 32rpx;
+  color: #007AFF;
+  opacity: 0.6;
+}

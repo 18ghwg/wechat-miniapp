@@ -1,0 +1,253 @@
+@import 'style/theme.wxss';
+@import 'style/macaron-theme.wxss';
+
+/* 页面进入动画 */
+page {
+  animation: pageSlideIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes pageSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(50rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 页面加载动画 */
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(40rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-50rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.page-enter {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.page-hidden {
+  opacity: 0;
+  transform: translateX(50rpx);
+}
+
+.card-hidden {
+  opacity: 0;
+  transform: translateY(40rpx);
+}
+
+.page-show-animation {
+  animation: pageSlideIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.card-enter {
+  animation: fadeInUp 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) backwards;
+}
+
+.card-enter-delay-1 {
+  animation-delay: 0.15s;
+}
+
+.card-enter-delay-2 {
+  animation-delay: 0.3s;
+}
+
+.card-enter-delay-3 {
+  animation-delay: 0.45s;
+}
+
+.modal-enter {
+  animation: scaleIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* 阻止TDesign远程字体加载 - 解决网络错误 */
+@font-face {
+  font-family: 't-icon';
+  src: url('data:text/plain;charset=utf-8,') format('truetype');
+  font-display: swap;
+}
+
+/* 字体降级方案 - 防止TDesign字体加载失败 */
+.t-icon {
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', 'Hiragino Sans GB', 'WenQuanYi Micro Hei', sans-serif !important;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.t-icon::before,
+.t-icon::after {
+  font-family: inherit;
+  -webkit-font-smoothing: inherit;
+  -moz-osx-font-smoothing: inherit;
+}
+
+/* 字体加载失败时的处理 */
+/* 注意：wept 不支持 @supports 规则，已注释 */
+/* @supports not (font-family: 't-icon') {
+  .t-icon {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  }
+} */
+
+/* 网络加载失败时完全禁用原图标，只显示emoji */
+.t-icon::before {
+  display: none !important;
+}
+
+/* 网络错误时提供emoji作为备选方案 */
+.t-icon[class*="home"]::after {
+  content: '🏠';
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', emoji;
+}
+
+.t-icon[class*="user"]::after {
+  content: '👤';
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', emoji;
+}
+
+.t-icon[class*="chart"]::after {
+  content: '📊';
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', emoji;
+}
+
+.t-icon[class*="calendar"]::after {
+  content: '📅';
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', emoji;
+}
+
+.t-icon[class*="success"]::after {
+  content: '✅';
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', emoji;
+}
+
+.t-icon[class*="error"]::after {
+  content: '❌';
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', emoji;
+}
+
+.t-icon[class*="info"]::after {
+  content: 'ℹ️';
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', emoji;
+}
+
+.t-icon[class*="warning"]::after {
+  content: '⚠️';
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', emoji;
+}
+
+.t-icon[class*="add"]::after,
+.t-icon[class*="plus"]::after {
+  content: '➕';
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', emoji;
+}
+
+.t-icon[class*="delete"]::after,
+.t-icon[class*="remove"]::after {
+  content: '🗑️';
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', emoji;
+}
+
+.t-icon[class*="edit"]::after {
+  content: '✏️';
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', emoji;
+}
+
+.t-icon[class*="setting"]::after {
+  content: '⚙️';
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', emoji;
+}
+
+.t-icon[class*="search"]::after {
+  content: '🔍';
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', emoji;
+}
+
+.t-icon[class*="arrow-right"]::after,
+.t-icon[class*="chevron-right"]::after {
+  content: '➡️';
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', emoji;
+}
+
+.t-icon[class*="arrow-left"]::after,
+.t-icon[class*="chevron-left"]::after {
+  content: '⬅️';
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', emoji;
+}
+
+.t-icon[class*="arrow-down"]::after,
+.t-icon[class*="chevron-down"]::after {
+  content: '⬇️';
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', emoji;
+}
+
+.t-icon[class*="close"]::after {
+  content: '❌';
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', emoji;
+}
+
+/* 所有emoji备选图标统一样式 */
+.t-icon::after {
+  font-size: inherit;
+  line-height: inherit;
+  vertical-align: inherit;
+}
+
+.cell--noborder .t-cell::after {
+  border-bottom: none !important;
+}
+
+/* 自定义样式 */
+.container {
+  padding: 20rpx;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+}

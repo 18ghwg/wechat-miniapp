@@ -1,0 +1,184 @@
+<!-- 用户中心 - 完全匹配 Weixin-main ProfilePage 设计 -->
+<!-- 需求 4.1-4.6: 马卡龙风格个人中心页面 -->
+<view class="profile-page {{pageAnimationClass}}">
+  <!-- 紧凑型用户信息卡片 - cartoon-card 样式 (orange-light 背景) -->
+  <!-- 需求 4.1: 将用户头像区域转换为 cartoon-card 样式 -->
+  <view class="profile-header-card {{cardAnimationClass}}">
+    <view class="user-info-row">
+      <!-- 用户头像 - 带边框和阴影的圆角方形 -->
+      <!-- 需求 4.2: 实现带边框和阴影的圆角方形头像 -->
+      <view class="user-avatar-wrapper">
+        <image 
+          class="user-avatar" 
+          src="{{generatedAvatarUrl || '/static/default-avatar.svg'}}" 
+          mode="aspectFill"
+          binderror="onAvatarError"
+          bindload="onAvatarLoad"
+        ></image>
+      </view>
+      
+      <!-- 用户信息 -->
+      <view class="user-details">
+        <view class="user-name-row">
+          <text class="user-name">{{userInfo.nickname || userInfo.real_name || '用户'}}</text>
+          <view class="online-dot" wx:if="{{userInfo.is_web_bound}}"></view>
+        </view>
+        <view class="user-register-info">
+          <image class="register-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
+          <text class="register-text">注册于 {{userInfo.register_time || '未知'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 徽章行 - macaron 风格胶囊 -->
+    <!-- 需求 4.3: 转换角色徽章、Web绑定徽章、实名徽章为 macaron 风格胶囊 -->
+    <view class="badges-row">
+      <view class="badge badge-role">{{userInfo.is_admin ? '管理员' : '普通用户'}}</view>
+      <view class="badge badge-web" wx:if="{{userInfo.is_web_bound}}">Web已绑定</view>
+      <view class="badge badge-verified" wx:if="{{userInfo.real_name}}">实名·{{userInfo.real_name}}</view>
+    </view>
+  </view>
+
+  <!-- 常用功能 - 4 列网格布局 -->
+  <!-- 需求 4.4: 将常用功能区域转换为 4 列网格布局 -->
+  <view class="quick-functions-section" wx:if="{{frequentFeatures.length > 0}}">
+    <view class="section-header-row">
+      <text class="section-title-small">常用功能</text>
+      <text class="section-subtitle-small">按使用频率排序</text>
+    </view>
+    <view class="quick-functions-grid">
+      <view 
+        wx:for="{{frequentFeatures}}" 
+        wx:key="feature_key"
+        class="quick-function-item"
+        bindtap="navigateToFeature"
+        data-feature-key="{{item.feature_key}}"
+        data-feature-name="{{item.feature_name}}"
+      >
+        <view class="function-icon-box" style="background: {{item.color}};">
+          <image class="function-icon-img" src="/assets/icons/{{item.iconFile}}.png" mode="aspectFit"/>
+          <view class="usage-count-badge" wx:if="{{item.usage_count > 0}}">
+            <text class="badge-count">{{item.usage_count > 999 ? '999+' : item.usage_count}}</text>
+          </view>
+        </view>
+        <text class="function-label">{{item.feature_name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 管理功能菜单组 - cartoon-card 列表 -->
+  <!-- 需求 4.5: 将管理功能菜单组转换为 cartoon-card 列表 -->
+  <view class="menu-group" wx:if="{{isAdmin}}">
+    <view class="menu-group-header">
+      <image class="group-icon" src="/assets/icons/settings.png" mode="aspectFit"/>
+      <text class="group-title">管理功能</text>
+    </view>
+    <view class="menu-list-card">
+      <view 
+        wx:for="{{adminMenuItems}}" 
+        wx:key="path"
+        class="menu-list-item {{index < adminMenuItems.length - 1 ? 'has-border' : ''}}"
+        bindtap="navigateToPage"
+        data-path="{{item.path}}"
+      >
+        <view class="menu-item-left">
+          <view class="menu-item-icon" style="background: {{item.bgColor}}; border-color: {{item.borderColor}};">
+            <image class="menu-item-icon-img" src="/assets/icons/{{item.iconFile}}.png" mode="aspectFit"/>
+          </view>
+          <text class="menu-item-label">{{item.label}}</text>
+        </view>
+        <text class="menu-item-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 账号管理菜单组 - cartoon-card 列表 -->
+  <!-- 需求 4.5, 4.6: 账号管理菜单，危险操作使用红色系样式 -->
+  <view class="menu-group" wx:if="{{!isGuest}}">
+    <view class="menu-group-header">
+      <image class="group-icon" src="/assets/icons/shield.png" mode="aspectFit"/>
+      <text class="group-title">账号管理</text>
+    </view>
+    <view class="menu-list-card">
+      <view 
+        wx:for="{{accountMenuItems}}" 
+        wx:key="action"
+        class="menu-list-item {{index < accountMenuItems.length - 1 ? 'has-border' : ''}} {{item.danger ? 'danger-item' : ''}} {{item.action === 'logout' ? 'logout-item' : ''}}"
+        bindtap="handleAccountAction"
+        data-action="{{item.action}}"
+      >
+        <view class="menu-item-left">
+          <view class="menu-item-icon" style="background: {{item.bgColor}}; border-color: {{item.borderColor}};">
+            <image class="menu-item-icon-img" src="/assets/icons/{{item.iconFile}}.png" mode="aspectFit"/>
+          </view>
+          <text class="menu-item-label {{item.danger ? 'danger-label' : ''}} {{item.action === 'logout' ? 'logout-text' : ''}}">{{item.label}}</text>
+        </view>
+        <text class="menu-item-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 游客模式登录提示卡片 -->
+  <view class="menu-group" wx:if="{{isGuest}}">
+    <view class="guest-login-card" bindtap="goToLogin">
+      <view class="guest-login-content">
+        <image class="guest-login-icon" src="/assets/icons/user.png" mode="aspectFit"/>
+        <view class="guest-login-text">
+          <text class="guest-login-title">登录查看完整功能</text>
+          <text class="guest-login-desc">登录后可查看真实数据和管理账号</text>
+        </view>
+      </view>
+      <view class="guest-login-btn">
+        <text class="guest-login-btn-text">立即登录</text>
+        <text class="guest-login-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部间距 -->
+  <view class="bottom-spacer"></view>
+</view>
+
+<!-- 隐藏的头像生成Canvas -->
+<canvas type="2d" id="avatarCanvas" style="width: 120px; height: 120px; position: absolute; left: -9999px; top: -9999px;"></canvas>
+
+<!-- 账号注销确认弹窗 - macaron 风格 -->
+<view class="delete-account-dialog" wx:if="{{showDeleteDialog}}">
+  <view class="dialog-mask" bindtap="closeDeleteDialog"></view>
+  <view class="dialog-content">
+    <view class="dialog-header">
+      <image class="dialog-icon" src="/assets/icons/alert-triangle.png" mode="aspectFit"/>
+      <text class="dialog-title">账号注销确认</text>
+    </view>
+    
+    <view class="dialog-body">
+      <text class="warning-text">注意：此操作不可逆转！</text>
+      <text class="info-text">注销账号将会：</text>
+      <view class="warning-list">
+        <text class="warning-item">• 删除您的微信账号信息</text>
+        <text class="warning-item">• 清除所有登录记录</text>
+        <text class="warning-item">• 断开与Web账号的关联</text>
+        <text class="warning-item">• 无法恢复已删除的数据</text>
+      </view>
+      
+      <view class="bind-info" wx:if="{{userInfo.is_web_bound}}">
+        <image class="bind-icon" src="/assets/icons/link.png" mode="aspectFit"/>
+        <text class="bind-text">您已绑定Web账号</text>
+        <text class="bind-desc">Web账号数据将保留，但关联关系会断开</text>
+      </view>
+    </view>
+    
+    <view class="dialog-footer">
+      <button class="cancel-btn" bindtap="closeDeleteDialog">取消</button>
+      <button 
+        class="confirm-btn {{countdown > 0 ? 'disabled' : 'danger'}}" 
+        bindtap="confirmDeleteAccount"
+        disabled="{{countdown > 0}}"
+      >
+        {{countdown > 0 ? '确定注销 (' + countdown + 's)' : '确定注销'}}
+      </button>
+    </view>
+  </view>
+</view>
+
+<t-toast id="t-toast" />

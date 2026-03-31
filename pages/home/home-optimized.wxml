@@ -1,0 +1,120 @@
+<!--管理工具首页（性能优化版）-->
+<view class="home-container">
+  
+  <!-- 骨架屏（优先显示） -->
+  <view class="skeleton-screen" wx:if="{{pageLoading}}">
+    <!-- 功能菜单骨架 -->
+    <view class="skeleton-section-title"></view>
+    <view class="skeleton-grid">
+      <view class="skeleton-item" wx:for="{{[1,2,3,4]}}" wx:key="*this">
+        <view class="skeleton-icon"></view>
+        <view class="skeleton-text skeleton-text-short"></view>
+        <view class="skeleton-text skeleton-text-long"></view>
+      </view>
+    </view>
+    
+    <!-- 公告骨架 -->
+    <view class="skeleton-section-title skeleton-mt"></view>
+    <view class="skeleton-announcement">
+      <view class="skeleton-text skeleton-text-medium"></view>
+      <view class="skeleton-text skeleton-text-long"></view>
+      <view class="skeleton-text skeleton-text-short"></view>
+    </view>
+    
+    <!-- 系统信息骨架 -->
+    <view class="skeleton-info">
+      <view class="skeleton-text skeleton-text-medium"></view>
+      <view class="skeleton-text skeleton-text-long"></view>
+    </view>
+  </view>
+
+  <!-- 主要内容 -->
+  <view class="main-content" wx:else>
+    <!-- 公告区域 -->
+    <view class="announcement-section" wx:if="{{announcements && announcements.length > 0}}">
+      <view class="section-header">
+        <view class="section-title">
+          <icon class="title-icon" type="info" size="16"></icon>
+          <text class="title-text">系统公告</text>
+        </view>
+        <view class="section-actions">
+          <text class="action-btn" wx:if="{{userInfo.is_admin}}" bindtap="onManageAnnouncement">管理</text>
+        </view>
+      </view>
+      
+      <scroll-view class="announcement-list" scroll-x="true" enable-flex="true">
+        <view 
+          class="announcement-item"
+          wx:for="{{announcements}}"
+          wx:key="id"
+          data-item="{{item}}"
+          bindtap="onAnnouncementTap"
+          style="position: relative; left: -2rpx; top: 6rpx">
+          <view class="announcement-header">
+            <text class="announcement-title">{{item.title}}</text>
+            <view class="announcement-priority" wx:if="{{item.priority > 0}}">重要</view>
+          </view>
+          <text class="announcement-content">{{item.content}}</text>
+          <text class="announcement-time">{{item.create_time}}</text>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 功能菜单 -->
+    <view class="function-grid">
+      <view 
+        class="function-item" 
+        wx:for="{{functionList}}" 
+        wx:key="id"
+        data-item="{{item}}"
+        bindtap="onFunctionTap"
+      >
+        <view class="function-icon">{{item.icon}}</view>
+        <text class="function-name">{{item.name}}</text>
+        <text class="function-desc">{{item.desc}}</text>
+        
+        <!-- 权限状态 -->
+        <view class="permission-status" wx:if="{{item.permission}}">
+          <icon 
+            wx:if="{{item.hasPermission}}"
+            class="permission-icon" 
+            type="success" 
+            size="12"
+          ></icon>
+          <icon 
+            wx:else
+            class="permission-icon locked" 
+            type="info" 
+            size="12"
+          ></icon>
+        </view>
+      </view>
+    </view>
+
+    <!-- 快捷信息 -->
+    <view class="quick-info" wx:if="{{systemConfig}}">
+      <view class="info-title">系统信息</view>
+      <view class="info-item">
+        <text class="info-label">应用版本：</text>
+        <text class="info-value">{{systemConfig.version || '未知'}}</text>
+      </view>
+      <view class="info-item" wx:if="{{systemConfig.functions}}">
+        <text class="info-label">功能数量：</text>
+        <text class="info-value">{{systemConfig.functions.length}}个</text>
+      </view>
+    </view>
+
+    <!-- 权限说明 -->
+    <view class="permission-notice" wx:if="{{userInfo && !userInfo.is_web_bound}}">
+      <view class="notice-header">
+        <icon class="notice-icon" type="info" size="16"></icon>
+        <text class="notice-title">权限说明</text>
+      </view>
+      <text class="notice-content">
+        部分功能需要特定权限才能使用。您可以绑定Web账号获得完整权限，或联系管理员为您开通相应功能权限。
+      </text>
+      <button class="bind-btn" bindtap="goToUserCenter">前往绑定</button>
+    </view>
+  </view>
+</view>
+

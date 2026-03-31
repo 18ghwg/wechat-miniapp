@@ -1,0 +1,10 @@
+<!-- 需要登录提示组件 -->
+<view class="login-required-container" wx:if="{{show}}">
+  <image class="login-lock-icon" src="/assets/icons/lock.png" mode="aspectFit"/>
+  <text class="login-title">{{title || '需要登录'}}</text>
+  <text class="login-desc">{{message || '登录后即可查看完整数据'}}</text>
+  <button class="login-button" bindtap="goToLogin">
+    立即登录
+  </button>
+</view>
+

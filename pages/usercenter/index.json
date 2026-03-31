@@ -1,0 +1,12 @@
+{
+  "navigationBarTitleText": "我的",
+  "navigationBarBackgroundColor": "#FFF9F2",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#FFF9F2",
+  "usingComponents": {
+    "t-popup": "tdesign-miniprogram/popup/popup",
+    "t-toast": "tdesign-miniprogram/toast/toast",
+    "guest-banner": "/components/guest-banner/index"
+  },
+  "enablePullDownRefresh": true
+}

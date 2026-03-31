@@ -1,0 +1,256 @@
+<!--用户绑定页面 - 马卡龙风格-->
+<view class="bind-container">
+  <!-- 标签切换 - cartoon-card 样式 -->
+  <view class="tab-container">
+    <view 
+      class="tab-item {{activeTab === 'web' ? 'active' : ''}}"
+      data-tab="web"
+      bindtap="onTabChange"
+    >
+      Web账号
+    </view>
+    <view 
+      class="tab-item {{activeTab === 'grid' ? 'active' : ''}}"
+      data-tab="grid"
+      bindtap="onTabChange"
+    >
+      国网账号
+    </view>
+  </view>
+
+  <!-- Web账号绑定内容 -->
+  <view wx:if="{{activeTab === 'web'}}">
+    <!-- Web用户状态 - cartoon-card + status-badge 样式 -->
+    <view class="status-card">
+      <view class="status-header">
+        <view class="status-icon-wrapper {{userInfo.is_web_bound ? 'bound' : 'unbound'}}">
+          <image 
+            class="status-icon-img" 
+            src="{{userInfo.is_web_bound ? '/assets/icons/check-circle.png' : '/assets/icons/alert-circle.png'}}"
+            mode="aspectFit"
+          />
+        </view>
+        <text class="status-text">
+          {{userInfo.is_web_bound ? '已绑定Web账号' : '未绑定Web账号'}}
+        </text>
+      </view>
+      
+      <view class="status-detail" wx:if="{{userInfo.is_web_bound}}">
+        <view class="bound-username">
+          <text class="bound-username-badge">{{userInfo.web_username}}</text>
+        </view>
+        <text class="status-desc">您已拥有所有功能权限</text>
+      </view>
+      
+      <view class="status-detail" wx:else>
+        <text class="status-desc">绑定Web账号后可获得完整功能权限</text>
+      </view>
+    </view>
+
+    <!-- Web绑定表单 - cartoon-card 样式 -->
+    <view class="bind-form" wx:if="{{!userInfo.is_web_bound}}">
+      <view class="form-title">绑定Web账号</view>
+      
+      <view class="form-group">
+        <text class="form-label">用户名</text>
+        <input 
+          class="form-input"
+          type="text"
+          placeholder="请输入Web用户名"
+          value="{{username}}"
+          bindinput="onUsernameInput"
+          disabled="{{bindLoading}}"
+        />
+      </view>
+      
+      <view class="form-group">
+        <text class="form-label">密码</text>
+        <input 
+          class="form-input"
+          type="password"
+          placeholder="请输入Web密码"
+          value="{{password}}"
+          bindinput="onPasswordInput"
+          disabled="{{bindLoading}}"
+        />
+      </view>
+      
+      <button 
+        class="bind-btn primary"
+        bindtap="onBindUser"
+        disabled="{{bindLoading}}"
+        loading="{{bindLoading}}"
+      >
+        绑定账号
+      </button>
+      
+      <view class="bind-tips">
+        <image class="tip-icon" src="/assets/icons/alert-circle.png" mode="aspectFit"/>
+        <text class="tip-text">
+          请使用与网站后台相同的用户名和密码进行绑定
+        </text>
+      </view>
+    </view>
+
+    <!-- Web已绑定状态 - 信息卡片和解绑按钮 -->
+    <view class="bound-actions" wx:if="{{userInfo.is_web_bound}}">
+      <view class="action-title">账号管理</view>
+      
+      <view class="action-item">
+        <view class="action-info">
+          <text class="action-name">解绑Web账号</text>
+          <text class="action-desc">解绑后将失去所有功能权限</text>
+        </view>
+        <button class="action-btn danger" bindtap="onUnbindUser">
+          解绑
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 国网账号绑定内容 -->
+  <view wx:if="{{activeTab === 'grid'}}">
+    <!-- 国网账号状态 - cartoon-card + status-badge 样式 -->
+    <view class="status-card">
+      <view class="status-header">
+        <view class="status-icon-wrapper {{(gridAccounts && gridAccounts.length > 0) ? 'bound' : 'unbound'}}">
+          <image 
+            class="status-icon-img" 
+            src="{{(gridAccounts && gridAccounts.length > 0) ? '/assets/icons/check-circle.png' : '/assets/icons/alert-circle.png'}}"
+            mode="aspectFit"
+          />
+        </view>
+        <text class="status-text">
+          {{(gridAccounts && gridAccounts.length > 0) ? '已绑定' + gridAccounts.length + '个国网账号' : '未绑定国网账号'}}
+        </text>
+      </view>
+      
+      <view class="status-detail">
+        <text class="status-desc">
+          {{(gridAccounts && gridAccounts.length > 0) ? '可查询绑定账号的电费信息' : '绑定国网账号后可查询电费信息'}}
+        </text>
+      </view>
+    </view>
+
+    <!-- 国网账号绑定表单 - cartoon-card 样式 -->
+    <view class="bind-form">
+      <view class="form-title">绑定国网账号</view>
+      
+      <view class="privacy-notice">
+        <image class="notice-icon" src="/assets/icons/shield.png" mode="aspectFit"/>
+        <text class="notice-text">您的国网账号信息仅用于电费查询，不会用于其他用途</text>
+      </view>
+      
+      <view class="form-group">
+        <text class="form-label">国网账号手机号</text>
+        <input 
+          class="form-input"
+          type="number"
+          placeholder="请输入国网账号绑定的手机号"
+          value="{{gridPhone}}"
+          bindinput="onGridPhoneInput"
+          disabled="{{gridBindLoading}}"
+          maxlength="11"
+        />
+      </view>
+      
+      <view class="form-group">
+        <text class="form-label">国网账号密码</text>
+        <input 
+          class="form-input"
+          type="password"
+          placeholder="请输入国网账号密码"
+          value="{{gridPassword}}"
+          bindinput="onGridPasswordInput"
+          disabled="{{gridBindLoading}}"
+        />
+      </view>
+      
+      <view class="form-group">
+        <text class="form-label">备注名称（可选）</text>
+        <input 
+          class="form-input"
+          type="text"
+          placeholder="为此账号设置备注名称"
+          value="{{gridAccountName}}"
+          bindinput="onGridAccountNameInput"
+          disabled="{{gridBindLoading}}"
+        />
+      </view>
+      
+      <button 
+        class="bind-btn primary"
+        bindtap="onBindGridAccount"
+        disabled="{{gridBindLoading}}"
+        loading="{{gridBindLoading}}"
+      >
+        验证并绑定
+      </button>
+      
+      <view class="bind-tips">
+        <image class="tip-icon" src="/assets/icons/alert-circle.png" mode="aspectFit"/>
+        <text class="tip-text">
+          此功能为可选功能，不绑定不影响小程序其他功能使用
+        </text>
+      </view>
+    </view>
+
+    <!-- 已绑定的国网账号列表 - cartoon-card 样式 -->
+    <view class="grid-accounts" wx:if="{{gridAccounts && gridAccounts.length > 0}}">
+      <view class="accounts-title">已绑定账号</view>
+      
+      <view 
+        class="account-item" 
+        wx:for="{{gridAccounts || []}}" 
+        wx:key="id"
+      >
+        <view class="account-info">
+          <view class="account-phone">{{item.PhoneName || item.grid_phone || '未知号码'}}</view>
+          <view class="account-name" wx:if="{{item.AccountName || item.account_name}}">{{item.AccountName || item.account_name}}</view>
+        </view>
+        <button 
+          class="action-btn danger small"
+          data-id="{{item.id}}"
+          bindtap="onUnbindGridAccount"
+        >
+          解绑
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 权限说明 - cartoon-card 样式 -->
+  <view class="permission-guide">
+    <view class="guide-title">权限说明</view>
+    
+    <view class="guide-item">
+      <view class="guide-icon-wrapper">
+        <image class="guide-icon-img" src="/assets/icons/check-circle.png" mode="aspectFit" />
+      </view>
+      <view class="guide-content">
+        <text class="guide-name">绑定Web账号</text>
+        <text class="guide-desc">获得所有功能的完整访问权限</text>
+      </view>
+    </view>
+    
+    <view class="guide-item">
+      <view class="guide-icon-wrapper">
+        <image class="guide-icon-img" src="/assets/icons/zap.png" mode="aspectFit" />
+      </view>
+      <view class="guide-content">
+        <text class="guide-name">管理员授权</text>
+        <text class="guide-desc">可获得特定功能的使用权限</text>
+      </view>
+    </view>
+    
+    <view class="guide-item">
+      <view class="guide-icon-wrapper">
+        <image class="guide-icon-img" src="/assets/icons/user.png" mode="aspectFit" />
+      </view>
+      <view class="guide-content">
+        <text class="guide-name">联系管理员</text>
+        <text class="guide-desc">如需权限或遇到问题请联系管理员</text>
+      </view>
+    </view>
+  </view>
+</view>

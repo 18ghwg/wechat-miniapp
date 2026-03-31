@@ -1,0 +1,365 @@
+<!--电费查询页面-->
+<view class="electric-container {{pageAnimationClass}}">
+  <!-- 游客模式横幅提示 -->
+  <guest-banner 
+    show="{{isGuest}}"
+    message="体验模式：当前显示演示数据，登录后可查看真实电费"
+    showLoginBtn="{{true}}"
+  />
+
+  <!-- 显示数据（包括游客模式和正常模式） -->
+  <view class="electric-content">
+
+    <!-- Header -->
+    <view class="page-header {{cardAnimationClass}}">
+      <view class="header-left">
+        <view class="page-title">
+          <text class="title-text">电费查询</text>
+          <image class="title-icon" src="/assets/icons/zap.png" mode="aspectFit"/>
+        </view>
+        <text class="page-subtitle">智慧家庭用电管理</text>
+      </view>
+      <view class="header-actions">
+        <view class="action-btn cartoon-card" bindtap="onViewMoreHistory">
+          <image class="action-icon" src="/assets/icons/history.png" mode="aspectFit"/>
+        </view>
+        <view class="action-btn cartoon-card" bindtap="goToAccountManage" wx:if="{{isAdmin}}">
+          <image class="action-icon" src="/assets/icons/settings.png" mode="aspectFit"/>
+        </view>
+      </view>
+    </view>
+
+    <!-- Current Account Card -->
+    <view class="hero-card cartoon-card">
+      <view class="hero-accent"></view>
+
+      <!-- Account Selector -->
+      <view class="account-selector-wrapper">
+        <view class="account-selector" bindtap="onToggleAccountPicker">
+          <view class="selector-left">
+            <view class="account-icon">
+              <image class="acct-icon" src="/assets/icons/home.png" mode="aspectFit"/>
+            </view>
+            <view class="account-info">
+              <text class="account-label">当前账户</text>
+              <text class="account-address">{{selectedAccount.address || '未选择账户'}}</text>
+              <text class="account-number">{{selectedAccount.accountNo || '--'}}</text>
+            </view>
+          </view>
+          <text class="selector-arrow {{showAccountPicker ? 'rotated' : ''}}">›</text>
+        </view>
+
+        <!-- Account Picker Dropdown -->
+        <view class="account-picker" wx:if="{{showAccountPicker}}">
+          <view 
+            class="picker-item {{selectedAccount.id === item.id ? 'selected' : ''}}"
+            wx:for="{{electricAccounts}}"
+            wx:key="id"
+            bindtap="onSelectAccount"
+            data-account="{{item}}"
+          >
+            <image class="picker-icon" src="/assets/icons/home.png" mode="aspectFit"/>
+            <view class="picker-info">
+              <text class="picker-address">{{item.address}}</text>
+              <text class="picker-details">{{item.accountNo}} · {{item.ownerName}}</text>
+            </view>
+            <text class="picker-balance {{item.balance < 0 ? 'negative' : 'positive'}}">¥{{item.balance}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- Balance & Usage Stats -->
+      <view class="stats-row">
+        <view class="stat-box owner-box">
+          <text class="stat-label">户主</text>
+          <text class="stat-value owner-value">{{selectedAccount.ownerName || '--'}}</text>
+        </view>
+        <view class="stat-box balance-box {{selectedAccount.balance < 0 ? 'negative' : 'positive'}}">
+          <text class="stat-label">上月电费</text>
+          <text class="stat-value balance-value {{selectedAccount.balance < 0 ? 'negative' : 'positive'}}">¥{{selectedAccount.balance || '0'}}</text>
+        </view>
+      </view>
+
+      <!-- Query Button -->
+      <view 
+        class="query-button macaron-btn" 
+        bindtap="onQueryElectric"
+        hover-class="macaron-btn-active"
+      >
+        <image class="query-icon" src="/assets/icons/zap.png" mode="aspectFit"/>
+        <text class="query-text">{{queryLoading ? '查询中...' : '立即查电费'}}</text>
+      </view>
+    </view>
+
+    <!-- Physical Meters Section -->
+    <view class="physical-meters-section" wx:if="{{physicalMeters.length > 0}}">
+      <view class="section-header-with-badge">
+        <view class="section-title-wrapper">
+          <image class="section-icon-large" src="/assets/icons/activity.png" mode="aspectFit"/>
+          <text class="section-title-large">实体电表数据</text>
+        </view>
+        <view class="meter-stats-row">
+          <view class="status-badge online" wx:if="{{meterStats.online > 0}}">
+            <view class="status-dot"></view>
+            <text class="status-text">在线 {{meterStats.online}}</text>
+          </view>
+          <view class="status-badge offline" wx:if="{{meterStats.offline > 0}}">
+            <view class="status-dot-offline"></view>
+            <text class="status-text">离线 {{meterStats.offline}}</text>
+          </view>
+        </view>
+      </view>
+      
+      <view class="meters-grid-row">
+        <view class="meter-card cartoon-card {{item._updating ? 'meter-updating' : ''}}" wx:for="{{physicalMeters}}" wx:key="location">
+          <!-- 扫描线效果 -->
+          <view class="meter-scanline" wx:if="{{item._updating}}"></view>
+          <view class="meter-header">
+            <view class="meter-icon-wrapper">
+              <image class="meter-icon" src="/assets/icons/cpu.png" mode="aspectFit"/>
+            </view>
+            <view class="meter-info">
+              <text class="meter-area">{{item.location}}</text>
+              <text class="meter-serial">{{item.data.SerialNumber || '--'}}</text>
+            </view>
+            <view class="meter-status online" wx:if="{{item.status === 'success'}}">
+              <view class="status-dot-meter {{item._updating ? 'status-dot-pulse' : ''}}"></view>
+              <text class="status-label">在线</text>
+            </view>
+            <view class="meter-status offline" wx:if="{{item.status === 'error'}}">
+              <view class="status-dot-meter-offline"></view>
+              <text class="status-label">离线</text>
+            </view>
+          </view>
+          
+          <view class="meter-data-grid" wx:if="{{item.status === 'success' && item.data}}">
+            <view class="data-box data-box-energy">
+              <text class="data-label">今日用电</text>
+              <view class="data-value-wrapper" wx:if="{{item.today_kwh !== null && item.today_kwh !== undefined}}">
+                <rolling-number class="data-value rolling-energy" value="{{item.today_kwh}}" precision="{{2}}" duration="{{800}}" />
+                <text class="data-unit">kWh</text>
+              </view>
+              <view class="data-value-wrapper" wx:else>
+                <text class="data-value" style="font-size:24rpx;color:#999;">统计中...</text>
+              </view>
+            </view>
+            <view class="data-box data-box-power">
+              <text class="data-label">当前功率</text>
+              <view class="data-value-wrapper">
+                <rolling-number class="data-value rolling-power" value="{{item.data.ActivePower || '0'}}" precision="{{3}}" duration="{{800}}" />
+                <text class="data-unit">kW</text>
+              </view>
+            </view>
+          </view>
+          
+          <view class="meter-footer" bindtap="toggleMeterExpand" data-location="{{item.location}}">
+            <text class="footer-text">{{item.expanded ? '收起详情' : '查看详细实时数据'}}</text>
+            <text class="footer-arrow {{item.expanded ? 'expanded' : ''}}">▼</text>
+          </view>
+
+          <view class="meter-expanded" wx:if="{{item.expanded && item.status === 'success' && item.data}}">
+            <view class="expanded-grid">
+              <view class="expanded-item">
+                <text class="expanded-label">电压</text>
+                <view class="expanded-value-wrapper">
+                  <rolling-number class="expanded-value" value="{{item.data.Voltage}}" precision="{{1}}" duration="{{800}}" />
+                  <text class="expanded-unit">V</text>
+                </view>
+              </view>
+              <view class="expanded-item">
+                <text class="expanded-label">电流</text>
+                <view class="expanded-value-wrapper">
+                  <rolling-number class="expanded-value" value="{{item.data.Current}}" precision="{{3}}" duration="{{800}}" />
+                  <text class="expanded-unit">A</text>
+                </view>
+              </view>
+              <view class="expanded-item">
+                <text class="expanded-label">功率因数</text>
+                <view class="expanded-value-wrapper">
+                  <rolling-number class="expanded-value" value="{{item.data.PowerFactor}}" precision="{{2}}" duration="{{800}}" />
+                </view>
+              </view>
+              <view class="expanded-item">
+                <text class="expanded-label">频率</text>
+                <view class="expanded-value-wrapper">
+                  <rolling-number class="expanded-value" value="{{item.data.Frequency}}" precision="{{2}}" duration="{{800}}" />
+                  <text class="expanded-unit">Hz</text>
+                </view>
+              </view>
+              <view class="expanded-item">
+                <text class="expanded-label">视在功率</text>
+                <view class="expanded-value-wrapper">
+                  <rolling-number class="expanded-value" value="{{item.data.ApparentPower}}" precision="{{3}}" duration="{{800}}" />
+                  <text class="expanded-unit">kVA</text>
+                </view>
+              </view>
+              <view class="expanded-item">
+                <text class="expanded-label">正向有功</text>
+                <view class="expanded-value-wrapper">
+                  <rolling-number class="expanded-value" value="{{item.data.ForwardEnergy}}" precision="{{2}}" duration="{{800}}" />
+                  <text class="expanded-unit">kWh</text>
+                </view>
+              </view>
+            </view>
+            <view class="expanded-info">
+              <view class="info-row">
+                <text class="info-label">网络状态</text>
+                <text class="info-value">{{item.data.Rssi}} dBm</text>
+              </view>
+              <view class="info-row">
+                <text class="info-label">IP 地址</text>
+                <text class="info-value">{{item.data.IP}}</text>
+              </view>
+              <view class="info-row">
+                <text class="info-label">固件版本</text>
+                <text class="info-value">{{item.data.FWVersion}} (MCU:{{item.data.MCUVersion}})</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- Daily Usage Chart -->
+    <view class="chart-section" wx:if="{{showUsageChart && usageChartStats}}">
+      <view class="section-header-simple">
+        <image class="section-icon" src="/assets/icons/trending-up.png" mode="aspectFit"/>
+        <text class="section-title-simple">日用电统计</text>
+      </view>
+      <view class="chart-card cartoon-card">
+        <canvas 
+          class="chart-canvas" 
+          type="2d"
+          id="usageChart"
+          bindtouchstart="onChartTouchStart"
+          bindtouchmove="onChartTouchMove"
+          bindtouchend="onChartTouchEnd"
+        ></canvas>
+        <!-- Tooltip -->
+        <view 
+          class="chart-tooltip {{usageTooltip.show ? 'show' : ''}}" 
+          style="left: {{usageTooltip.x}}px; top: {{usageTooltip.y}}px; transform: translateX(-50%);"
+          wx:if="{{usageTooltip.show}}"
+        >
+          <view class="tooltip-content">
+            <text class="tooltip-date">{{usageTooltip.date}}</text>
+            <text class="tooltip-value">{{usageTooltip.label}}：{{usageTooltip.value}} {{usageTooltip.unit}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- Monthly Balance Trend -->
+    <view class="chart-section" wx:if="{{showBalanceChart && balanceChartStats}}">
+      <view class="section-header-simple">
+        <image class="section-icon" src="/assets/icons/dollar.png" mode="aspectFit"/>
+        <text class="section-title-simple">账户余额趋势</text>
+      </view>
+      <view class="chart-card cartoon-card">
+        <canvas 
+          class="chart-canvas" 
+          type="2d"
+          id="balanceChart"
+          bindtouchstart="onChartTouchStart"
+          bindtouchmove="onChartTouchMove"
+          bindtouchend="onChartTouchEnd"
+        ></canvas>
+        <!-- Tooltip -->
+        <view 
+          class="chart-tooltip {{balanceTooltip.show ? 'show' : ''}}" 
+          style="left: {{balanceTooltip.x}}px; top: {{balanceTooltip.y}}px; transform: translateX(-50%);"
+          wx:if="{{balanceTooltip.show}}"
+        >
+          <view class="tooltip-content">
+            <text class="tooltip-date">{{balanceTooltip.date}}</text>
+            <text class="tooltip-value">{{balanceTooltip.label}}：{{balanceTooltip.value}} {{balanceTooltip.unit}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- Recent Query Records -->
+    <view class="records-section">
+      <view class="section-header">
+        <view class="section-header-left">
+          <image class="section-icon" src="/assets/icons/search.png" mode="aspectFit"/>
+          <text class="section-title">最近记录</text>
+        </view>
+        <view class="view-all-btn" bindtap="onViewMoreHistory">
+          <text class="view-all-text">查看全部</text>
+          <text class="view-all-arrow">›</text>
+        </view>
+      </view>
+
+      <!-- Loading State -->
+      <view class="loading-container" wx:if="{{historyLoading}}">
+        <view class="loading-spinner"></view>
+        <text class="loading-text">加载中...</text>
+      </view>
+
+      <!-- Records List -->
+      <view class="records-list" wx:elif="{{historyData.length > 0}}">
+        <view 
+          class="record-card cartoon-card"
+          wx:for="{{historyData}}"
+          wx:key="id"
+        >
+          <!-- Row 1: 户号 + 查询时间 -->
+          <view class="record-row-1">
+            <view class="record-account">
+              <image class="record-small-icon" src="/assets/icons/home.png" mode="aspectFit"/>
+              <text class="record-account-no">{{item.account_number}}</text>
+            </view>
+            <text class="record-time">{{item.check_time}}</text>
+          </view>
+
+          <!-- Row 2: 数据日期 -->
+          <view class="record-row-2">
+            <image class="record-small-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
+            <text class="record-date">{{item.daily_date}}</text>
+          </view>
+
+          <!-- Row 3: Usage + Balance -->
+          <view class="record-row-3">
+            <view class="record-usage">
+              <text class="record-label">日用电量</text>
+              <view class="record-usage-row">
+                <text class="record-usage-value">{{item.last_daily_usage}}</text>
+              </view>
+            </view>
+            <view class="record-balance">
+              <text class="record-label">账户余额</text>
+              <text class="record-balance-value {{item.balance_num < 0 ? 'negative' : 'positive'}}">¥{{item.balance}}</text>
+            </view>
+          </view>
+          
+          <!-- 公告弹窗 -->
+          <notice-modal
+            show="{{showNoticeModal}}"
+            noticeList="{{noticeModalList}}"
+            bind:close="onNoticeModalClose"
+          />
+
+          <!-- Row 4: Address + Owner -->
+          <view class="record-row-4">
+            <view class="record-address">
+              <image class="record-small-icon" src="/assets/icons/home.png" mode="aspectFit"/>
+              <text class="record-small-text">{{item.room_name}}</text>
+            </view>
+            <view class="record-owner" wx:if="{{item.owner_name}}">
+              <image class="record-small-icon" src="/assets/icons/user.png" mode="aspectFit"/>
+              <text class="record-small-text">{{item.owner_name}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- Empty State -->
+      <view class="empty-state cartoon-card" wx:else>
+        <image class="empty-icon" src="/assets/icons/bar-chart.png" mode="aspectFit"/>
+        <text class="empty-text">暂无查询记录</text>
+      </view>
+    </view>
+
+  </view>
+</view>

@@ -1,0 +1,10 @@
+{
+  "navigationBarTitleText": "编辑任务配置",
+  "navigationBarBackgroundColor": "#FFF9F2",
+  "navigationBarTextStyle": "black",
+  "backgroundTextStyle": "dark",
+  "backgroundColor": "#FFF9F2",
+  "usingComponents": {
+    "cron-editor": "/components/cron-editor/index"
+  }
+}

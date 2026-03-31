@@ -1,0 +1,14 @@
+<!-- 游客模式提示横幅组件 - Macaron风格 -->
+<view class="guest-banner" wx:if="{{show}}">
+  <view class="banner-content">
+    <view class="banner-left">
+      <image class="banner-eye-icon" src="/assets/icons/eye.png" mode="aspectFit"/>
+      <text class="banner-text">{{message}}</text>
+    </view>
+    <button class="banner-login-btn" bindtap="onLogin" wx:if="{{showLoginBtn}}">
+      登录
+    </button>
+    <text class="banner-close" bindtap="onClose" wx:if="{{showCloseBtn}}">✕</text>
+  </view>
+</view>
+

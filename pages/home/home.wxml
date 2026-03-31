@@ -1,0 +1,98 @@
+<!--首页 - 完全匹配 Weixin-main HomePage 设计-->
+<view class="home-page page-enter">
+  <!-- 加载状态 -->
+  <view class="loading-container" wx:if="{{pageLoading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 主要内容 -->
+  <view class="main-content" wx:else>
+    <!-- 头部标题 -->
+    <view class="page-header card-enter">
+      <view class="header-title-wrapper">
+        <!-- Sparkles Icon SVG -->
+        <view class="sparkle-icon-svg">
+          <view class="icon-sparkles">
+            <view class="sparkle sparkle-1"></view>
+            <view class="sparkle sparkle-2"></view>
+            <view class="sparkle sparkle-3"></view>
+          </view>
+        </view>
+        <text class="page-title">我的小助手</text>
+      </view>
+      <text class="page-subtitle">让生活更便捷~</text>
+    </view>
+
+    <!-- 功能卡片网格 -->
+    <view class="feature-cards">
+      <!-- 考勤打卡卡片 -->
+      <view class="feature-card attendance-card card-enter card-enter-delay-1" bindtap="goToAttendance">
+        <view class="card-content">
+          <view class="card-icon-wrapper">
+            <!-- Clock Icon SVG -->
+            <view class="card-icon-svg">
+              <view class="icon-clock-card">
+                <view class="clock-circle-card"></view>
+                <view class="clock-hour-card"></view>
+                <view class="clock-minute-card"></view>
+              </view>
+            </view>
+          </view>
+          <text class="card-title">考勤打卡</text>
+          <text class="card-desc">记录每一天的上下班时间</text>
+          
+          <!-- 装饰圆圈 -->
+          <view class="deco-circle deco-circle-1"></view>
+          <view class="deco-circle deco-circle-2"></view>
+        </view>
+      </view>
+
+      <!-- 电费查询卡片 -->
+      <view class="feature-card electricity-card card-enter card-enter-delay-2" bindtap="goToElectric">
+        <view class="card-content">
+          <view class="card-icon-wrapper">
+            <!-- Zap Icon SVG -->
+            <view class="card-icon-svg">
+              <view class="icon-zap-card">
+                <view class="zap-bolt-card"></view>
+              </view>
+            </view>
+          </view>
+          <text class="card-title">电费查询</text>
+          <text class="card-desc">查看家庭用电情况和费用</text>
+          
+          <!-- 装饰圆圈 -->
+          <view class="deco-circle deco-circle-1"></view>
+          <view class="deco-circle deco-circle-2"></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部提示 -->
+    <view class="footer-tip">
+      <!-- Sparkles Icon SVG (small) -->
+      <view class="tip-sparkle-svg">
+        <view class="icon-sparkles-tiny">
+          <view class="sparkle-tiny sparkle-tiny-1"></view>
+          <view class="sparkle-tiny sparkle-tiny-2"></view>
+        </view>
+      </view>
+      <text class="tip-text">点击卡片开始使用</text>
+      <view class="tip-sparkle-svg">
+        <view class="icon-sparkles-tiny">
+          <view class="sparkle-tiny sparkle-tiny-1"></view>
+          <view class="sparkle-tiny sparkle-tiny-2"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 公告弹窗 -->
+<notice-modal 
+  visible="{{showNoticeModal}}" 
+  title="公告中心" 
+  notices="{{noticeModalList}}"
+  bind:close="onNoticeModalClose"
+/>

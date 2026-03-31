@@ -1,0 +1,153 @@
+<!-- 功能使用记录页面 -->
+<view class="usage-history-page">
+  <!-- 统计概览 -->
+  <view class="stats-overview" wx:if="{{!loading && statistics}}">
+    <view class="overview-card">
+      <view class="card-header">
+        <image class="header-icon" src="/assets/icons/bar-chart.png" mode="aspectFit"/>
+        <text class="header-title">使用统计</text>
+        <text class="header-subtitle">近30天数据</text>
+      </view>
+      
+      <view class="stats-grid">
+        <view class="stat-item">
+          <text class="stat-value">{{statistics.total_usage_count || 0}}</text>
+          <text class="stat-label">总使用次数</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-value">{{statistics.total_features || 0}}</text>
+          <text class="stat-label">已用功能</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-value">{{statistics.active_days || 0}}</text>
+          <text class="stat-label">活跃天数</text>
+        </view>
+      </view>
+      
+      <view class="most-used" wx:if="{{statistics.most_used_feature}}">
+        <view class="most-used-label-wrapper">
+          <image class="most-used-icon" src="/assets/icons/trending-up.png" mode="aspectFit"/>
+          <text class="most-used-label">最常用功能：</text>
+        </view>
+        <view class="most-used-feature">
+          <text class="feature-icon">{{statistics.most_used_feature.feature_icon}}</text>
+          <text class="feature-name">{{statistics.most_used_feature.feature_name}}</text>
+          <text class="feature-count">({{statistics.most_used_feature.usage_count}}次)</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 功能列表 -->
+  <view class="feature-list-section">
+    <view class="section-header">
+      <text class="section-title">功能使用详情</text>
+      <view class="filter-tabs">
+        <view 
+          class="tab-item {{activeTab === 'frequent' ? 'active' : ''}}"
+          bindtap="switchTab"
+          data-tab="frequent"
+        >
+          常用
+        </view>
+        <view 
+          class="tab-item {{activeTab === 'all' ? 'active' : ''}}"
+          bindtap="switchTab"
+          data-tab="all"
+        >
+          全部
+        </view>
+        <view 
+          class="tab-item {{activeTab === 'recent' ? 'active' : ''}}"
+          bindtap="switchTab"
+          data-tab="recent"
+        >
+          最近
+        </view>
+      </view>
+    </view>
+    
+    <!-- 常用功能 -->
+    <view class="feature-list" wx:if="{{activeTab === 'frequent' && frequentFeatures.length > 0}}">
+      <view 
+        class="feature-card"
+        wx:for="{{frequentFeatures}}"
+        wx:key="feature_key"
+        bindtap="navigateToFeature"
+        data-feature-key="{{item.feature_key}}"
+      >
+        <view class="feature-icon-wrapper">
+          <image class="feature-icon-img" src="/assets/icons/user.png" mode="aspectFit"/>
+        </view>
+        <view class="feature-info">
+          <text class="feature-name">{{item.feature_name}}</text>
+          <text class="feature-desc">使用 {{item.usage_count}} 次 · 最近于 {{item.last_used_time}}</text>
+        </view>
+        <view class="feature-arrow">
+          <image class="arrow-icon" src="/assets/icons/chevron-left.png" mode="aspectFit"/>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 所有功能 -->
+    <view class="feature-list" wx:if="{{activeTab === 'all' && allFeatures.length > 0}}">
+      <view 
+        class="feature-card {{item.usage_count > 0 ? '' : 'not-used'}}"
+        wx:for="{{allFeatures}}"
+        wx:key="feature_key"
+        bindtap="navigateToFeature"
+        data-feature-key="{{item.feature_key}}"
+      >
+        <view class="feature-icon-wrapper">
+          <image class="feature-icon-img" src="/assets/icons/user.png" mode="aspectFit"/>
+        </view>
+        <view class="feature-info">
+          <text class="feature-name">{{item.feature_name}}</text>
+          <text class="feature-desc" wx:if="{{item.usage_count > 0}}">
+            使用 {{item.usage_count}} 次 · 最近于 {{item.last_used_time}}
+          </text>
+          <text class="feature-desc not-used-text" wx:else>尚未使用</text>
+        </view>
+        <view class="feature-arrow">
+          <image class="arrow-icon" src="/assets/icons/chevron-left.png" mode="aspectFit"/>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 最近使用 -->
+    <view class="feature-list" wx:if="{{activeTab === 'recent' && recentFeatures.length > 0}}">
+      <view 
+        class="feature-card"
+        wx:for="{{recentFeatures}}"
+        wx:key="feature_key"
+        bindtap="navigateToFeature"
+        data-feature-key="{{item.feature_key}}"
+      >
+        <view class="feature-icon-wrapper">
+          <image class="feature-icon-img" src="/assets/icons/user.png" mode="aspectFit"/>
+        </view>
+        <view class="feature-info">
+          <text class="feature-name">{{item.feature_name}}</text>
+          <text class="feature-desc">{{item.last_used_time}}</text>
+        </view>
+        <view class="feature-arrow">
+          <image class="arrow-icon" src="/assets/icons/chevron-left.png" mode="aspectFit"/>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{!loading && getCurrentList().length === 0}}">
+      <image class="empty-icon-img" src="/assets/icons/clipboard.png" mode="aspectFit"/>
+      <text class="empty-text">暂无使用记录</text>
+      <text class="empty-desc">{{getEmptyDesc()}}</text>
+    </view>
+  </view>
+  
+  <!-- 加载状态 -->
+  <view class="loading-state" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+</view>
+

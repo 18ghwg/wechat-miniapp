@@ -1,0 +1,125 @@
+// Canvas 2D 版本的 generateTextAvatar 函数
+// 替换 index.js 中第 219-340 行的内容
+
+      const cacheKey = `${userInfo.id || 'default'}_${sourceText}`;
+      
+      // 使用 Canvas 2D 接口绘制头像
+      const canvasId = 'avatarCanvas';
+      const query = wx.createSelectorQuery().in(this);
+      query.select(`#${canvasId}`)
+        .fields({ node: true, size: true })
+        .exec((res) => {
+          if (!res || !res[0]) {
+            console.error('usercenter generateTextAvatar - 无法找到Canvas元素');
+            this.isGeneratingAvatar = false;
+            reject(new Error('无法找到Canvas元素'));
+            return;
+          }
+          
+          try {
+            const canvas = res[0].node;
+            const ctx = canvas.getContext('2d');
+            const canvasSize = 120;
+            
+            // 设置canvas实际尺寸（考虑设备像素比）
+            const dpr = wx.getWindowInfo().pixelRatio || 1;
+            canvas.width = canvasSize * dpr;
+            canvas.height = canvasSize * dpr;
+            ctx.scale(dpr, dpr);
+            
+            console.log('usercenter generateTextAvatar - Canvas 2D上下文创建完成, 设备像素比:', dpr);
+            
+            const firstChar = displayChar;
+            
+            // 优先使用openid最后一位来生成颜色索引
+            let colorIndex;
+            if (userInfo.avatarSeed && userInfo.useGeneratedAvatar) {
+              // 微信登录用户：使用openid最后一位生成颜色
+              const seedChar = userInfo.avatarSeed;
+              colorIndex = parseInt(seedChar, 16) || 0; // 将16进制字符转为数字
+              console.log('usercenter generateTextAvatar - 使用openid生成颜色索引:', seedChar, '=>', colorIndex);
+            } else {
+              // Web用户或其他情况：使用原有逻辑
+              colorIndex = avatarGenerator.generateColorIndex(userInfo, sourceText);
+            }
+            
+            const backgroundColor = avatarGenerator.defaultColors[colorIndex % avatarGenerator.defaultColors.length];
+            
+            // 绘制背景
+            ctx.fillStyle = backgroundColor;
+            ctx.fillRect(0, 0, canvasSize, canvasSize);
+            
+            // 绘制文字
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '48px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(firstChar, canvasSize / 2, canvasSize / 2);
+            
+            // Canvas 2D 不需要调用 draw()，直接生成图片
+            setTimeout(() => {
+              // 生成图片
+              wx.canvasToTempFilePath({
+                canvas: canvas,  // Canvas 2D 使用 canvas 对象而不是 canvasId
+                destWidth: canvasSize,
+                destHeight: canvasSize,
+                quality: 0.8,
+                success: (res) => {
+                  console.log('usercenter generateTextAvatar - 临时头像生成成功:', res.tempFilePath);
+                  
+                  // 将临时文件转换为Base64格式进行持久化存储
+                  wx.getFileSystemManager().readFile({
+                    filePath: res.tempFilePath,
+                    encoding: 'base64',
+                    success: (base64Res) => {
+                      const base64Data = 'data:image/png;base64,' + base64Res.data;
+                      console.log('usercenter generateTextAvatar - Base64头像生成成功');
+                      
+                      console.log('usercenter generateTextAvatar - 设置Base64头像数据:', base64Data.substring(0, 50) + '...');
+                      
+                      // 缓存Base64头像数据
+                      avatarGenerator.cacheAvatar(cacheKey, base64Data);
+                      
+                      // 更新数据 - 强制刷新页面显示
+                      this.setData({ 
+                        generatedAvatarUrl: base64Data,
+                        // 强制清空外链头像，确保使用生成的头像
+                        'userInfo.avatar_url': '' 
+                      });
+                      
+                      console.log('usercenter generateTextAvatar - Base64头像已设置并清空外链');
+                      
+                      this.isGeneratingAvatar = false;
+                      resolve(base64Data);
+                    },
+                    fail: (base64Error) => {
+                      console.error('usercenter generateTextAvatar - Base64转换失败:', base64Error);
+                      
+                      console.log('usercenter generateTextAvatar - Base64转换失败，使用临时文件作为备用');
+                      
+                      // 转换失败时仍使用临时文件，但优先显示生成的头像
+                      avatarGenerator.cacheAvatar(cacheKey, res.tempFilePath);
+                      this.setData({ 
+                        generatedAvatarUrl: res.tempFilePath,
+                        'userInfo.avatar_url': '' // 清空外链
+                      });
+                      
+                      this.isGeneratingAvatar = false;
+                      resolve(res.tempFilePath);
+                    }
+                  });
+                },
+                fail: (error) => {
+                  console.error('usercenter generateTextAvatar - 头像生成失败:', error);
+                  this.isGeneratingAvatar = false;
+                  reject(error);
+                }
+              });
+            }, 100); // 稍微延迟确保绘制完成
+            
+          } catch (error) {
+            console.error('usercenter generateTextAvatar - 绘制异常:', error);
+            this.isGeneratingAvatar = false;
+            reject(error);
+          }
+        });

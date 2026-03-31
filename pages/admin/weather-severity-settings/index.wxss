@@ -1,0 +1,580 @@
+/* 天气严重程度设置页面样式 - Macaron Theme */
+@import '/style/macaron-theme.wxss';
+
+.severity-settings-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--background);
+  box-sizing: border-box;
+}
+
+/* Loading */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 20rpx;
+}
+
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 6rpx solid var(--color-peach-macaron);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: var(--muted-foreground);
+}
+
+.content {
+  flex: 1;
+  padding: 0 30rpx 30rpx;
+  box-sizing: border-box;
+}
+
+/* 页面标题 */
+.page-header {
+  padding: 40rpx 0 30rpx;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.header-icon-wrapper {
+  width: 100rpx;
+  height: 100rpx;
+  background: var(--color-peach-macaron);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20rpx;
+  border: 4rpx solid var(--foreground);
+  box-shadow: 6rpx 6rpx 0rpx var(--foreground);
+}
+
+.header-icon {
+  width: 56rpx;
+  height: 56rpx;
+}
+
+.page-title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-bottom: 12rpx;
+}
+
+.page-subtitle {
+  font-size: 26rpx;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+
+/* 区块容器 */
+.section-container {
+  margin-bottom: 30rpx;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 0;
+}
+
+.section-header.clickable {
+  padding: 20rpx;
+  background: var(--card);
+  border: 4rpx solid var(--foreground);
+  border-radius: var(--radius-lg);
+  box-shadow: 6rpx 6rpx 0rpx var(--foreground);
+  margin-bottom: 20rpx;
+}
+
+.section-header.clickable:active {
+  transform: translate(3rpx, 3rpx);
+  box-shadow: 3rpx 3rpx 0rpx var(--foreground);
+}
+
+.section-icon-wrapper {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+  border: 3rpx solid var(--foreground);
+  box-shadow: 4rpx 4rpx 0rpx var(--foreground);
+}
+
+.icon-peach { background: var(--color-peach-macaron); }
+.icon-mint { background: var(--color-mint-macaron); }
+.icon-pink { background: var(--color-pink-macaron); }
+.icon-lavender { background: var(--color-lavender-macaron); }
+.icon-yellow { background: var(--color-yellow-macaron); }
+.icon-blue { background: var(--color-blue-macaron); }
+
+.section-icon {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.section-title-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 6rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.section-desc {
+  font-size: 24rpx;
+  color: var(--muted-foreground);
+}
+
+.expand-btn {
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expand-icon {
+  font-size: 24rpx;
+  color: var(--muted-foreground);
+}
+
+/* 预设卡片 */
+.preset-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.preset-card {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-md);
+  position: relative;
+  min-height: 88rpx;
+}
+
+.preset-card:active {
+  transform: translate(6rpx, 6rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+.preset-active {
+  background: var(--color-orange-light) !important;
+  border-color: var(--color-peach-macaron) !important;
+}
+
+.preset-icon-wrapper {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+  border: 3rpx solid var(--foreground);
+}
+
+.preset-emoji {
+  font-size: 32rpx;
+}
+
+.preset-icon-img {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.preset-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 6rpx;
+}
+
+.preset-label {
+  font-size: 30rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.preset-desc {
+  font-size: 24rpx;
+  color: var(--muted-foreground);
+}
+
+.preset-badge {
+  position: absolute;
+  top: 16rpx;
+  right: 16rpx;
+  background: var(--color-peach-macaron);
+  border: 3rpx solid var(--foreground);
+  border-radius: 20rpx;
+  padding: 6rpx 16rpx;
+}
+
+.badge-text {
+  font-size: 22rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.custom-badge-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20rpx;
+  padding: 16rpx 24rpx;
+  background: var(--color-yellow-macaron);
+  border: 4rpx dashed var(--foreground);
+  border-radius: var(--radius-lg);
+  gap: 12rpx;
+}
+
+.custom-badge-icon {
+  font-size: 28rpx;
+}
+
+.custom-badge-icon-img {
+  width: 32rpx;
+  height: 32rpx;
+}
+
+.custom-badge-text {
+  font-size: 26rpx;
+  color: var(--foreground);
+  font-weight: var(--font-weight-bold);
+}
+
+/* 天气分类 */
+.weather-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.weather-category {
+  margin-bottom: 0;
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-md);
+  min-height: 88rpx;
+}
+
+.category-header:active {
+  transform: translate(6rpx, 6rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+.category-icon-wrapper {
+  width: 60rpx;
+  height: 60rpx;
+  background: var(--color-orange-light);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+  border: 3rpx solid var(--foreground);
+}
+
+.category-emoji {
+  font-size: 28rpx;
+}
+
+.category-icon-img {
+  width: 32rpx;
+  height: 32rpx;
+}
+
+.category-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 4rpx;
+}
+
+.category-name {
+  font-size: 28rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.category-count {
+  font-size: 22rpx;
+  color: var(--muted-foreground);
+}
+
+.category-expand-btn {
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.category-expand-icon {
+  font-size: 22rpx;
+  color: var(--muted-foreground);
+}
+
+/* 天气项目 */
+.weather-items {
+  padding: 16rpx 0 0 0;
+  margin-left: 30rpx;
+  border-left: 4rpx solid var(--border);
+}
+
+.weather-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  margin-left: 20rpx;
+  background: var(--card);
+  border: 3rpx solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 12rpx;
+  min-height: 88rpx;
+  box-sizing: border-box;
+}
+
+.weather-item:active {
+  background: var(--color-orange-light);
+  border-color: var(--color-peach-macaron);
+}
+
+.weather-item:last-child {
+  margin-bottom: 0;
+}
+
+.weather-name {
+  font-size: 28rpx;
+  color: var(--foreground);
+  font-weight: var(--font-weight-medium);
+}
+
+.weather-severity-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+/* 严重程度徽章 - 使用马卡龙颜色 */
+.severity-badge-macaron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8rpx 20rpx;
+  border-radius: 24rpx;
+  min-width: 80rpx;
+  border: 3rpx solid var(--foreground);
+}
+
+.severity-badge-text {
+  font-size: 24rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.severity-arrow-btn {
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.severity-arrow-icon {
+  width: 24rpx;
+  height: 24rpx;
+  transform: rotate(180deg);
+  opacity: 0.5;
+}
+
+/* 信息区域 */
+.info-section {
+  padding: var(--spacing-md);
+}
+
+.info-header {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+
+.info-icon-wrapper {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3rpx solid var(--foreground);
+  box-shadow: 3rpx 3rpx 0rpx var(--foreground);
+}
+
+.info-icon {
+  width: 32rpx;
+  height: 32rpx;
+}
+
+.info-title {
+  font-size: 30rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+/* 严重程度图例 */
+.severity-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+  padding: 20rpx;
+  background: var(--color-orange-light);
+  border-radius: var(--radius-lg);
+  border: 3rpx solid var(--border);
+}
+
+.severity-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  min-width: 45%;
+}
+
+.severity-dot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2rpx solid var(--foreground);
+}
+
+.severity-legend-text {
+  font-size: 24rpx;
+  color: var(--foreground);
+}
+
+/* 提示卡片 */
+.info-tips-card {
+  background: var(--muted);
+  border-radius: var(--radius-lg);
+  padding: 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.tip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12rpx;
+}
+
+.tip-icon {
+  font-size: 28rpx;
+  flex-shrink: 0;
+  line-height: 1.6;
+}
+
+.tip-icon-img {
+  width: 32rpx;
+  height: 32rpx;
+  flex-shrink: 0;
+  margin-top: 4rpx;
+}
+
+.tip-text {
+  font-size: 24rpx;
+  color: var(--foreground);
+  line-height: 1.6;
+  flex: 1;
+}
+
+/* 底部占位 */
+.bottom-placeholder {
+  height: 160rpx;
+}
+
+/* 底部按钮 */
+.button-group {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 20rpx;
+  padding: 20rpx 30rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  background: var(--card);
+  border-top: 4rpx solid var(--foreground);
+  box-sizing: border-box;
+}
+
+.reset-btn,
+.save-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  min-height: 88rpx;
+  font-size: 28rpx;
+}
+
+.btn-icon {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.save-btn[disabled] {
+  opacity: 0.6;
+  background: var(--muted);
+}
+
+/* 减少动画（可访问性） */
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation: none;
+  }
+  
+  .preset-card,
+  .category-header,
+  .weather-item,
+  .section-header.clickable {
+    transition: none;
+  }
+}

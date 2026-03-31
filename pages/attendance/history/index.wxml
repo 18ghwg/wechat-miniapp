@@ -1,0 +1,371 @@
+<!--考勤历史记录页面 - Macaron Cartoon 风格-->
+<view class="history-container">
+
+  <!-- 游客模式横幅 -->
+  <guest-banner
+    show="{{isGuest}}"
+    message="所有数据仅供展示"
+    showLoginBtn="{{true}}"
+    bind:close="closeGuestBanner"
+  />
+
+  <!-- Header -->
+  <view class="history-header">
+    <view class="header-back-btn" bindtap="onBack">
+      <image class="header-icon" src="/assets/icons/chevron-left.png" mode="aspectFit"/>
+    </view>
+    <text class="header-title">考勤报表</text>
+    <view class="header-placeholder"></view>
+  </view>
+
+  <!-- 筛选卡片 -->
+  <view class="filter-card">
+    <view class="filter-card-title-row">
+      <image class="filter-title-icon" src="/assets/icons/filter.png" mode="aspectFit"/>
+      <text class="filter-card-title">考勤统计 & 筛选</text>
+    </view>
+
+    <!-- 两列布局：左员工选择，右年月选择 -->
+    <view class="filter-inputs-row">
+      <view class="filter-input-wrap" bindtap="{{isAdmin ? 'onShowEmployeeSelector' : ''}}">
+        <image class="input-icon" src="/assets/icons/users.png" mode="aspectFit"/>
+        <text class="filter-input-text" wx:if="{{!isAdmin}}">全部成员</text>
+        <text class="filter-input-text" wx:elif="{{selectedEmployees.length === 0}}">全部成员</text>
+        <text class="filter-input-text" wx:elif="{{selectedEmployees.length === 1}}">{{selectedEmployees[0]}}</text>
+        <text class="filter-input-text" wx:else>已选{{selectedEmployees.length}}人</text>
+      </view>
+      <view class="filter-input-wrap filter-date-wrap">
+        <image class="input-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
+        <picker
+          class="month-picker"
+          mode="selector"
+          range="{{yearOptions}}"
+          value="{{yearIndex}}"
+          bindchange="onYearChange"
+        >
+          <text class="picker-text">{{currentYear}}年</text>
+        </picker>
+        <picker
+          class="month-picker"
+          mode="selector"
+          range="{{monthOptions}}"
+          value="{{monthIndex}}"
+          bindchange="onMonthChange"
+        >
+          <text class="picker-text">{{currentMonth}}月</text>
+        </picker>
+      </view>
+    </view>
+
+    <!-- 统计条 -->
+    <view class="stats-strip">
+      <view class="stats-strip-item stats-orange">
+        <text class="stats-strip-label">总计补贴</text>
+        <text class="stats-strip-value">{{statisticsData.totalSubsidy}}</text>
+      </view>
+      <view class="stats-strip-item stats-blue">
+        <text class="stats-strip-label">打卡天数</text>
+        <text class="stats-strip-value">{{statisticsData.attendanceDays}}天</text>
+      </view>
+      <view class="stats-strip-item stats-mint">
+        <text class="stats-strip-label">出差次数</text>
+        <text class="stats-strip-value">{{statisticsData.domesticTripDays + statisticsData.foreignTripDays}}次</text>
+      </view>
+      <view class="stats-strip-item stats-green" wx:if="{{statisticsData.compensatoryDays > 0}}">
+        <text class="stats-strip-label">调休天数</text>
+        <text class="stats-strip-value">{{statisticsData.compensatoryDays}}天</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">正在加载数据...</text>
+  </view>
+
+  <!-- 记录列表 -->
+  <view class="records-list" wx:if="{{!loading && attendanceData.length > 0}}">
+    <view class="record-card" wx:for="{{attendanceData}}" wx:key="id">
+      <!-- 卡片顶部：头像 + 姓名时间 + 状态徽章 + 编辑/删除按钮 -->
+      <view class="record-top">
+        <view class="record-avatar">
+          <text class="record-avatar-text">{{item.name ? item.name[0] : (item.real_name ? item.real_name[0] : '?')}}</text>
+        </view>
+        <view class="record-info">
+          <text class="record-name">{{item.name || item.real_name || item.employee_name}}</text>
+          <text class="record-datetime">{{item.work_date}} {{item.weekday}}</text>
+        </view>
+        <view class="record-top-right">
+          <view class="record-badge badge-{{item.status_type}}">
+            <text class="record-badge-text">{{item.work_status}}</text>
+          </view>
+          <view class="record-action-btns">
+            <view class="record-btn-edit" bindtap="onEditItem" data-item="{{item}}">
+              <image class="action-btn-icon" src="/assets/icons/edit.png" mode="aspectFit"/>
+            </view>
+            <view class="record-btn-delete" bindtap="onDeleteItem" data-item="{{item}}">
+              <image class="action-btn-icon" src="/assets/icons/trash.png" mode="aspectFit"/>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 卡片底部：出差地址 + 补贴（仅出差时显示） -->
+      <view class="record-detail" wx:if="{{item.work_status === '国内出差' || item.work_status === '国外出差'}}">
+        <view class="record-detail-left">
+          <image class="detail-icon" src="/assets/icons/map-pin.png" mode="aspectFit"/>
+          <text class="record-base-name">{{item.comment || item.location || item.base_name || '出差地点未填写'}}</text>
+        </view>
+        <view class="record-subsidy" wx:if="{{item.business_trip_subsidy > 0}}">
+          <image class="detail-icon" src="/assets/icons/dollar.png" mode="aspectFit"/>
+          <text class="record-subsidy-text">¥{{item.business_trip_subsidy}} 补贴</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{!loading && attendanceData.length === 0}}">
+    <view class="empty-icon-wrap">
+      <image class="empty-icon" src="/assets/icons/search.png" mode="aspectFit"/>
+    </view>
+    <text class="empty-text">哎呀，这个月暂时没有记录哦</text>
+    <view class="empty-reset-btn" bindtap="onResetFilter">重置筛选条件</view>
+  </view>
+
+  <view class="bottom-spacer"/>
+</view>
+
+<!-- 员工多选弹窗 -->
+<t-popup visible="{{showEmployeePopup}}" bind:visible-change="onEmployeePopupChange" placement="bottom">
+  <view class="employee-popup">
+    <view class="employee-popup-header">
+      <text class="employee-popup-title">选择员工</text>
+      <view class="employee-popup-header-btns">
+        <view class="emp-popup-btn emp-clear" bindtap="onClearAllEmployees">清空</view>
+        <view class="emp-popup-btn emp-all" bindtap="onSelectAllEmployees">全选</view>
+      </view>
+    </view>
+    <view class="employee-list" wx:if="{{employeeList.length > 0}}">
+      <view class="employee-item" wx:for="{{employeeList}}" wx:key="name" bindtap="onToggleEmployee" data-name="{{item.name}}">
+        <view class="emp-checkbox {{item.selected ? 'emp-checked' : ''}}">
+          <text class="emp-check-icon" wx:if="{{item.selected}}"></text>
+        </view>
+        <text class="emp-name">{{item.name}}</text>
+      </view>
+    </view>
+    <view class="employee-empty" wx:elif="{{employeeLoading}}">
+      <text class="employee-empty-text">加载员工列表中...</text>
+    </view>
+    <view class="employee-empty" wx:else>
+      <text class="employee-empty-text">暂无员工数据</text>
+    </view>
+    <view class="employee-popup-footer">
+      <view class="employee-confirm-btn" bindtap="onConfirmEmployeeSelection">确定（已选{{selectedEmployees.length}}人）</view>
+    </view>
+  </view>
+</t-popup>
+
+<!-- 删除确认弹窗 -->
+<view class="delete-modal-mask" wx:if="{{showDeleteModal}}" bindtap="onCloseDeleteModal">
+  <view class="delete-modal" catchtap="onStopPropagation">
+    <view class="delete-modal-close" bindtap="onCloseDeleteModal">
+      <image class="close-icon" src="/assets/icons/close.png" mode="aspectFit"/>
+    </view>
+    <view class="delete-modal-icon-wrap">
+      <view class="delete-modal-icon-inner">
+        <image class="delete-modal-icon-img" src="/assets/icons/trash.png" mode="aspectFit"/>
+      </view>
+    </view>
+    <text class="delete-modal-title">确认要删除吗？</text>
+    <text class="delete-modal-desc">删除后的打卡记录无法找回哦，请确认是否继续操作。</text>
+    <view class="delete-modal-btns">
+      <view class="delete-modal-btn delete-modal-btn-cancel" bindtap="onCloseDeleteModal">先留着吧</view>
+      <view class="delete-modal-btn delete-modal-btn-confirm" bindtap="onConfirmDelete">残忍删除</view>
+    </view>
+  </view>
+</view>
+
+<!-- 编辑考勤记录弹窗（自定义遮罩，不依赖 t-popup） -->
+<view class="edit-modal-mask" wx:if="{{showEditModal}}" bindtap="onCloseEditModal">
+  <view class="edit-popup" catchtap="onStopPropagation">
+    <view class="edit-popup-header">
+      <text class="edit-popup-title">修改考勤记录</text>
+      <view class="edit-popup-close" bindtap="onCloseEditModal">
+        <image class="close-icon" src="/assets/icons/close.png" mode="aspectFit"/>
+      </view>
+    </view>
+
+    <!-- 打卡状态选择 -->
+    <view class="edit-section">
+      <text class="edit-label">打卡状态</text>
+      <view class="edit-type-grid">
+        <view
+          class="edit-type-btn {{editForm.type === 'office' ? 'edit-type-active' : ''}}"
+          style="{{editForm.type === 'office' ? 'background:#C7E9FB;' : ''}}"
+          bindtap="onEditTypeChange"
+          data-type="office"
+        >
+          <image class="edit-type-icon" src="/assets/icons/briefcase.png" mode="aspectFit"/>
+          <text class="edit-type-label">公司上班</text>
+        </view>
+        <view
+          class="edit-type-btn {{editForm.type === 'domestic' ? 'edit-type-active' : ''}}"
+          style="{{editForm.type === 'domestic' ? 'background:#FFCBA4;' : ''}}"
+          bindtap="onEditTypeChange"
+          data-type="domestic"
+        >
+          <image class="edit-type-icon" src="/assets/icons/map-pin.png" mode="aspectFit"/>
+          <text class="edit-type-label">国内出差</text>
+        </view>
+        <view
+          class="edit-type-btn {{editForm.type === 'international' ? 'edit-type-active' : ''}}"
+          style="{{editForm.type === 'international' ? 'background:#FFB7C5;' : ''}}"
+          bindtap="onEditTypeChange"
+          data-type="international"
+        >
+          <image class="edit-type-icon" src="/assets/icons/plane.png" mode="aspectFit"/>
+          <text class="edit-type-label">国外出差</text>
+        </view>
+        <view
+          class="edit-type-btn {{editForm.type === 'rest' ? 'edit-type-active' : ''}}"
+          style="{{editForm.type === 'rest' ? 'background:#B5EAD7;' : ''}}"
+          bindtap="onEditTypeChange"
+          data-type="rest"
+        >
+          <image class="edit-type-icon" src="/assets/icons/coffee.png" mode="aspectFit"/>
+          <text class="edit-type-label">休息</text>
+        </view>
+        <view
+          class="edit-type-btn {{editForm.type === 'compensatory' ? 'edit-type-active' : ''}}"
+          style="{{editForm.type === 'compensatory' ? 'background:#C8F7C5;' : ''}}"
+          bindtap="onEditTypeChange"
+          data-type="compensatory"
+        >
+          <image class="edit-type-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
+          <text class="edit-type-label">调休</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 日期 + 时间 -->
+    <view class="edit-row">
+      <view class="edit-field">
+        <text class="edit-label">日期</text>
+        <view class="edit-input-wrap">
+          <image class="edit-input-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
+          <picker mode="date" value="{{editForm.date}}" bindchange="onEditDateChange">
+            <text class="edit-picker-text">{{editForm.date || '选择日期'}}</text>
+          </picker>
+        </view>
+      </view>
+      <view class="edit-field">
+        <text class="edit-label">时间</text>
+        <view class="edit-input-wrap">
+          <image class="edit-input-icon" src="/assets/icons/clock.png" mode="aspectFit"/>
+          <picker mode="time" value="{{editForm.time}}" bindchange="onEditTimeChange">
+            <text class="edit-picker-text">{{editForm.time || '选择时间'}}</text>
+          </picker>
+        </view>
+      </view>
+    </view>
+
+    <!-- 出差专属字段 -->
+    <view wx:if="{{editForm.type === 'domestic' || editForm.type === 'international'}}">
+      <view class="edit-section">
+        <text class="edit-label">出差地址</text>
+        <view class="edit-input-wrap">
+          <image class="edit-input-icon" src="/assets/icons/map-pin.png" mode="aspectFit"/>
+          <input
+            class="edit-input"
+            placeholder="例如：新加坡"
+            value="{{editForm.baseName}}"
+            bindinput="onEditBaseNameChange"
+          />
+        </view>
+      </view>
+      <view class="edit-section">
+        <text class="edit-label">补贴金额</text>
+        <view class="edit-input-wrap">
+          <image class="edit-input-icon" src="/assets/icons/dollar.png" mode="aspectFit"/>
+          <input
+            class="edit-input"
+            placeholder="0.00"
+            type="digit"
+            value="{{editForm.subsidy}}"
+            bindinput="onEditSubsidyChange"
+          />
+        </view>
+      </view>
+    </view>
+
+    <!-- 保存按钮 -->
+    <view class="edit-save-btn" bindtap="onSaveEdit">保 存 修 改</view>
+    <view class="edit-save-spacer"></view>
+  </view>
+</view>
+
+<!-- 保存结果弹窗 -->
+<view class="result-modal-mask" wx:if="{{showResultModal}}" bindtap="onCloseResultModal">
+  <view class="result-modal" catchtap="onStopPropagation">
+    <view class="result-modal-close" bindtap="onCloseResultModal">
+      <image class="close-icon" src="/assets/icons/close.png" mode="aspectFit"/>
+    </view>
+    <view class="result-icon-wrap {{resultSuccess ? 'result-icon-success' : 'result-icon-fail'}}">
+      <view class="result-icon-inner">
+        <image class="result-icon-img" src="{{resultSuccess ? '/assets/icons/check.png' : '/assets/icons/x.png'}}" mode="aspectFit"/>
+      </view>
+    </view>
+    <text class="result-title">{{resultSuccess ? '更新成功！' : '更新失败'}}</text>
+    <text class="result-msg">接口返回：{{resultMsg}}</text>
+    <view class="result-confirm-btn" bindtap="onCloseResultModal">确 定</view>
+  </view>
+</view>
+
+<!-- 删除进度弹窗 -->
+<view class="delete-progress-overlay" wx:if="{{isDeleting}}">
+  <view class="delete-progress-card" catchtap="">
+    <text class="delete-progress-title">正在删除记录</text>
+    <text class="delete-progress-desc">{{deleteCurrentStep}}</text>
+    <view class="delete-progress-bar-wrap">
+      <view class="delete-progress-bar-bg">
+        <view class="delete-progress-bar-fill" style="width: {{deleteProgress}}%;"></view>
+      </view>
+      <text class="delete-progress-percent">{{deleteProgress}}%</text>
+    </view>
+    <text class="delete-progress-tip">请不要离开页面，系统正在同步数据...</text>
+  </view>
+</view>
+
+<!-- 删除结果弹窗 -->
+<view class="delete-result-overlay" wx:if="{{showDeleteResult}}" bindtap="onCloseDeleteResult">
+  <view class="delete-result-card" catchtap="">
+    <view class="delete-result-close" catchtap="onCloseDeleteResult">
+      <image class="close-icon" src="/assets/icons/close.png" mode="aspectFit"/>
+    </view>
+    <view class="delete-result-icon-wrap {{deleteResultSuccess ? 'delete-result-success' : 'delete-result-fail'}}">
+      <view class="delete-result-icon-inner">
+        <image class="delete-result-icon-img" src="{{deleteResultSuccess ? '/assets/icons/check-circle.png' : '/assets/icons/alert-circle.png'}}" mode="aspectFit"/>
+      </view>
+    </view>
+    <text class="delete-result-title">{{deleteResultSuccess ? '删除完成' : '删除异常'}}</text>
+    <view class="delete-steps-list">
+      <view class="delete-step-item">
+        <image class="delete-step-icon" src="{{deleteSteps.db_deleted ? '/assets/icons/check-circle.png' : '/assets/icons/alert-circle.png'}}" mode="aspectFit"/>
+        <text class="delete-step-text {{deleteSteps.db_deleted ? '' : 'delete-step-fail'}}">数据库：{{deleteSteps.db_msg || '未执行'}}</text>
+      </view>
+      <view class="delete-step-item">
+        <image class="delete-step-icon" src="{{deleteSteps.excel_cleared ? '/assets/icons/check-circle.png' : '/assets/icons/alert-circle.png'}}" mode="aspectFit"/>
+        <text class="delete-step-text {{deleteSteps.excel_cleared ? '' : 'delete-step-fail'}}">Excel：{{deleteSteps.excel_msg || '未执行'}}</text>
+      </view>
+      <view class="delete-step-item">
+        <image class="delete-step-icon" src="{{deleteSteps.nas_uploaded ? '/assets/icons/check-circle.png' : '/assets/icons/alert-circle.png'}}" mode="aspectFit"/>
+        <text class="delete-step-text {{deleteSteps.nas_uploaded ? '' : 'delete-step-fail'}}">公盘：{{deleteSteps.nas_msg || '未执行'}}</text>
+      </view>
+    </view>
+    <view class="delete-result-confirm-btn" catchtap="onCloseDeleteResult">确 定</view>
+  </view>
+</view>
+
+<t-toast id="t-toast" />

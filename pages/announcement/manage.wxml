@@ -1,0 +1,284 @@
+<!--公告管理页面 - Macaron Theme-->
+<wxs module="utils">
+module.exports = {
+  formatTime: function(timeStr) {
+    if (!timeStr) return '未知';
+    return timeStr;
+  }
+}
+</wxs>
+
+<view class="manage-container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <view class="header-icon-wrapper">
+      <image class="header-icon" src="/assets/icons/megaphone.png" mode="aspectFit"/>
+    </view>
+    <text class="page-title">公告管理</text>
+    <text class="page-subtitle">发布和管理系统公告</text>
+  </view>
+
+  <!-- 创建按钮 -->
+  <view class="add-button-container">
+    <button class="macaron-btn macaron-btn-mint add-button" bindtap="onShowCreate">
+      <text class="add-icon">+</text>
+      <text class="add-text">创建公告</text>
+    </button>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="cartoon-card loading-state" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 公告列表 -->
+  <view class="announcements-list" wx:if="{{!loading && announcements.length > 0}}">
+    <view 
+      class="cartoon-card announcement-card {{item.is_active ? 'active-card' : ''}}" 
+      wx:for="{{announcements}}" 
+      wx:key="id"
+    >
+      <!-- 公告头部 -->
+      <view class="card-header">
+        <view class="title-section">
+          <view class="title-wrapper">
+            <text class="announcement-title">{{item.title}}</text>
+          </view>
+          <view class="status-badges">
+            <view class="status-badge priority-badge" wx:if="{{item.priority > 0}}">
+              优先级: {{item.priority}}
+            </view>
+            <view class="status-badge popup-badge" wx:if="{{item.show_popup}}">
+              弹窗
+            </view>
+            <view class="status-badge {{item.is_active ? 'status-active' : 'status-inactive'}}">
+              {{item.is_active ? '已启用' : '已禁用'}}
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 公告内容 -->
+      <view class="card-content">
+        <text class="announcement-content">{{item.content}}</text>
+      </view>
+
+      <!-- 公告信息 -->
+      <view class="card-info">
+        <view class="info-item">
+          <text class="info-label">创建者：</text>
+          <text class="info-value">{{item.created_by}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">创建时间：</text>
+          <text class="info-value">{{utils.formatTime(item.create_time)}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">更新时间：</text>
+          <text class="info-value">{{utils.formatTime(item.update_time)}}</text>
+        </view>
+      </view>
+
+      <!-- 操作按钮 -->
+      <view class="card-actions">
+        <view 
+          class="macaron-btn macaron-btn-blue action-btn" 
+          data-item="{{item}}" 
+          bindtap="onShowEdit"
+        >
+          <text>编辑</text>
+        </view>
+        <view 
+          class="macaron-btn {{item.is_active ? 'macaron-btn-yellow' : 'macaron-btn-mint'}} action-btn" 
+          data-item="{{item}}" 
+          bindtap="onToggleStatus"
+        >
+          <text>{{item.is_active ? '禁用' : '启用'}}</text>
+        </view>
+        <view 
+          class="macaron-btn macaron-btn-pink action-btn" 
+          data-item="{{item}}" 
+          bindtap="onDelete"
+        >
+          <text>删除</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="cartoon-card empty-state" wx:if="{{!loading && announcements.length === 0}}">
+    <image class="empty-icon-img" src="/assets/icons/megaphone.png" mode="aspectFit"/>
+    <text class="empty-title">暂无公告</text>
+    <text class="empty-subtitle">点击上方按钮创建第一条公告</text>
+  </view>
+</view>
+
+<!-- 创建公告对话框 -->
+<view class="popup-overlay" wx:if="{{showCreateDialog}}" bindtap="onCloseDialog">
+  <view class="cartoon-card popup-container" catchtap="onDialogContentTap">
+    <view class="popup-header">
+      <text class="popup-title">创建公告</text>
+      <view class="popup-close" catchtap="onCloseDialog">
+        <text class="close-icon-text">×</text>
+      </view>
+    </view>
+    
+    <view class="popup-content">
+      <!-- 标题 -->
+      <view class="form-group">
+        <text class="form-label">公告标题 *</text>
+        <input 
+          class="form-input-macaron" 
+          placeholder="请输入公告标题"
+          value="{{formData.title}}"
+          data-field="title"
+          bindinput="onInputChange"
+          maxlength="100"
+        />
+      </view>
+
+      <!-- 内容 -->
+      <view class="form-group">
+        <text class="form-label">公告内容 *</text>
+        <textarea 
+          class="form-textarea-macaron" 
+          placeholder="请输入公告内容"
+          value="{{formData.content}}"
+          data-field="content"
+          bindinput="onInputChange"
+          maxlength="1000"
+        ></textarea>
+      </view>
+
+      <!-- 优先级 -->
+      <view class="form-group">
+        <text class="form-label">优先级</text>
+        <picker mode="selector" range="{{[0,1,2,3,4,5]}}" value="{{formData.priority}}" bindchange="onPriorityChange">
+          <view class="picker-macaron">
+            <text class="picker-text">{{formData.priority}}</text>
+            <text class="picker-arrow">▼</text>
+          </view>
+        </picker>
+      </view>
+
+      <!-- 弹窗显示 -->
+      <view class="form-group">
+        <view class="form-row">
+          <text class="form-label">弹窗显示</text>
+          <switch 
+            class="macaron-switch"
+            checked="{{formData.show_popup}}" 
+            data-field="show_popup"
+            bindchange="onSwitchChange"
+            color="#FF9F43"
+          />
+        </view>
+      </view>
+
+      <!-- 立即启用 -->
+      <view class="form-group">
+        <view class="form-row">
+          <text class="form-label">立即启用</text>
+          <switch 
+            class="macaron-switch"
+            checked="{{formData.is_active}}" 
+            data-field="is_active"
+            bindchange="onSwitchChange"
+            color="#FF9F43"
+          />
+        </view>
+      </view>
+    </view>
+    
+    <view class="popup-footer">
+      <view class="macaron-btn macaron-btn-lavender popup-btn" catchtap="onCloseDialog">取消</view>
+      <view class="macaron-btn macaron-btn-peach popup-btn" catchtap="onCreateSubmit">创建</view>
+    </view>
+  </view>
+</view>
+
+<!-- 编辑公告对话框 -->
+<view class="popup-overlay" wx:if="{{showEditDialog}}" bindtap="onCloseDialog">
+  <view class="cartoon-card popup-container" catchtap="onDialogContentTap">
+    <view class="popup-header">
+      <text class="popup-title">编辑公告</text>
+      <view class="popup-close" catchtap="onCloseDialog">
+        <text class="close-icon-text">×</text>
+      </view>
+    </view>
+    
+    <view class="popup-content">
+      <!-- 标题 -->
+      <view class="form-group">
+        <text class="form-label">公告标题 *</text>
+        <input 
+          class="form-input-macaron" 
+          placeholder="请输入公告标题"
+          value="{{formData.title}}"
+          data-field="title"
+          bindinput="onInputChange"
+          maxlength="100"
+        />
+      </view>
+
+      <!-- 内容 -->
+      <view class="form-group">
+        <text class="form-label">公告内容 *</text>
+        <textarea 
+          class="form-textarea-macaron" 
+          placeholder="请输入公告内容"
+          value="{{formData.content}}"
+          data-field="content"
+          bindinput="onInputChange"
+          maxlength="1000"
+        ></textarea>
+      </view>
+
+      <!-- 优先级 -->
+      <view class="form-group">
+        <text class="form-label">优先级</text>
+        <picker mode="selector" range="{{[0,1,2,3,4,5]}}" value="{{formData.priority}}" bindchange="onPriorityChange">
+          <view class="picker-macaron">
+            <text class="picker-text">{{formData.priority}}</text>
+            <text class="picker-arrow">▼</text>
+          </view>
+        </picker>
+      </view>
+
+      <!-- 弹窗显示 -->
+      <view class="form-group">
+        <view class="form-row">
+          <text class="form-label">弹窗显示</text>
+          <switch 
+            class="macaron-switch"
+            checked="{{formData.show_popup}}" 
+            data-field="show_popup"
+            bindchange="onSwitchChange"
+            color="#FF9F43"
+          />
+        </view>
+      </view>
+
+      <!-- 状态 -->
+      <view class="form-group">
+        <view class="form-row">
+          <text class="form-label">启用状态</text>
+          <switch 
+            class="macaron-switch"
+            checked="{{formData.is_active}}" 
+            data-field="is_active"
+            bindchange="onSwitchChange"
+            color="#FF9F43"
+          />
+        </view>
+      </view>
+    </view>
+    
+    <view class="popup-footer">
+      <view class="macaron-btn macaron-btn-lavender popup-btn" catchtap="onCloseDialog">取消</view>
+      <view class="macaron-btn macaron-btn-peach popup-btn" catchtap="onEditSubmit">更新</view>
+    </view>
+  </view>
+</view>

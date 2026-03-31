@@ -1,0 +1,59 @@
+<view class="terms-container">
+  <view class="terms-header">
+    <text class="terms-title">用户服务协议</text>
+  </view>
+  
+  <scroll-view class="terms-content" scroll-y="true">
+    <view class="section">
+      <text class="section-title">一、总则</text>
+      <text class="section-content">
+        本协议是您与我们之间关于使用本小程序服务所订立的协议。
+        使用本小程序即表示您同意遵守本协议的所有条款和条件。
+      </text>
+    </view>
+    
+    <view class="section">
+      <text class="section-title">二、服务内容</text>
+      <text class="section-content">
+        我们为您提供考勤管理、电费查询等相关服务。
+        我们保留随时变更、中断或终止部分或全部服务的权利。
+      </text>
+    </view>
+    
+    <view class="section">
+      <text class="section-title">三、用户行为规范</text>
+      <text class="section-content">
+        用户应遵守相关法律法规，不得利用本小程序从事违法活动。
+        用户应妥善保管账户信息，对账户下的行为承担责任。
+      </text>
+    </view>
+    
+    <view class="section">
+      <text class="section-title">四、隐私保护</text>
+      <text class="section-content">
+        我们非常重视用户的隐私保护，详细内容请参见《隐私政策》。
+        我们会采取必要的技术和管理措施保护用户信息安全。
+      </text>
+    </view>
+    
+    <view class="section">
+      <text class="section-title">五、免责声明</text>
+      <text class="section-content">
+        本小程序提供的服务按现状提供，我们不保证服务的连续性或安全性。
+        因不可抗力导致的服务中断，我们不承担相应责任。
+      </text>
+    </view>
+    
+    <view class="section">
+      <text class="section-title">六、协议修改</text>
+      <text class="section-content">
+        我们有权根据业务发展需要修改本协议，修改后的协议将在小程序内公布。
+        如您继续使用我们的服务，则视为您接受修改后的协议。
+      </text>
+    </view>
+  </scroll-view>
+  
+  <view class="back-button">
+    <button class="back-btn" bindtap="goBack">返回</button>
+  </view>
+</view>

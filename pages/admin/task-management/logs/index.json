@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "任务日志",
+  "navigationBarBackgroundColor": "#FFF9F2",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#FFF9F2",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark"
+}

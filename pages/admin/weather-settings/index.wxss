@@ -1,0 +1,199 @@
+/* 天气设置 - 统一入口页面样式 - Macaron Theme */
+@import '/style/macaron-theme.wxss';
+
+.weather-settings-container {
+  padding: 0 30rpx 30rpx;
+  background-color: var(--background);
+  min-height: 100vh;
+}
+
+/* 页面标题 */
+.page-header {
+  padding: 40rpx 0 30rpx;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.header-icon-wrapper {
+  width: 100rpx;
+  height: 100rpx;
+  background: var(--color-peach-macaron);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20rpx;
+  border: 4rpx solid var(--foreground);
+  box-shadow: 6rpx 6rpx 0rpx var(--foreground);
+}
+
+.header-icon {
+  width: 56rpx;
+  height: 56rpx;
+}
+
+.page-title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-bottom: 12rpx;
+}
+
+.page-subtitle {
+  font-size: 26rpx;
+  color: var(--muted-foreground);
+}
+
+/* 设置项列表 */
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  margin-bottom: 30rpx;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-md);
+  min-height: 88rpx;
+}
+
+.setting-item:active {
+  transform: translate(6rpx, 6rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+/* 图标包装器 */
+.item-icon-wrapper {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+  flex-shrink: 0;
+  border: 3rpx solid var(--foreground);
+  box-shadow: 4rpx 4rpx 0rpx var(--foreground);
+}
+
+.icon-mint {
+  background: var(--color-mint-macaron);
+}
+
+.icon-lavender {
+  background: var(--color-lavender-macaron);
+}
+
+.item-icon {
+  width: 44rpx;
+  height: 44rpx;
+}
+
+/* 内容区域 */
+.item-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 8rpx;
+}
+
+.item-title {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.item-desc {
+  font-size: 26rpx;
+  color: var(--muted-foreground);
+  line-height: 1.4;
+}
+
+/* 箭头 */
+.item-arrow {
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.arrow-icon {
+  width: 32rpx;
+  height: 32rpx;
+  transform: rotate(180deg);
+  opacity: 0.5;
+}
+
+/* 说明信息卡片 */
+.info-section {
+  padding: var(--spacing-md);
+}
+
+.info-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.info-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.info-title {
+  font-size: 30rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  padding-left: 8rpx;
+}
+
+.info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+}
+
+.info-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  margin-top: 10rpx;
+  flex-shrink: 0;
+  border: 2rpx solid var(--foreground);
+}
+
+.mint-dot {
+  background: var(--color-mint-macaron);
+}
+
+.lavender-dot {
+  background: var(--color-lavender-macaron);
+}
+
+.info-text {
+  font-size: 26rpx;
+  color: var(--foreground);
+  line-height: 1.6;
+  flex: 1;
+}
+
+/* 减少动画（可访问性） */
+@media (prefers-reduced-motion: reduce) {
+  .setting-item {
+    transition: none;
+  }
+}

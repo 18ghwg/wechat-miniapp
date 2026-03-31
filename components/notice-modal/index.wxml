@@ -1,0 +1,51 @@
+<!-- 公告弹窗组件 - 匹配 React NoticeModal 设计 -->
+<view class="notice-modal-overlay" wx:if="{{visible}}" bindtap="onMaskTap">
+  <view class="notice-modal-card" catchtap="">
+    <!-- Header -->
+    <view class="notice-header">
+      <view class="notice-header-left">
+        <view class="notice-header-icon-box">
+          <image class="notice-header-icon" src="/assets/icons/megaphone.png" mode="aspectFit" />
+        </view>
+        <text class="notice-header-title">{{title}}</text>
+      </view>
+      <view class="notice-close-btn" catchtap="onClose">
+        <image class="notice-close-icon" src="/assets/icons/close.png" mode="aspectFit" />
+      </view>
+    </view>
+
+    <!-- Content - 时间线列表 -->
+    <scroll-view class="notice-content" scroll-y>
+      <view 
+        wx:for="{{notices}}" 
+        wx:key="id" 
+        class="notice-item"
+      >
+        <!-- 时间线圆点 -->
+        <view class="timeline-dot"></view>
+        
+        <!-- 标签 + 日期 -->
+        <view class="notice-meta">
+          <text class="notice-tag" wx:if="{{item.tag}}">{{item.tag}}</text>
+          <text class="notice-date">{{item.date}}</text>
+        </view>
+        
+        <!-- 内容 -->
+        <text class="notice-text">{{item.content}}</text>
+      </view>
+
+      <!-- 空状态 -->
+      <view class="notice-empty" wx:if="{{notices.length === 0}}">
+        <image class="notice-empty-icon" src="/assets/icons/alert-circle.png" mode="aspectFit" />
+        <text class="notice-empty-text">暂时没有新公告哦~</text>
+      </view>
+    </scroll-view>
+
+    <!-- Footer -->
+    <view class="notice-footer">
+      <view class="notice-confirm-btn" catchtap="onClose">
+        <text class="notice-confirm-text">我知道了</text>
+      </view>
+    </view>
+  </view>
+</view>

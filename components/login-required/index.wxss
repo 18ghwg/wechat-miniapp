@@ -1,0 +1,57 @@
+/* 需要登录提示组件 */
+.login-required-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 60rpx;
+  min-height: 400rpx;
+  background: #ffffff;
+  border-radius: 20rpx;
+  margin: 20rpx;
+}
+
+.login-icon {
+  font-size: 100rpx;
+  margin-bottom: 32rpx;
+  opacity: 0.3;
+}
+
+.login-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+.login-desc {
+  font-size: 26rpx;
+  color: #999;
+  text-align: center;
+  line-height: 1.6;
+  margin-bottom: 48rpx;
+  padding: 0 40rpx;
+}
+
+.login-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 50rpx;
+  padding: 24rpx 80rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+  border: none;
+  box-shadow: 0 8rpx 20rpx rgba(102, 126, 234, 0.3);
+}
+
+.login-button::after {
+  border: none;
+}
+
+
+.login-lock-icon {
+  width: 80rpx;
+  height: 80rpx;
+  margin-bottom: 32rpx;
+  opacity: 0.6;
+}

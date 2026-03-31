@@ -1,0 +1,380 @@
+/* 用户设置页面样式 - 马卡龙风格 */
+/* 使用 macaron-theme.wxss 主题样式 */
+/* 需求 7.1, 7.2, 7.3: 设置页面转换为分组的 cartoon-card 列表样式 */
+@import '/style/macaron-theme.wxss';
+
+page {
+  background: var(--background);
+}
+
+/* 设置页面容器 */
+.settings-container {
+  min-height: 100vh;
+  padding: 40rpx;
+  padding-bottom: 120rpx;
+}
+
+/* ===== 设置分组 ===== */
+.settings-group {
+  margin-bottom: 40rpx;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 0 8rpx;
+  margin-bottom: 20rpx;
+}
+
+.group-icon {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.group-title {
+  font-size: 28rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+/* ===== 设置卡片 - cartoon-card 列表样式 ===== */
+/* 需求 7.1: 将设置页面转换为分组的 cartoon-card 列表样式 */
+.settings-card {
+  background: var(--card);
+  border: 6rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon);
+  overflow: hidden;
+  box-shadow: var(--shadow-cartoon);
+}
+
+/* ===== 设置项 ===== */
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 32rpx;
+  transition: all 0.15s ease;
+  /* 确保最小触摸区域 88rpx × 88rpx */
+  min-height: 88rpx;
+}
+
+.settings-item.has-border {
+  border-bottom: 3rpx solid rgba(94, 78, 62, 0.1);
+}
+
+.settings-item:active {
+  background: rgba(255, 159, 67, 0.1);
+}
+
+.item-left {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+/* 图标盒子 - macaron 风格 */
+.item-icon-box {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 24rpx;
+  border: 4rpx solid var(--foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 4rpx 4rpx 0rpx rgba(94, 78, 62, 0.2);
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.settings-item:active .item-icon-box {
+  transform: translate(2rpx, 2rpx);
+  box-shadow: 0rpx 0rpx 0rpx rgba(94, 78, 62, 0.2);
+}
+
+.item-icon-img {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-label {
+  display: block;
+  font-size: 28rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-bottom: 6rpx;
+}
+
+.item-desc {
+  display: block;
+  font-size: 22rpx;
+  color: var(--foreground);
+  opacity: 0.6;
+  line-height: 1.4;
+}
+
+/* 右侧区域 */
+.item-right {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex-shrink: 0;
+}
+
+.item-value {
+  font-size: 26rpx;
+  font-weight: var(--font-weight-medium);
+  color: var(--foreground);
+  opacity: 0.7;
+}
+
+.item-arrow {
+  font-size: 40rpx;
+  font-weight: var(--font-weight-bold);
+  color: rgba(94, 78, 62, 0.3);
+  transition: all 0.15s ease;
+}
+
+.settings-item:active .item-arrow {
+  color: var(--color-peach-macaron);
+  transform: translateX(4rpx);
+}
+
+/* ===== 马卡龙风格 Switch 组件 ===== */
+/* 需求 7.2: 将开关控件转换为马卡龙风格 switch 组件 */
+.macaron-switch {
+  transform: scale(1.1);
+}
+
+/* Switch 容器样式覆盖 */
+.wx-switch-input {
+  width: 96rpx !important;
+  height: 52rpx !important;
+  border-radius: 999rpx !important;
+  border: 4rpx solid var(--foreground) !important;
+  background: var(--muted) !important;
+  box-shadow: 4rpx 4rpx 0rpx rgba(94, 78, 62, 0.15) !important;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+.wx-switch-input::before {
+  display: none !important;
+}
+
+.wx-switch-input::after {
+  width: 44rpx !important;
+  height: 44rpx !important;
+  border-radius: 50% !important;
+  background: var(--card) !important;
+  border: 3rpx solid var(--foreground) !important;
+  box-shadow: 2rpx 2rpx 0rpx rgba(94, 78, 62, 0.2) !important;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+/* Switch 开启状态 */
+.wx-switch-input.wx-switch-input-checked {
+  background: var(--color-peach-macaron) !important;
+  border-color: var(--foreground) !important;
+}
+
+.wx-switch-input.wx-switch-input-checked::after {
+  transform: translateX(44rpx) !important;
+}
+
+/* Switch 禁用状态 */
+.wx-switch-input[disabled] {
+  opacity: 0.5;
+}
+
+/* ===== 选择器弹窗 - macaron 风格 picker ===== */
+/* 需求 7.3: 将选择器控件转换为马卡龙风格 picker 组件 */
+.picker-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.picker-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(94, 78, 62, 0.7);
+}
+
+.picker-content {
+  position: relative;
+  width: 100%;
+  max-height: 70vh;
+  background: var(--card);
+  border-top: 6rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon) var(--radius-cartoon) 0 0;
+  overflow: hidden;
+}
+
+.picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32rpx 40rpx;
+  border-bottom: 3rpx solid rgba(94, 78, 62, 0.1);
+}
+
+.picker-cancel {
+  font-size: 28rpx;
+  font-weight: var(--font-weight-medium);
+  color: var(--foreground);
+  opacity: 0.6;
+  padding: 16rpx;
+  /* 确保最小触摸区域 88rpx × 88rpx */
+  min-width: 88rpx;
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.picker-cancel:active {
+  opacity: 1;
+}
+
+.picker-title {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.picker-confirm {
+  font-size: 28rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-peach-macaron);
+  padding: 16rpx;
+  /* 确保最小触摸区域 88rpx × 88rpx */
+  min-width: 88rpx;
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.picker-confirm:active {
+  opacity: 0.7;
+}
+
+.picker-body {
+  padding: 20rpx 40rpx 60rpx;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+/* 选项样式 - macaron 风格 */
+.picker-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 32rpx;
+  margin-bottom: 16rpx;
+  background: var(--input-background);
+  border: 4rpx solid var(--border);
+  border-radius: var(--radius-lg);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  /* 确保最小触摸区域 88rpx × 88rpx */
+  min-height: 88rpx;
+}
+
+.picker-option:last-child {
+  margin-bottom: 0;
+}
+
+.picker-option:active {
+  transform: scale(0.98);
+}
+
+.picker-option.active {
+  background: var(--color-peach-macaron);
+  border-color: var(--foreground);
+  box-shadow: 4rpx 4rpx 0rpx var(--foreground);
+}
+
+.option-text {
+  font-size: 28rpx;
+  font-weight: var(--font-weight-medium);
+  color: var(--foreground);
+}
+
+.option-check {
+  width: 40rpx;
+  height: 40rpx;
+  background: var(--foreground);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: var(--font-weight-bold);
+}
+
+.option-check-icon {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+/* 底部间距 */
+.bottom-spacer {
+  height: 64rpx;
+}
+
+/* ===== 响应式设计 ===== */
+@media (max-width: 375px) {
+  .settings-container {
+    padding: 30rpx;
+  }
+  
+  .item-icon-box {
+    width: 56rpx;
+    height: 56rpx;
+  }
+  
+  .item-icon-img {
+    width: 32rpx;
+    height: 32rpx;
+  }
+  
+  .item-label {
+    font-size: 26rpx;
+  }
+  
+  .item-desc {
+    font-size: 20rpx;
+  }
+}
+
+/* ===== 减少动画（可访问性）===== */
+@media (prefers-reduced-motion: reduce) {
+  .settings-card,
+  .settings-item,
+  .item-icon-box,
+  .item-arrow,
+  .macaron-switch,
+  .wx-switch-input,
+  .wx-switch-input::after,
+  .picker-option {
+    animation: none;
+    transition: none;
+  }
+}

@@ -1,0 +1,432 @@
+/* 定时任务编辑页面样式 - 马卡龙风格 */
+@import '/style/macaron-theme.wxss';
+
+/* 页面容器 */
+.task-edit-page {
+  min-height: 100vh;
+  background: var(--background);
+  padding: 30rpx;
+  padding-bottom: 180rpx;
+}
+
+/* 当弹窗打开时，禁止页面滚动 */
+.task-edit-page.modal-open {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* 表单容器 */
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 30rpx;
+}
+
+/* 表单区块 */
+.form-section {
+  padding: var(--spacing-md);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 3rpx solid var(--border);
+}
+
+.section-emoji {
+  font-size: 36rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+/* 表单项 */
+.form-item {
+  margin-bottom: 30rpx;
+}
+
+.form-item:last-child {
+  margin-bottom: 0;
+}
+
+.form-label {
+  display: block;
+  font-size: 28rpx;
+  font-weight: var(--font-weight-medium);
+  color: var(--foreground);
+  margin-bottom: 12rpx;
+}
+
+/* 马卡龙风格输入框 */
+.form-input-macaron {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 24rpx;
+  border: 4rpx solid var(--border);
+  border-radius: var(--radius-lg);
+  font-size: 28rpx;
+  background: var(--card);
+  color: var(--foreground);
+  box-sizing: border-box;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.form-input-macaron:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 6rpx rgba(255, 159, 67, 0.1);
+}
+
+.form-input-macaron.disabled {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+/* 马卡龙风格文本域 */
+.form-textarea-macaron {
+  width: 100%;
+  min-height: 160rpx;
+  padding: 20rpx 24rpx;
+  border: 4rpx solid var(--border);
+  border-radius: var(--radius-lg);
+  font-size: 28rpx;
+  background: var(--card);
+  color: var(--foreground);
+  box-sizing: border-box;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.form-textarea-macaron.disabled {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.form-hint {
+  display: block;
+  font-size: 24rpx;
+  color: var(--muted-foreground);
+  margin-top: 8rpx;
+  line-height: 1.5;
+}
+
+/* 触发类型选择器 */
+.trigger-type-selector {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.trigger-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30rpx 20rpx;
+  min-height: 88rpx;
+  background: var(--muted);
+  border: 4rpx solid var(--border);
+  border-radius: var(--radius-lg);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.trigger-option.active {
+  background: var(--color-peach-macaron);
+  border-color: var(--foreground);
+  box-shadow: var(--shadow-btn);
+  transform: translateY(-4rpx);
+}
+
+.trigger-option:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.option-icon {
+  font-size: 48rpx;
+  margin-bottom: 12rpx;
+  transition: transform 0.3s ease;
+}
+
+.trigger-option.active .option-icon {
+  transform: scale(1.1);
+}
+
+.option-text {
+  font-size: 28rpx;
+  color: var(--foreground);
+  font-weight: var(--font-weight-medium);
+  transition: color 0.3s ease;
+}
+
+.trigger-option.active .option-text {
+  font-weight: var(--font-weight-bold);
+}
+
+.trigger-type-hint {
+  padding: 20rpx;
+  background: var(--color-orange-light);
+  border-left: 6rpx solid var(--primary);
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  font-size: 26rpx;
+  color: var(--foreground);
+  line-height: 1.6;
+}
+
+/* Cron字段项 */
+.cron-field-item {
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  background: var(--color-orange-light);
+  border-radius: var(--radius-lg);
+  border: 4rpx solid var(--border);
+  min-height: 88rpx;
+  transition: all 0.3s;
+}
+
+.cron-field-item:active {
+  background: var(--color-yellow-macaron);
+  border-color: var(--primary);
+  transform: scale(0.98);
+}
+
+.field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.field-label {
+  font-size: 28rpx;
+  color: var(--foreground);
+  font-weight: var(--font-weight-medium);
+}
+
+.field-value {
+  font-size: 32rpx;
+  color: var(--primary);
+  font-weight: var(--font-weight-bold);
+  font-family: 'Courier New', monospace;
+}
+
+.field-hint {
+  font-size: 24rpx;
+  color: var(--muted-foreground);
+}
+
+/* 预览区域 */
+.cron-preview,
+.interval-preview {
+  margin-top: 20rpx;
+  padding: 20rpx;
+  background: var(--color-blue-macaron);
+  border-left: 6rpx solid var(--foreground);
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  transition: all 0.3s ease;
+}
+
+/* 有效的预览 */
+.cron-preview.valid {
+  background: var(--color-mint-macaron);
+}
+
+/* 无效的预览 */
+.cron-preview.invalid {
+  background: var(--color-pink-macaron);
+  animation: shake 0.5s;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5rpx); }
+  75% { transform: translateX(5rpx); }
+}
+
+.preview-label {
+  font-size: 26rpx;
+  color: var(--foreground);
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.preview-text {
+  font-size: 28rpx;
+  color: var(--foreground);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.6;
+}
+
+/* Picker显示区域 */
+.picker-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 88rpx;
+  padding: 0 24rpx;
+  border: 4rpx solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  transition: all 0.3s;
+}
+
+.picker-display:active {
+  border-color: var(--primary);
+  background: var(--color-orange-light);
+}
+
+.picker-text {
+  flex: 1;
+  font-size: 28rpx;
+  color: var(--foreground);
+}
+
+.picker-icon {
+  font-size: 32rpx;
+  margin-left: 12rpx;
+}
+
+/* 开关项 */
+.switch-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  min-height: 88rpx;
+}
+
+.switch-label-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.switch-item .form-label {
+  margin-bottom: 0;
+}
+
+.switch-item .form-hint {
+  margin-top: 0;
+}
+
+/* 马卡龙风格开关 */
+.macaron-switch {
+  transform: scale(1.1);
+}
+
+/* 操作按钮 */
+.action-buttons {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 20rpx;
+  padding: 20rpx 30rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  background: var(--card);
+  border-top: 3rpx solid var(--border);
+  box-shadow: 0 -8rpx 24rpx rgba(0, 0, 0, 0.05);
+}
+
+.btn-cancel,
+.btn-save {
+  flex: 1;
+  height: 96rpx;
+  font-size: 32rpx;
+}
+
+.btn-save.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* 加载状态 */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100rpx 0;
+  gap: 20rpx;
+}
+
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 6rpx solid var(--color-orange-light);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-state text {
+  font-size: 28rpx;
+  color: var(--muted-foreground);
+}
+
+/* Cron编辑器弹窗 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 40rpx;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 680rpx;
+  max-height: 90vh;
+  background: var(--card);
+  border-radius: var(--radius-cartoon);
+  border: 6rpx solid var(--foreground);
+  box-shadow: var(--shadow-cartoon);
+  overflow: visible;
+  box-sizing: border-box;
+  animation: slideUp 0.3s ease-out;
+  transform: translateY(0);
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(100rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 减少动画（可访问性） */
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner,
+  .cron-preview.invalid {
+    animation: none;
+  }
+  
+  .modal-content {
+    animation: none;
+  }
+}

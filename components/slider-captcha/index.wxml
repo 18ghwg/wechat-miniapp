@@ -1,0 +1,87 @@
+<!--components/slider-captcha/index.wxml-->
+<view class="slider-captcha-container" catchtouchmove="preventScroll">
+  <!-- 标题 -->
+  <view class="captcha-title">{{title}}</view>
+  
+  <!-- Canvas画布区域 -->
+  <view class="canvas-wrapper" catchtouchmove="preventScroll">
+    <!-- 背景画布 -->
+    <canvas 
+      type="2d" 
+      id="captcha-canvas" 
+      class="captcha-canvas"
+      style="{{bgStyle}}"
+    ></canvas>
+    
+    <!-- 拼图块画布（覆盖在背景上，跟随滑块移动） -->
+    <canvas 
+      type="2d" 
+      id="puzzle-canvas" 
+      class="puzzle-canvas"
+      style="{{puzzleStyle}}"
+    ></canvas>
+    
+    <!-- 加载提示 -->
+    <view class="loading-mask" wx:if="{{loading}}">
+      <view class="loading-text">加载中...</view>
+    </view>
+    
+    <!-- 验证成功提示 -->
+    <view class="success-mask" wx:if="{{verifySuccess}}">
+      <view class="success-icon">✓</view>
+      <view class="success-text">验证成功</view>
+    </view>
+    
+    <!-- 验证失败提示 -->
+    <view class="fail-mask" wx:if="{{verifyFail}}">
+      <view class="fail-icon">✗</view>
+      <view class="fail-text">验证失败，请重试</view>
+    </view>
+  </view>
+  
+  <!-- 滑块控制区域 -->
+  <view class="slider-wrapper" catchtouchmove="preventScroll">
+    <view class="slider-track {{verifySuccess ? 'success' : ''}} {{verifyFail ? 'fail' : ''}}">
+      <!-- 背景文字 -->
+      <view class="slider-text">{{sliderText}}</view>
+      
+      <!-- 滑块按钮 - Macaron 风格 -->
+      <view 
+        class="slider-button {{dragging ? 'dragging' : ''}} {{verifySuccess ? 'success' : ''}} {{verifyFail ? 'fail' : ''}}"
+        style="left: {{sliderX}}px;"
+        catchtouchstart="onSliderTouchStart"
+        catchtouchmove="onSliderTouchMove"
+        catchtouchend="onSliderTouchEnd"
+      >
+        <!-- 三条竖线装饰 - 匹配 Weixin 设计 -->
+        <view class="slider-icon" wx:if="{{!verifySuccess && !verifyFail}}">
+          <view class="slider-stripe"></view>
+          <view class="slider-stripe"></view>
+          <view class="slider-stripe"></view>
+        </view>
+        <view class="slider-icon success" wx:if="{{verifySuccess}}">✓</view>
+        <view class="slider-icon fail" wx:if="{{verifyFail}}">✗</view>
+      </view>
+      
+      <!-- 滑动进度条 -->
+      <view class="slider-progress" style="{{progressStyle}}"></view>
+    </view>
+  </view>
+  
+  <!-- 底部操作区域 - Macaron 风格 -->
+  <view class="captcha-footer">
+    <view class="refresh-btn" bindtap="onRefresh">
+      <!-- RefreshCw Icon SVG -->
+      <view class="refresh-icon">
+        <view class="icon-refresh">
+          <view class="refresh-circle"></view>
+          <view class="refresh-arrow"></view>
+        </view>
+      </view>
+      <text>刷新</text>
+    </view>
+    <text class="captcha-hint">拖拽滑块完成拼图验证身份</text>
+  </view>
+</view>
+
+

@@ -1,0 +1,201 @@
+/* Macaron 风格主题样式 */
+/* 基于 Weixin-main 项目的设计系统 */
+/* 完全匹配 Weixin-main/src/styles/theme.css */
+
+/* ===== CSS 变量定义 ===== */
+page {
+  /* 基础颜色 - 完全匹配 Weixin-main */
+  --background: #fef9f3;
+  --foreground: #5E4E3E;
+  --card: #ffffff;
+  --card-foreground: #5E4E3E;
+  --popover: #ffffff;
+  --popover-foreground: #5E4E3E;
+  --primary: #FF9F43;
+  --primary-foreground: #ffffff;
+  --secondary: #FFEBCC;
+  --secondary-foreground: #5E4E3E;
+  --muted: #f3f3f5;
+  --muted-foreground: #717182;
+  --accent: #FF9F43;
+  --accent-foreground: #ffffff;
+  --destructive: #FF4D4D;
+  --destructive-foreground: #ffffff;
+  --border: rgba(94, 78, 62, 0.15);
+  --input: transparent;
+  --input-background: #f3f3f5;
+  
+  /* Macaron 配色方案 - 完全匹配 Weixin-main */
+  --color-pink-macaron: #FFB3BA;
+  --color-peach-macaron: #FF9F43;
+  --color-mint-macaron: #B9FBC0;
+  --color-lavender-macaron: #E0BBE4;
+  --color-blue-macaron: #98F5E1;
+  --color-yellow-macaron: #FFD93D;
+  --color-orange-light: #FFEBCC;
+  
+  /* 字体和排版 */
+  --font-family: 'M PLUS Rounded 1c', 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  --font-size-base: 32rpx;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 800;
+  
+  /* 间距和圆角 - 匹配 Weixin-main (1px = 2rpx) */
+  --radius-cartoon: 40rpx; /* 2rem = 32px = 64rpx, 但小程序适配为 40rpx */
+  --radius-lg: 30rpx; /* 1.5rem = 24px = 48rpx, 适配为 30rpx */
+  --spacing-xs: 10rpx;
+  --spacing-sm: 20rpx;
+  --spacing-md: 30rpx;
+  --spacing-lg: 40rpx;
+  
+  /* 阴影 - 完全匹配 Weixin-main (3px = 6rpx, 4px = 8rpx, 6px = 12rpx) */
+  --shadow-cartoon: 12rpx 12rpx 0rpx #5E4E3E; /* 6px 6px 0px */
+  --shadow-btn: 8rpx 8rpx 0rpx #5E4E3E; /* 4px 4px 0px */
+  --shadow-soft: 0 20rpx 50rpx -10rpx rgba(255, 159, 67, 0.2);
+}
+
+/* ===== Cartoon Card 组件 ===== */
+.cartoon-card {
+  background: var(--card);
+  border: 6rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon);
+  box-shadow: var(--shadow-cartoon);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  padding: var(--spacing-md);
+}
+
+.cartoon-card:active {
+  transform: translate(6rpx, 6rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+/* ===== Macaron Button 组件 ===== */
+.macaron-btn {
+  border: 6rpx solid var(--foreground);
+  border-radius: 999rpx;
+  box-shadow: var(--shadow-btn);
+  font-weight: var(--font-weight-bold);
+  transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  padding: 20rpx 40rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+}
+
+.macaron-btn::after {
+  border: none;
+}
+
+.macaron-btn:active {
+  transform: translate(4rpx, 4rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+/* Macaron Button 颜色变体 */
+.macaron-btn-pink { 
+  background-color: var(--color-pink-macaron);
+  color: var(--foreground);
+}
+
+.macaron-btn-peach { 
+  background-color: var(--color-peach-macaron);
+  color: var(--foreground);
+}
+
+.macaron-btn-mint { 
+  background-color: var(--color-mint-macaron);
+  color: var(--foreground);
+}
+
+.macaron-btn-lavender { 
+  background-color: var(--color-lavender-macaron);
+  color: var(--foreground);
+}
+
+.macaron-btn-yellow { 
+  background-color: var(--color-yellow-macaron);
+  color: var(--foreground);
+}
+
+.macaron-btn-blue { 
+  background-color: var(--color-blue-macaron);
+  color: var(--foreground);
+}
+
+/* ===== Form Input 组件 ===== */
+.form-input-macaron {
+  padding: 24rpx 30rpx;
+  border: 4rpx solid var(--border);
+  border-radius: var(--radius-lg);
+  font-size: 28rpx;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  background: var(--card);
+  color: var(--foreground);
+}
+
+.form-input-macaron:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 6rpx rgba(255, 159, 67, 0.1);
+  transform: translateY(-4rpx);
+}
+
+/* ===== Status Badge 组件 ===== */
+.status-badge {
+  padding: 12rpx 24rpx;
+  border-radius: 40rpx;
+  font-size: 24rpx;
+  font-weight: var(--font-weight-medium);
+  display: inline-flex;
+  align-items: center;
+  border: 3rpx solid var(--foreground);
+}
+
+.status-active {
+  background: var(--color-mint-macaron);
+  color: var(--foreground);
+}
+
+.status-inactive {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+/* ===== 响应式网格布局 ===== */
+.grid-responsive {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300rpx, 1fr));
+  gap: var(--spacing-md);
+}
+
+/* ===== 动画效果 ===== */
+.hover-lift {
+  transition: transform 0.2s ease;
+}
+
+.hover-lift:active {
+  transform: translateY(-4rpx);
+}
+
+/* ===== 辅助类 ===== */
+.bg-macaron-pink { background-color: var(--color-pink-macaron); }
+.bg-macaron-peach { background-color: var(--color-peach-macaron); }
+.bg-macaron-mint { background-color: var(--color-mint-macaron); }
+.bg-macaron-lavender { background-color: var(--color-lavender-macaron); }
+.bg-macaron-yellow { background-color: var(--color-yellow-macaron); }
+.bg-macaron-blue { background-color: var(--color-blue-macaron); }
+
+.text-foreground { color: var(--foreground); }
+.text-primary { color: var(--primary); }
+
+/* ===== 减少动画（可访问性） ===== */
+@media (prefers-reduced-motion: reduce) {
+  .cartoon-card,
+  .macaron-btn,
+  .form-input-macaron,
+  .hover-lift {
+    animation: none;
+    transition: none;
+  }
+}

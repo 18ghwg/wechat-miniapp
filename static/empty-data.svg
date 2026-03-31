@@ -1,0 +1,8 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="120" height="120" fill="#F5F5F5" rx="8"/>
+<path d="M40 75H80V80H40V75Z" fill="#E0E0E0"/>
+<path d="M50 65H90V70H50V65Z" fill="#E0E0E0"/>
+<path d="M35 55H85V60H35V55Z" fill="#E0E0E0"/>
+<circle cx="60" cy="35" r="10" fill="#E0E0E0"/>
+<text x="60" y="95" text-anchor="middle" fill="#999999" font-size="12" font-family="Arial">暂无数据</text>
+</svg>

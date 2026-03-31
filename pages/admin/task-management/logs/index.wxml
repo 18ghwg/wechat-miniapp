@@ -1,0 +1,115 @@
+<!-- 任务日志查看页面 - 终端风格 + 马卡龙主题 -->
+<view class="terminal-page">
+  <!-- 终端标题栏 -->
+  <view class="terminal-header">
+    <view class="terminal-buttons">
+      <view class="btn-close"></view>
+      <view class="btn-minimize"></view>
+      <view class="btn-maximize"></view>
+    </view>
+    <view class="terminal-title">
+      <text>{{taskName}} - 执行日志</text>
+    </view>
+    <view class="terminal-controls">
+      <view class="control-btn {{autoRefresh ? 'active' : ''}}" bindtap="toggleAutoRefresh">
+        <text>{{autoRefresh ? '⏸' : '▶'}}</text>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 工具栏 - 马卡龙风格 -->
+  <view class="toolbar">
+    <picker mode="selector" range="{{availableDates}}" range-key="display" value="{{selectedDateIndex}}" bindchange="onDateChange">
+      <view class="tool-item macaron-tool">
+        <text class="tool-icon">📅</text>
+        <text class="tool-text">{{currentDate || '选择日期'}}</text>
+      </view>
+    </picker>
+    
+    <picker mode="selector" range="{{levelOptions}}" value="{{selectedLevelIndex}}" bindchange="onLevelChange">
+      <view class="tool-item macaron-tool">
+        <text class="tool-icon">🎯</text>
+        <text class="tool-text">{{selectedLevelText}}</text>
+      </view>
+    </picker>
+    
+    <view class="tool-item search-box macaron-tool">
+      <text class="tool-icon">🔍</text>
+      <input 
+        class="search-input" 
+        placeholder="搜索..." 
+        value="{{keyword}}"
+        bindinput="onKeywordInput"
+        bindconfirm="onSearch"
+      />
+    </view>
+    
+    <view class="tool-item macaron-tool clear-btn" bindtap="onClear">
+      <text class="tool-icon">🗑</text>
+    </view>
+  </view>
+  
+  <!-- 终端内容区 -->
+  <scroll-view 
+    class="terminal-body" 
+    scroll-y="true" 
+    scroll-into-view="{{scrollToId}}"
+    scroll-with-animation="{{true}}"
+    enhanced="{{true}}"
+    show-scrollbar="{{false}}"
+  >
+    <!-- 欢迎信息 -->
+    <view class="log-line system-line" wx:if="{{logs.length === 0 && !loading}}">
+      <text class="prompt">$</text>
+      <text class="log-text">等待日志数据...</text>
+    </view>
+    
+    <!-- 日志行 -->
+    <view 
+      class="log-line {{item.level}}" 
+      wx:for="{{logs}}" 
+      wx:key="index"
+      id="log-{{index}}"
+    >
+      <text class="log-timestamp">{{item.shortTime}}</text>
+      <view class="log-level-tag {{item.level}}">
+        <text>{{item.levelTag}}</text>
+      </view>
+      <text class="log-text" user-select="true">{{item.message}}</text>
+    </view>
+    
+    <!-- 加载更多 -->
+    <view class="log-line system-line" wx:if="{{loading}}">
+      <text class="prompt">$</text>
+      <text class="log-text blink">加载中...</text>
+    </view>
+    
+    <!-- 底部锚点 -->
+    <view id="log-bottom"></view>
+  </scroll-view>
+  
+  <!-- 状态栏 - 马卡龙风格 -->
+  <view class="status-bar">
+    <view class="status-left">
+      <view class="status-badge-item">
+        <text class="status-item">📊 {{pagination.total}} 条</text>
+      </view>
+      <view class="status-badge-item active" wx:if="{{autoRefresh}}">
+        <text class="status-item">🔄 自动刷新</text>
+      </view>
+    </view>
+    <view class="status-right">
+      <text class="status-item" wx:if="{{pagination.pages > 1}}">
+        第 {{pagination.page}}/{{pagination.pages}} 页
+      </text>
+      <view class="page-btns" wx:if="{{pagination.pages > 1}}">
+        <view class="page-btn {{pagination.has_prev ? '' : 'disabled'}}" bindtap="onPrevPage">
+          <text>◀</text>
+        </view>
+        <view class="page-btn {{pagination.has_next ? '' : 'disabled'}}" bindtap="onNextPage">
+          <text>▶</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

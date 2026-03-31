@@ -1,0 +1,252 @@
+/* 定时任务管理列表页面样式 - 马卡龙风格 */
+@import '/style/macaron-theme.wxss';
+
+/* 页面容器 */
+.task-management-page {
+  min-height: 100vh;
+  background: var(--background);
+  padding: 30rpx;
+  padding-bottom: 100rpx;
+}
+
+/* 页面标题 */
+.page-header {
+  margin-bottom: 30rpx;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.header-icon {
+  width: 64rpx;
+  height: 64rpx;
+}
+
+.header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.page-title {
+  font-size: 48rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.page-subtitle {
+  font-size: 28rpx;
+  color: var(--muted-foreground);
+}
+
+/* 任务列表 */
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+/* 任务卡片 */
+.task-card {
+  padding: var(--spacing-md);
+}
+
+/* 任务头部 */
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20rpx;
+}
+
+.task-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.task-name {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+/* 状态徽章增强 */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  align-self: flex-start;
+}
+
+.status-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-active .status-dot {
+  background: #52c41a;
+  animation: pulse 2s infinite;
+}
+
+.status-inactive .status-dot {
+  background: var(--muted-foreground);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.2); }
+}
+
+/* 马卡龙风格开关 */
+.macaron-switch {
+  transform: scale(1.1);
+}
+
+/* 任务描述 */
+.task-description {
+  margin-bottom: 20rpx;
+  padding: 16rpx 20rpx;
+  background: var(--color-orange-light);
+  border-radius: var(--radius-lg);
+  border: 3rpx solid var(--foreground);
+}
+
+.task-description text {
+  font-size: 26rpx;
+  color: var(--foreground);
+  line-height: 1.6;
+}
+
+/* 任务详情 */
+.task-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  font-size: 26rpx;
+}
+
+.detail-icon {
+  width: 32rpx;
+  height: 32rpx;
+  flex-shrink: 0;
+}
+
+.detail-label {
+  color: var(--muted-foreground);
+  min-width: 120rpx;
+}
+
+.detail-value {
+  color: var(--foreground);
+  flex: 1;
+  font-weight: var(--font-weight-medium);
+}
+
+/* 操作按钮区域 */
+.task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  padding-top: 20rpx;
+  border-top: 3rpx solid var(--border);
+}
+
+.action-btn {
+  flex: 1;
+  min-width: 140rpx;
+  min-height: 88rpx;
+  padding: 16rpx 20rpx;
+  font-size: 24rpx;
+}
+
+.action-btn text {
+  font-size: 24rpx;
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80rpx 40rpx;
+  text-align: center;
+}
+
+.empty-emoji {
+  font-size: 120rpx;
+  margin-bottom: 30rpx;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-bottom: 12rpx;
+}
+
+.empty-hint {
+  font-size: 26rpx;
+  color: var(--muted-foreground);
+}
+
+/* 加载状态 */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100rpx 0;
+  gap: 20rpx;
+}
+
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 6rpx solid var(--color-orange-light);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-state text {
+  font-size: 28rpx;
+  color: var(--muted-foreground);
+}
+
+/* 响应式适配 - 小屏设备 */
+@media screen and (max-width: 375px) {
+  .task-actions {
+    flex-direction: column;
+  }
+  
+  .action-btn {
+    width: 100%;
+  }
+}
+
+/* 减少动画（可访问性） */
+@media (prefers-reduced-motion: reduce) {
+  .status-active .status-dot,
+  .loading-spinner {
+    animation: none;
+  }
+}

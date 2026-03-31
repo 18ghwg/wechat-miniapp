@@ -1,0 +1,51 @@
+<!-- 天气设置 - 统一入口页面 - Macaron Theme -->
+<view class="weather-settings-container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <view class="header-icon-wrapper">
+      <image class="header-icon" src="/assets/icons/cloud-sun.png" mode="aspectFit" />
+    </view>
+    <text class="page-title">天气设置</text>
+    <text class="page-subtitle">管理天气通知和预警相关设置</text>
+  </view>
+
+  <!-- 设置项列表 -->
+  <view class="settings-list">
+    <view 
+      wx:for="{{settingItems}}" 
+      wx:key="id"
+      class="cartoon-card setting-item"
+      bindtap="goToSetting"
+      data-item="{{item}}"
+    >
+      <view class="item-icon-wrapper {{item.id === 'notification' ? 'icon-mint' : 'icon-lavender'}}">
+        <image class="item-icon" src="{{item.iconPath}}" mode="aspectFit" />
+      </view>
+      <view class="item-content">
+        <text class="item-title">{{item.title}}</text>
+        <text class="item-desc">{{item.desc}}</text>
+      </view>
+      <view class="item-arrow">
+        <image class="arrow-icon" src="/assets/icons/chevron-left.png" mode="aspectFit" />
+      </view>
+    </view>
+  </view>
+
+  <!-- 说明信息 -->
+  <view class="cartoon-card info-section">
+    <view class="info-header">
+      <image class="info-icon" src="/assets/icons/alert-circle.png" mode="aspectFit" />
+      <text class="info-title">功能说明</text>
+    </view>
+    <view class="info-content">
+      <view class="info-item">
+        <view class="info-dot mint-dot"></view>
+        <text class="info-text">天气通知设置：控制天气预报和预警消息的发送</text>
+      </view>
+      <view class="info-item">
+        <view class="info-dot lavender-dot"></view>
+        <text class="info-text">天气严重程度：自定义各种天气类型的预警级别</text>
+      </view>
+    </view>
+  </view>
+</view>

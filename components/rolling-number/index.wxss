@@ -1,0 +1,5 @@
+/* rolling-number 组件 - 继承外部样式 */
+.rolling-value {
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  display: inline;
+}

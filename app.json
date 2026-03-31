@@ -1,0 +1,86 @@
+{
+  "pages": [
+    "pages/attendance/index",
+    "pages/electric/index",
+    "pages/login/index", 
+    "pages/electric/query/index",
+    "pages/electric/history/index",
+    "pages/electric/account-manage/index",
+    "pages/attendance/history/index",
+    "pages/attendance/missing-checkin/index",
+    "pages/attendance/netdisk/index",
+    "pages/user/bind/index",
+    "pages/user/settings/index",
+    "pages/usercenter/index",
+    "pages/usercenter/usage-history/index",
+    "pages/terms/index",
+    "pages/privacy/index",
+    "pages/announcement/manage",
+    "pages/feedback/index"
+  ],
+  "subpackages": [
+    {
+      "root": "pages/admin",
+      "name": "admin",
+      "pages": [
+        "miniprogram-users/index",
+        "notification-group/index",
+        "df-notification-settings/index",
+        "weather-settings/index",
+        "weather-notification-settings/index",
+        "weather-severity-settings/index",
+        "task-management/list/index",
+        "task-management/edit/index",
+        "task-management/logs/index",
+        "usage-records/index"
+      ]
+    }
+  ],
+  "preloadRule": {
+    "pages/attendance/index": {
+      "network": "all",
+      "packages": ["admin"]
+    }
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#5E4E3E",
+    "selectedColor": "#5E4E3E",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/attendance/index", 
+        "text": "考勤"
+      },
+      {
+        "pagePath": "pages/electric/index",
+        "text": "电费"
+      },
+      {
+        "pagePath": "pages/usercenter/index",
+        "text": "我的"
+      }
+    ]
+  },
+  "requiredPrivateInfos": [],
+  "lazyCodeLoading": "requiredComponents",
+  "usingComponents": {},
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#007AFF",
+    "navigationBarTitleText": "无感tool",
+    "navigationBarTextStyle": "white",
+    "pageOrientation": "portrait",
+    "restartStrategy": "homePage"
+  },
+  "sitemapLocation": "sitemap.json",
+  "permission": {},
+  "networkTimeout": {
+    "request": 30000,
+    "downloadFile": 30000,
+    "connectSocket": 30000,
+    "uploadFile": 30000
+  },
+  "debug": true
+}

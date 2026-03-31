@@ -1,0 +1,605 @@
+/* 电费通知设置页面样式 - Macaron Theme */
+@import '/style/macaron-theme.wxss';
+
+.container {
+  min-height: 100vh;
+  background-color: var(--background);
+  padding: 0 30rpx 30rpx;
+  box-sizing: border-box;
+}
+
+/* 页面标题 */
+.page-header {
+  padding: 40rpx 0 30rpx;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.header-icon-wrapper {
+  width: 100rpx;
+  height: 100rpx;
+  background: var(--color-yellow-macaron);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20rpx;
+  border: 4rpx solid var(--foreground);
+  box-shadow: 6rpx 6rpx 0rpx var(--foreground);
+}
+
+.header-emoji {
+  font-size: 48rpx;
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12rpx;
+  gap: 16rpx;
+}
+
+.title-text {
+  font-size: 40rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.title-badge {
+  background: var(--color-yellow-macaron);
+  color: var(--foreground);
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  font-weight: var(--font-weight-bold);
+  border: 3rpx solid var(--foreground);
+}
+
+.page-subtitle {
+  font-size: 26rpx;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+
+/* 加载状态 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 20rpx;
+}
+
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 6rpx solid var(--color-peach-macaron);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: var(--muted-foreground);
+}
+
+/* 设置容器 */
+.settings-container {
+  padding-bottom: 40rpx;
+}
+
+/* 设置区块 */
+.setting-section {
+  margin-bottom: 30rpx;
+}
+
+.main-section .cartoon-card {
+  border-color: var(--color-peach-macaron);
+}
+
+/* 区块标题 */
+.section-header {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-md);
+  background: var(--card);
+  border: 6rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon);
+  box-shadow: var(--shadow-cartoon);
+  margin-bottom: 20rpx;
+}
+
+.section-header:active {
+  transform: translate(6rpx, 6rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+.section-icon-wrapper {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+  border: 3rpx solid var(--foreground);
+  box-shadow: 4rpx 4rpx 0rpx var(--foreground);
+}
+
+.icon-peach { background: var(--color-peach-macaron); }
+.icon-mint { background: var(--color-mint-macaron); }
+.icon-pink { background: var(--color-pink-macaron); }
+.icon-lavender { background: var(--color-lavender-macaron); }
+.icon-yellow { background: var(--color-yellow-macaron); }
+.icon-blue { background: var(--color-blue-macaron); }
+
+.section-icon {
+  font-size: 32rpx;
+}
+
+.section-title-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 6rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.section-desc {
+  font-size: 24rpx;
+  color: var(--muted-foreground);
+}
+
+.section-actions {
+  display: flex;
+  gap: 12rpx;
+}
+
+.action-btn {
+  background-color: var(--color-blue-macaron);
+  color: var(--foreground);
+  border: 3rpx solid var(--foreground);
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  font-weight: var(--font-weight-bold);
+  padding: 12rpx 20rpx;
+  box-shadow: 4rpx 4rpx 0rpx var(--foreground);
+  min-height: 56rpx;
+  line-height: 1;
+}
+
+.action-btn::after {
+  border: none;
+}
+
+.action-btn:active {
+  transform: translate(2rpx, 2rpx);
+  box-shadow: 2rpx 2rpx 0rpx var(--foreground);
+}
+
+/* 设置项列表 */
+.setting-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  background: var(--card);
+  border: 4rpx solid var(--border);
+  border-radius: var(--radius-lg);
+  min-height: 88rpx;
+  box-sizing: border-box;
+}
+
+.setting-item:active {
+  background: var(--color-orange-light);
+  border-color: var(--color-peach-macaron);
+}
+
+.main-setting {
+  background: var(--color-orange-light);
+  border: 6rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon);
+  box-shadow: var(--shadow-cartoon);
+}
+
+.main-setting:active {
+  transform: translate(6rpx, 6rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+.setting-info {
+  flex: 1;
+  margin-right: 30rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.setting-name {
+  font-size: 30rpx;
+  color: var(--foreground);
+  font-weight: var(--font-weight-bold);
+  display: block;
+}
+
+.setting-desc {
+  font-size: 24rpx;
+  color: var(--muted-foreground);
+  line-height: 1.4;
+}
+
+/* 马卡龙风格 Switch */
+.setting-switch {
+  transform: scale(1.1);
+}
+
+.main-switch {
+  transform: scale(1.3);
+}
+
+/* 高亮项样式 */
+.highlight-item {
+  background: var(--color-orange-light);
+  border-color: var(--color-peach-macaron);
+}
+
+/* 提示信息 */
+.tip-section {
+  margin-top: 20rpx;
+  padding: var(--spacing-md);
+  background: var(--color-yellow-macaron);
+  border: 4rpx solid var(--foreground);
+  border-radius: var(--radius-lg);
+}
+
+.tip-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+}
+
+.tip-icon {
+  font-size: 32rpx;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.tip-text {
+  font-size: 26rpx;
+  color: var(--foreground);
+  line-height: 1.5;
+  flex: 1;
+}
+
+.tip-text-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  flex: 1;
+}
+
+.tip-text-warning {
+  font-size: 24rpx;
+  color: var(--foreground);
+  line-height: 1.5;
+  margin-top: 8rpx;
+  padding: 12rpx;
+  background: var(--color-pink-macaron);
+  border-radius: 12rpx;
+  border: 2rpx solid var(--foreground);
+}
+
+.chart-tip {
+  background: var(--color-blue-macaron);
+}
+
+.billing-mode-tip {
+  background: var(--color-mint-macaron);
+}
+
+.arrears-tip {
+  background: var(--color-peach-macaron);
+}
+
+/* 电费统计模式设置 */
+.billing-mode-section {
+  padding: var(--spacing-md);
+  background: var(--card);
+  border: 4rpx solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.billing-mode-description {
+  margin-bottom: 24rpx;
+}
+
+.mode-desc-title {
+  font-size: 28rpx;
+  color: var(--muted-foreground);
+  font-weight: var(--font-weight-medium);
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.radio-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 24rpx;
+  background: var(--muted);
+  border-radius: var(--radius-lg);
+  border: 3rpx solid var(--border);
+  min-height: 88rpx;
+  box-sizing: border-box;
+}
+
+.radio-item:active {
+  background: var(--color-orange-light);
+}
+
+.radio-item-active {
+  background: var(--color-orange-light);
+  border-color: var(--color-peach-macaron);
+  border-width: 4rpx;
+}
+
+.radio-item radio {
+  margin-right: 16rpx;
+  margin-top: 4rpx;
+}
+
+.radio-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.radio-label {
+  font-size: 28rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.radio-desc {
+  font-size: 24rpx;
+  color: var(--muted-foreground);
+  line-height: 1.4;
+}
+
+/* 欠费通知输入框样式 */
+.input-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: var(--spacing-md);
+  background: var(--card);
+  border: 4rpx solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.input-label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16rpx;
+  gap: 12rpx;
+}
+
+.label-icon {
+  font-size: 28rpx;
+}
+
+.label-text {
+  font-size: 28rpx;
+  color: var(--foreground);
+  font-weight: var(--font-weight-medium);
+}
+
+.input-field {
+  padding: 24rpx 30rpx;
+  border: 4rpx solid var(--border);
+  border-radius: var(--radius-lg);
+  font-size: 28rpx;
+  background: var(--card);
+  color: var(--foreground);
+  min-height: 88rpx;
+  box-sizing: border-box;
+}
+
+.input-field:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 6rpx rgba(255, 159, 67, 0.1);
+}
+
+/* 操作按钮 */
+.action-section {
+  margin: 40rpx 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.save-btn {
+  background: var(--color-peach-macaron);
+  color: var(--foreground);
+  border: 6rpx solid var(--foreground);
+  border-radius: 999rpx;
+  height: 88rpx;
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  box-shadow: var(--shadow-btn);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.save-btn::after {
+  border: none;
+}
+
+.save-btn:active {
+  transform: translate(4rpx, 4rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+.reset-btn {
+  background: var(--card);
+  color: var(--foreground);
+  border: 4rpx solid var(--foreground);
+  border-radius: 999rpx;
+  height: 88rpx;
+  font-size: 28rpx;
+  font-weight: var(--font-weight-medium);
+  box-shadow: 6rpx 6rpx 0rpx var(--foreground);
+}
+
+.reset-btn::after {
+  border: none;
+}
+
+.reset-btn:active {
+  transform: translate(3rpx, 3rpx);
+  box-shadow: 3rpx 3rpx 0rpx var(--foreground);
+}
+
+/* 帮助信息 */
+.help-section {
+  display: flex;
+  justify-content: center;
+  margin: 30rpx 0;
+}
+
+.help-btn {
+  background: var(--color-lavender-macaron);
+  color: var(--foreground);
+  border: 4rpx solid var(--foreground);
+  border-radius: 999rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16rpx 32rpx;
+  gap: 12rpx;
+  box-shadow: 4rpx 4rpx 0rpx var(--foreground);
+  min-height: 88rpx;
+}
+
+.help-btn::after {
+  border: none;
+}
+
+.help-btn:active {
+  transform: translate(2rpx, 2rpx);
+  box-shadow: 2rpx 2rpx 0rpx var(--foreground);
+}
+
+.help-icon {
+  font-size: 28rpx;
+}
+
+.help-text {
+  font-size: 26rpx;
+  font-weight: var(--font-weight-bold);
+}
+
+/* 测试模式提示 */
+.test-mode-tip {
+  margin-top: 30rpx;
+  padding: 24rpx;
+  background: var(--color-yellow-macaron);
+  border: 4rpx dashed var(--foreground);
+  border-radius: var(--radius-lg);
+}
+
+.test-tip-content {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.test-tip-icon {
+  font-size: 32rpx;
+}
+
+.test-tip-text {
+  font-size: 26rpx;
+  color: var(--foreground);
+  line-height: 1.4;
+  flex: 1;
+  font-weight: var(--font-weight-medium);
+}
+
+/* 响应式设计 */
+@media screen and (max-width: 360px) {
+  .container {
+    padding: 0 20rpx 20rpx;
+  }
+  
+  .title-text {
+    font-size: 36rpx;
+  }
+  
+  .setting-item {
+    padding: 24rpx;
+  }
+  
+  .setting-name {
+    font-size: 28rpx;
+  }
+  
+  .setting-desc {
+    font-size: 22rpx;
+  }
+
+  .radio-item {
+    padding: 20rpx;
+  }
+
+  .radio-label {
+    font-size: 26rpx;
+  }
+
+  .radio-desc {
+    font-size: 22rpx;
+  }
+}
+
+/* 减少动画（可访问性） */
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation: none;
+  }
+  
+  .setting-item,
+  .section-header,
+  .main-setting,
+  .action-btn,
+  .save-btn,
+  .reset-btn,
+  .help-btn {
+    transition: none;
+  }
+}

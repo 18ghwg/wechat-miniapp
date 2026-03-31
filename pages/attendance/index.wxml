@@ -1,0 +1,520 @@
+<!--考勤管理页面 - 完全匹配 AttendancePage.tsx 设计-->
+<view class="attendance-container page-enter {{pageAnimationClass}}">
+  <!-- ⭐ 游客模式横幅提示 -->
+  <guest-banner 
+    show="{{isGuest}}"
+    message="体验模式：当前显示演示数据，登录后可查看真实考勤"
+    showLoginBtn="{{true}}"
+  />
+
+  <!-- 显示数据（包括游客模式和正常模式） -->
+  <view class="content-wrapper">
+    <!-- Header - 匹配 AttendancePage 设计 -->
+    <view class="page-header {{cardAnimationClass}}">
+      <view class="header-left">
+        <view class="greeting-line">
+          <text class="greeting-text">{{greetingText}}，{{currentUser.real_name || currentUser.nickname || '用户'}}</text>
+          <image class="header-icon" src="{{greetingIcon}}" mode="aspectFit"/>
+        </view>
+        <text class="date-text">{{formattedDate}}</text>
+      </view>
+      <view class="notification-btn" bindtap="onNotificationTap">
+        <image class="notif-icon" src="/assets/icons/bell.png" mode="aspectFit"/>
+        <view class="notification-badge" wx:if="{{hasNotification}}"></view>
+      </view>
+    </view>
+
+    <!-- Hero Clock-in Card (Orange Style) - 完全匹配设计 -->
+    <view class="hero-card {{cardAnimationClass}} card-enter-delay-1">
+      <view class="hero-bg-circle hero-bg-circle-1"></view>
+      <view class="hero-bg-circle hero-bg-circle-2"></view>
+      
+      <view class="clock-display">{{currentTime}}</view>
+      <view class="clock-label">
+        <image class="clock-icon" src="/assets/icons/clock.png" mode="aspectFit"/>
+        <text class="clock-text">当前系统时间</text>
+      </view>
+
+      <!-- 大圆形打卡按钮 -->
+      <view class="checkin-button-wrapper">
+        <view class="checkin-button" bindtap="onOpenCheckInModal">
+          <view class="checkin-icon-circle">
+            <text class="plus-icon">+</text>
+          </view>
+          <text class="checkin-text">考勤打卡</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 漏打卡提醒横幅 - 匹配 Figma 设计 -->
+    <view class="missed-reminder-banner {{cardAnimationClass}} card-enter-delay-2" wx:if="{{showMissedReminder && missedDays.length > 0}}" bindtap="goToMissingCheckin">
+      <view class="missed-reminder-left">
+        <view class="missed-reminder-icon-box">
+          <image class="missed-reminder-icon" src="/assets/icons/alert-circle.png" mode="aspectFit"/>
+        </view>
+        <view class="missed-reminder-text">
+          <text class="missed-reminder-title">发现本月有 {{missedDays.length}} 天漏打卡！</text>
+          <text class="missed-reminder-desc">点击这里，立即前往批量补交记录</text>
+        </view>
+      </view>
+      <text class="missed-reminder-arrow">›</text>
+    </view>
+
+    <!-- Calendar View - 匹配设计 -->
+    <view class="calendar-section {{cardAnimationClass}} card-enter-delay-3">
+      <view class="section-header-with-icon">
+        <image class="section-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
+        <text class="section-title">考勤日历</text>
+      </view>
+      <view class="calendar-card">
+        <!-- 月份选择器 -->
+        <view class="month-selector">
+          <view class="month-btn" bindtap="changeMonth" data-direction="prev">‹</view>
+          <text class="month-text">{{calendarYear}}年{{calendarMonth}}月</text>
+          <view class="month-btn" bindtap="changeMonth" data-direction="next">›</view>
+        </view>
+
+        <!-- 星期标题 -->
+        <view class="calendar-weekdays">
+          <text class="weekday">日</text>
+          <text class="weekday">一</text>
+          <text class="weekday">二</text>
+          <text class="weekday">三</text>
+          <text class="weekday">四</text>
+          <text class="weekday">五</text>
+          <text class="weekday">六</text>
+        </view>
+
+        <!-- 日历天数 -->
+        <view class="calendar-days">
+          <view
+            wx:for="{{calendarDays}}"
+            wx:key="index"
+            class="calendar-day {{item.isEmpty ? 'empty' : ''}} {{item.isToday ? 'today' : ''}} {{item.isMissed ? 'missed' : ''}} {{item.isWeekend && !item.hasAttendance && !item.isMissed && !item.isToday ? 'weekend' : ''}} type-{{item.attendanceType}}"
+            bindtap="onCalendarDayTap"
+            data-date="{{item.date}}"
+            data-is-missed="{{item.isMissed}}"
+          >
+            <text class="day-number" wx:if="{{!item.isEmpty}}">{{item.day}}</text>
+            <!-- 公司上班 -->
+            <image class="day-status-icon" wx:if="{{item.hasAttendance && item.attendanceType === 'office'}}" src="/assets/icons/check-circle.png" mode="aspectFit"/>
+            <!-- 国内出差 -->
+            <image class="day-status-icon" wx:elif="{{item.hasAttendance && item.attendanceType === 'domestic'}}" src="/assets/icons/map-pin.png" mode="aspectFit"/>
+            <!-- 国外出差 -->
+            <image class="day-status-icon" wx:elif="{{item.hasAttendance && item.attendanceType === 'international'}}" src="/assets/icons/plane.png" mode="aspectFit"/>
+            <!-- 休息 -->
+            <image class="day-status-icon" wx:elif="{{item.hasAttendance && item.attendanceType === 'rest'}}" src="/assets/icons/coffee.png" mode="aspectFit"/>
+            <!-- 调休 -->
+            <image class="day-status-icon" wx:elif="{{item.hasAttendance && item.attendanceType === 'compensatory'}}" src="/assets/icons/calendar.png" mode="aspectFit"/>
+            <!-- 缺卡 -->
+            <image class="day-status-icon" wx:elif="{{item.isMissed}}" src="/assets/icons/alert-circle.png" mode="aspectFit"/>
+          </view>
+        </view>
+
+        <!-- 图例 - 匹配网页5种类型 -->
+        <view class="calendar-legend">
+          <view class="legend-item">
+            <view class="legend-box legend-office">
+              <image class="legend-icon" src="/assets/icons/check-circle.png" mode="aspectFit"/>
+            </view>
+            <text class="legend-text">公司</text>
+          </view>
+          <view class="legend-item">
+            <view class="legend-box legend-domestic">
+              <image class="legend-icon" src="/assets/icons/map-pin.png" mode="aspectFit"/>
+            </view>
+            <text class="legend-text">国内出差</text>
+          </view>
+          <view class="legend-item">
+            <view class="legend-box legend-international">
+              <image class="legend-icon" src="/assets/icons/plane.png" mode="aspectFit"/>
+            </view>
+            <text class="legend-text">国外出差</text>
+          </view>
+          <view class="legend-item">
+            <view class="legend-box legend-rest">
+              <image class="legend-icon" src="/assets/icons/coffee.png" mode="aspectFit"/>
+            </view>
+            <text class="legend-text">休息</text>
+          </view>
+          <view class="legend-item">
+            <view class="legend-box legend-compensatory">
+              <image class="legend-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
+            </view>
+            <text class="legend-text">调休</text>
+          </view>
+          <view class="legend-item">
+            <view class="legend-box legend-missed">
+              <image class="legend-icon" src="/assets/icons/alert-circle.png" mode="aspectFit"/>
+            </view>
+            <text class="legend-text">缺卡</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- Records Section - 匹配设计 -->
+    <view class="records-section">
+      <view class="records-header">
+        <view class="records-title-with-icon">
+          <image class="section-icon" src="/assets/icons/history.png" mode="aspectFit"/>
+          <text class="section-title">最近打卡</text>
+        </view>
+        <view class="view-all-btn" bindtap="goToHistory">
+          <text class="view-all-text">查看详情</text>
+          <text class="chevron-icon">›</text>
+        </view>
+      </view>
+
+      <!-- 加载状态 -->
+      <view class="loading-container" wx:if="{{loading}}">
+        <view class="loading-spinner"></view>
+        <text class="loading-text">加载中...</text>
+      </view>
+
+      <!-- 记录列表 -->
+      <view class="records-list" wx:elif="{{recentAttendance.length > 0}}">
+        <view 
+          class="record-card" 
+          wx:for="{{recentAttendance}}" 
+          wx:key="id"
+          wx:for-index="idx"
+        >
+          <!-- 左侧：图标 + 信息（标题、时间、地址、基地纵向排列） -->
+          <view class="record-left">
+            <view class="record-icon-box record-icon-{{item.status_type}}">
+              <image class="record-status-icon" src="/assets/icons/{{item.status_type === 'office' ? 'briefcase' : item.status_type === 'domestic' ? 'map-pin' : item.status_type === 'international' ? 'plane' : item.status_type === 'compensatory' ? 'calendar' : 'coffee'}}.png" mode="aspectFit"/>
+            </view>
+            <view class="record-info">
+              <text class="record-status">{{item.work_status}}</text>
+              <text class="record-datetime">{{item.put_date_time || item.submit_time}} · {{item.work_date}}</text>
+              <view class="record-location" wx:if="{{item.business_trip_location}}">
+                <image class="loc-icon-tiny" src="/assets/icons/map-pin.png" mode="aspectFit"/>
+                <text class="record-location-text">{{item.business_trip_location}}</text>
+              </view>
+              <!-- 出差基地名：显示在打卡时间下方左侧 -->
+              <view class="record-base-name" wx:if="{{item.comment && (item.work_status === '国内出差' || item.work_status === '国外出差')}}">
+                <image class="loc-icon-tiny" src="/assets/icons/map-pin.png" mode="aspectFit"/>
+                <text class="record-base-name-text">{{item.comment}}</text>
+              </view>
+            </view>
+          </view>
+
+          <!-- 右侧：[编辑][删除][补贴/常规] 一行 -->
+          <view class="record-right">
+            <view class="record-actions-row">
+              <view class="record-action-btn" catchtap="onEditRecord" data-item="{{item}}">
+                <image class="action-icon" src="/assets/icons/edit.png" mode="aspectFit"/>
+              </view>
+              <view class="record-action-btn" catchtap="onDeleteRecord" data-id="{{item.id}}">
+                <image class="action-icon" src="/assets/icons/trash.png" mode="aspectFit"/>
+              </view>
+              <view class="subsidy-badge" wx:if="{{item.business_trip_subsidy > 0}}">
+                <text class="subsidy-text">补贴 ¥{{item.business_trip_subsidy}}</text>
+              </view>
+              <text class="regular-badge" wx:else>常规</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 空状态 -->
+      <view class="empty-state" wx:else>
+        <image class="empty-icon" src="/assets/icons/clipboard.png" mode="aspectFit"/>
+        <text class="empty-text">暂无考勤记录</text>
+        <text class="empty-desc">点击上方按钮开始打卡</text>
+      </view>
+    </view>
+
+    <!-- 底部间距 -->
+    <view class="bottom-spacer"></view>
+  </view>
+</view>
+
+<!-- 编辑考勤记录弹窗（自定义遮罩，不依赖 t-popup） -->
+<view class="edit-modal-mask" wx:if="{{showEditModal}}" bindtap="onCloseEditModal">
+  <view class="edit-popup" catchtap="onStopPropagation">
+    <view class="edit-popup-header">
+      <text class="edit-popup-title">修改考勤记录</text>
+      <view class="edit-popup-close" bindtap="onCloseEditModal">
+        <image class="close-icon" src="/assets/icons/close.png" mode="aspectFit"/>
+      </view>
+    </view>
+
+    <!-- 打卡状态选择 -->
+    <view class="edit-section">
+      <text class="edit-label">打卡状态</text>
+      <view class="edit-type-grid">
+        <view class="edit-type-btn {{editForm.type === 'office' ? 'edit-type-active' : ''}}" style="{{editForm.type === 'office' ? 'background:#C7E9FB;' : ''}}" bindtap="onEditTypeChange" data-type="office">
+          <image class="edit-type-icon" src="/assets/icons/briefcase.png" mode="aspectFit"/>
+          <text class="edit-type-label">公司上班</text>
+        </view>
+        <view class="edit-type-btn {{editForm.type === 'domestic' ? 'edit-type-active' : ''}}" style="{{editForm.type === 'domestic' ? 'background:#FFCBA4;' : ''}}" bindtap="onEditTypeChange" data-type="domestic">
+          <image class="edit-type-icon" src="/assets/icons/map-pin.png" mode="aspectFit"/>
+          <text class="edit-type-label">国内出差</text>
+        </view>
+        <view class="edit-type-btn {{editForm.type === 'international' ? 'edit-type-active' : ''}}" style="{{editForm.type === 'international' ? 'background:#FFB7C5;' : ''}}" bindtap="onEditTypeChange" data-type="international">
+          <image class="edit-type-icon" src="/assets/icons/plane.png" mode="aspectFit"/>
+          <text class="edit-type-label">国外出差</text>
+        </view>
+        <view class="edit-type-btn {{editForm.type === 'rest' ? 'edit-type-active' : ''}}" style="{{editForm.type === 'rest' ? 'background:#B5EAD7;' : ''}}" bindtap="onEditTypeChange" data-type="rest">
+          <image class="edit-type-icon" src="/assets/icons/coffee.png" mode="aspectFit"/>
+          <text class="edit-type-label">休息</text>
+        </view>
+        <view class="edit-type-btn {{editForm.type === 'compensatory' ? 'edit-type-active' : ''}}" style="{{editForm.type === 'compensatory' ? 'background:#C8F7C5;' : ''}}" bindtap="onEditTypeChange" data-type="compensatory">
+          <image class="edit-type-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
+          <text class="edit-type-label">调休</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 日期 + 时间 -->
+    <view class="edit-row">
+      <view class="edit-field">
+        <text class="edit-label">日期</text>
+        <view class="edit-input-wrap">
+          <image class="edit-input-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
+          <picker mode="date" value="{{editForm.date}}" bindchange="onEditDateChange">
+            <text class="edit-picker-text">{{editForm.date || '选择日期'}}</text>
+          </picker>
+        </view>
+      </view>
+      <view class="edit-field">
+        <text class="edit-label">时间</text>
+        <view class="edit-input-wrap">
+          <image class="edit-input-icon" src="/assets/icons/clock.png" mode="aspectFit"/>
+          <text class="edit-picker-text edit-time-readonly">{{editForm.time || '00:00'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 出差专属字段 -->
+    <view wx:if="{{editForm.type === 'domestic' || editForm.type === 'international'}}">
+      <view class="edit-section">
+        <text class="edit-label">出差地址</text>
+        <view class="edit-input-wrap">
+          <image class="edit-input-icon" src="/assets/icons/map-pin.png" mode="aspectFit"/>
+          <input class="edit-input" placeholder="例如：新加坡" value="{{editForm.baseName}}" bindinput="onEditBaseNameChange"/>
+        </view>
+      </view>
+      <view class="edit-section">
+        <text class="edit-label">补贴金额</text>
+        <view class="edit-input-wrap">
+          <image class="edit-input-icon" src="/assets/icons/dollar.png" mode="aspectFit"/>
+          <input class="edit-input" placeholder="0.00" type="digit" value="{{editForm.subsidy}}" bindinput="onEditSubsidyChange"/>
+        </view>
+      </view>
+    </view>
+
+    <view class="edit-save-btn" bindtap="onSaveEdit">保 存 修 改</view>
+  </view>
+</view>
+
+<!-- 删除确认弹窗 -->
+<view class="delete-modal-mask" wx:if="{{showDeleteModal}}" bindtap="onCloseDeleteModal">
+  <view class="delete-modal" catchtap="onStopPropagation">
+    <view class="delete-modal-close" bindtap="onCloseDeleteModal">
+      <image class="close-icon" src="/assets/icons/close.png" mode="aspectFit"/>
+    </view>
+    <view class="delete-modal-icon-wrap">
+      <view class="delete-modal-icon-inner">
+        <image class="delete-modal-icon-img" src="/assets/icons/trash.png" mode="aspectFit"/>
+      </view>
+    </view>
+    <text class="delete-modal-title">确认要删除吗？</text>
+    <text class="delete-modal-desc">删除后的打卡记录无法找回哦，请确认是否继续操作。</text>
+    <view class="delete-modal-btns">
+      <view class="delete-modal-btn delete-modal-btn-cancel" bindtap="onCloseDeleteModal">先留着吧</view>
+      <view class="delete-modal-btn delete-modal-btn-confirm" bindtap="onConfirmDelete">残忍删除</view>
+    </view>
+  </view>
+</view>
+
+<!-- 删除进度弹窗 -->
+<view class="delete-progress-overlay" wx:if="{{isDeleting}}">
+  <view class="delete-progress-card" catchtap="">
+    <text class="delete-progress-title">正在删除记录</text>
+    <text class="delete-progress-desc">{{deleteCurrentStep}}</text>
+    <view class="delete-progress-bar-wrap">
+      <view class="delete-progress-bar-bg">
+        <view class="delete-progress-bar-fill" style="width: {{deleteProgress}}%;"></view>
+      </view>
+      <text class="delete-progress-percent">{{deleteProgress}}%</text>
+    </view>
+    <text class="delete-progress-tip">请不要离开页面，系统正在同步数据...</text>
+  </view>
+</view>
+
+<!-- 删除结果弹窗 -->
+<view class="delete-result-overlay" wx:if="{{showDeleteResult}}" bindtap="onCloseDeleteResult">
+  <view class="delete-result-card" catchtap="">
+    <view class="delete-result-close" catchtap="onCloseDeleteResult">
+      <image class="close-icon" src="/assets/icons/close.png" mode="aspectFit"/>
+    </view>
+    <view class="delete-result-icon-wrap {{deleteResultSuccess ? 'delete-result-success' : 'delete-result-fail'}}">
+      <view class="delete-result-icon-inner">
+        <image class="delete-result-icon-img" src="{{deleteResultSuccess ? '/assets/icons/check-circle.png' : '/assets/icons/alert-circle.png'}}" mode="aspectFit"/>
+      </view>
+    </view>
+    <text class="delete-result-title">{{deleteResultSuccess ? '删除完成' : '删除异常'}}</text>
+    <!-- 步骤详情 -->
+    <view class="delete-steps-list">
+      <view class="delete-step-item">
+        <image class="delete-step-icon" src="{{deleteSteps.db_deleted ? '/assets/icons/check-circle.png' : '/assets/icons/alert-circle.png'}}" mode="aspectFit"/>
+        <text class="delete-step-text {{deleteSteps.db_deleted ? '' : 'delete-step-fail'}}">数据库：{{deleteSteps.db_msg || '未执行'}}</text>
+      </view>
+      <view class="delete-step-item">
+        <image class="delete-step-icon" src="{{deleteSteps.excel_cleared ? '/assets/icons/check-circle.png' : '/assets/icons/alert-circle.png'}}" mode="aspectFit"/>
+        <text class="delete-step-text {{deleteSteps.excel_cleared ? '' : 'delete-step-fail'}}">Excel：{{deleteSteps.excel_msg || '未执行'}}</text>
+      </view>
+      <view class="delete-step-item">
+        <image class="delete-step-icon" src="{{deleteSteps.nas_uploaded ? '/assets/icons/check-circle.png' : '/assets/icons/alert-circle.png'}}" mode="aspectFit"/>
+        <text class="delete-step-text {{deleteSteps.nas_uploaded ? '' : 'delete-step-fail'}}">公盘：{{deleteSteps.nas_msg || '未执行'}}</text>
+      </view>
+    </view>
+    <view class="delete-result-confirm-btn" catchtap="onCloseDeleteResult">确 定</view>
+  </view>
+</view>
+
+<!-- 保存结果弹窗 -->
+<view class="result-modal-mask" wx:if="{{showResultModal}}" bindtap="onCloseResultModal">
+  <view class="result-modal" catchtap="onStopPropagation">
+    <view class="result-modal-close" bindtap="onCloseResultModal">
+      <image class="close-icon" src="/assets/icons/close.png" mode="aspectFit"/>
+    </view>
+    <view class="result-icon-wrap {{resultSuccess ? 'result-icon-success' : 'result-icon-fail'}}">
+      <view class="result-icon-inner">
+        <image class="result-icon-img" src="{{resultSuccess ? '/assets/icons/check.png' : '/assets/icons/x.png'}}" mode="aspectFit"/>
+      </view>
+    </view>
+    <text class="result-title">{{resultSuccess ? '更新成功！' : '更新失败'}}</text>
+    <text class="result-msg">接口返回：{{resultMsg}}</text>
+    <view class="result-confirm-btn" bindtap="onCloseResultModal">确 定</view>
+  </view>
+</view>
+
+<t-toast id="t-toast" />
+
+<!-- 公告弹窗 -->
+<notice-modal 
+  visible="{{showNoticeModal}}" 
+  title="公告中心" 
+  notices="{{noticeModalList}}"
+  bind:close="onNoticeModalClose"
+/>
+
+<!-- 打卡弹窗 -->
+<view class="checkin-modal-mask" wx:if="{{showCheckinModal}}" bindtap="onCloseCheckinModal">
+  <view class="checkin-modal" catchtap="onStopPropagation">
+    <!-- 关闭按钮 -->
+    <view class="checkin-modal-close" bindtap="onCloseCheckinModal">
+      <image class="close-icon" src="/assets/icons/close.png" mode="aspectFit"/>
+    </view>
+
+    <!-- 标题 -->
+    <text class="checkin-modal-title">选择打卡状态</text>
+    
+    <!-- 日期显示 -->
+    <view class="checkin-date-display" wx:if="{{checkinForm.date}}">
+      <image class="checkin-date-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
+      <text class="checkin-date-text">{{checkinForm.date}}</text>
+    </view>
+
+    <!-- 可滚动内容区域 -->
+    <scroll-view class="checkin-modal-scroll" scroll-y>
+      <!-- 工作状态选择 -->
+      <view class="checkin-status-grid">
+      <view 
+        class="checkin-status-item {{checkinForm.type === 'office' ? 'checkin-status-active' : ''}}"
+        bindtap="onCheckinTypeChange"
+        data-type="office"
+      >
+        <view class="checkin-status-icon-box">
+          <image class="checkin-status-icon" src="/assets/icons/briefcase.png" mode="aspectFit"/>
+        </view>
+        <text class="checkin-status-label">公司上班</text>
+        <view class="checkin-check-mark" wx:if="{{checkinForm.type === 'office'}}">
+          <image class="check-icon-img" src="/assets/icons/check.png" mode="aspectFit"/>
+        </view>
+      </view>
+
+      <view 
+        class="checkin-status-item {{checkinForm.type === 'domestic' ? 'checkin-status-active' : ''}}"
+        bindtap="onCheckinTypeChange"
+        data-type="domestic"
+      >
+        <view class="checkin-status-icon-box">
+          <image class="checkin-status-icon" src="/assets/icons/map-pin.png" mode="aspectFit"/>
+        </view>
+        <text class="checkin-status-label">国内出差</text>
+        <view class="checkin-check-mark" wx:if="{{checkinForm.type === 'domestic'}}">
+          <image class="check-icon-img" src="/assets/icons/check.png" mode="aspectFit"/>
+        </view>
+      </view>
+
+      <view 
+        class="checkin-status-item {{checkinForm.type === 'international' ? 'checkin-status-active' : ''}}"
+        bindtap="onCheckinTypeChange"
+        data-type="international"
+      >
+        <view class="checkin-status-icon-box">
+          <image class="checkin-status-icon" src="/assets/icons/plane.png" mode="aspectFit"/>
+        </view>
+        <text class="checkin-status-label">国外出差</text>
+        <view class="checkin-check-mark" wx:if="{{checkinForm.type === 'international'}}">
+          <image class="check-icon-img" src="/assets/icons/check.png" mode="aspectFit"/>
+        </view>
+      </view>
+
+      <view
+        class="checkin-status-item {{checkinForm.type === 'rest' ? 'checkin-status-active' : ''}}"
+        bindtap="onCheckinTypeChange"
+        data-type="rest"
+      >
+        <view class="checkin-status-icon-box">
+          <image class="checkin-status-icon" src="/assets/icons/coffee.png" mode="aspectFit"/>
+        </view>
+        <text class="checkin-status-label">休息</text>
+        <view class="checkin-check-mark" wx:if="{{checkinForm.type === 'rest'}}">
+          <image class="check-icon-img" src="/assets/icons/check.png" mode="aspectFit"/>
+        </view>
+      </view>
+
+      <view
+        class="checkin-status-item {{checkinForm.type === 'compensatory' ? 'checkin-status-active' : ''}}"
+        bindtap="onCheckinTypeChange"
+        data-type="compensatory"
+      >
+        <view class="checkin-status-icon-box">
+          <image class="checkin-status-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
+        </view>
+        <text class="checkin-status-label">调休</text>
+        <view class="checkin-check-mark" wx:if="{{checkinForm.type === 'compensatory'}}">
+          <image class="check-icon-img" src="/assets/icons/check.png" mode="aspectFit"/>
+        </view>
+      </view>
+    </view>
+
+    <!-- 出差专属字段 -->
+    <view class="checkin-trip-fields" wx:if="{{checkinForm.type === 'domestic' || checkinForm.type === 'international'}}">
+      <view class="checkin-field">
+        <text class="checkin-field-label">出差地址</text>
+        <view class="checkin-input-wrap">
+          <image class="checkin-input-icon" src="/assets/icons/map-pin.png" mode="aspectFit"/>
+          <input class="checkin-input" placeholder="例如：新加坡" value="{{checkinForm.baseName}}" bindinput="onCheckinBaseNameChange"/>
+        </view>
+      </view>
+      <view class="checkin-field">
+        <text class="checkin-field-label">补贴金额</text>
+        <view class="checkin-input-wrap">
+          <image class="checkin-input-icon" src="/assets/icons/dollar.png" mode="aspectFit"/>
+          <input class="checkin-input" placeholder="0.00" type="digit" value="{{checkinForm.subsidy}}" bindinput="onCheckinSubsidyChange"/>
+        </view>
+      </view>
+      </view>
+
+      <!-- 确认打卡按钮 -->
+      <view class="checkin-confirm-btn" bindtap="onConfirmCheckin">确 认 打 卡</view>
+    </scroll-view>
+  </view>
+</view>

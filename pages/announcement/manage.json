@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "公告管理",
+  "navigationBarBackgroundColor": "#FFF9F2",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#FFF9F2",
+  "enablePullDownRefresh": true
+}

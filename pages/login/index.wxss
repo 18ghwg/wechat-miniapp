@@ -1,0 +1,874 @@
+/* 登录页面样式 - 完全匹配 Weixin-main Macaron 设计 */
+
+page {
+  background: var(--color-orange-light);
+}
+
+/* 登录页面容器 */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80rpx 48rpx;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* 背景装饰圆圈 - 隐藏，避免影响布局 */
+.bg-circle {
+  display: none;
+}
+
+/* 主登录卡片 - Cartoon Card 风格 */
+.login-card {
+  width: 100%;
+  background: var(--card);
+  border: 6rpx solid var(--foreground);
+  border-radius: 48rpx;
+  box-shadow: 12rpx 12rpx 0rpx var(--foreground);
+  padding: 56rpx 48rpx 48rpx;
+  z-index: 10;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Logo 和标题区域 */
+.header-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 48rpx;
+}
+
+.logo-container {
+  width: 140rpx;
+  height: 140rpx;
+  background: var(--primary);
+  border-radius: 40rpx;
+  border: 6rpx solid var(--foreground);
+  box-shadow: 6rpx 6rpx 0rpx var(--foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24rpx;
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-shine {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transform: skewX(-20deg);
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% {
+    left: -100%;
+  }
+  50%, 100% {
+    left: 200%;
+  }
+}
+
+.logo-icon {
+  font-size: 80rpx;
+  position: relative;
+  z-index: 1;
+}
+
+.app-title {
+  font-size: 48rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-bottom: 12rpx;
+  letter-spacing: 2rpx;
+}
+
+.app-subtitle {
+  font-size: 24rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  opacity: 0.6;
+}
+
+/* 登录表单 */
+.login-form,
+.wechat-login-form {
+  margin-bottom: 48rpx;
+}
+
+/* 输入框容器 */
+.input-wrapper {
+  position: relative;
+  margin-bottom: 32rpx;
+}
+
+.input-icon {
+  position: absolute;
+  left: 32rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+}
+
+.input-icon .icon {
+  font-size: 36rpx;
+}
+
+/* Cartoon 风格输入框 */
+.cartoon-input {
+  width: 100%;
+  height: 96rpx;
+  padding: 0 32rpx 0 88rpx;
+  border: 4rpx solid var(--border);
+  border-radius: var(--radius-lg);
+  font-size: 30rpx;
+  background: var(--card);
+  color: var(--foreground);
+  box-sizing: border-box;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.cartoon-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 6rpx rgba(255, 159, 67, 0.1);
+  transform: translateY(-4rpx);
+}
+
+.password-toggle {
+  position: absolute;
+  right: 32rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  padding: 8rpx;
+}
+
+.password-toggle .icon {
+  font-size: 36rpx;
+}
+
+/* 表单选项 */
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32rpx;
+  padding: 0 8rpx;
+}
+
+.remember-checkbox {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-label {
+  font-size: 24rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-left: 12rpx;
+}
+
+.forgot-password {
+  font-size: 24rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 4rpx;
+}
+
+/* 主登录按钮 - Macaron Button 风格 */
+.login-btn-main {
+  width: 100%;
+  height: 112rpx;
+  background: var(--primary);
+  color: var(--foreground);
+  border: 6rpx solid var(--foreground);
+  border-radius: 999rpx;
+  font-size: 36rpx;
+  font-weight: var(--font-weight-bold);
+  box-shadow: var(--shadow-btn);
+  transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-btn-main::after {
+  border: none;
+}
+
+.login-btn-main:active {
+  transform: translate(4rpx, 4rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+.login-btn-main[disabled] {
+  opacity: 0.6;
+}
+
+.btn-text {
+  font-size: 36rpx;
+  font-weight: var(--font-weight-bold);
+}
+
+/* 微信登录用户信息 */
+.user-info-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 48rpx;
+}
+
+.user-avatar {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  border: 6rpx solid var(--foreground);
+  box-shadow: 6rpx 6rpx 0rpx var(--foreground);
+  margin-bottom: 24rpx;
+}
+
+.user-nickname {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+/* 分隔线 */
+.separator {
+  display: flex;
+  align-items: center;
+  margin: 40rpx 0;
+}
+
+.separator-line {
+  flex: 1;
+  height: 4rpx;
+  background: var(--border);
+}
+
+.separator-text {
+  padding: 0 32rpx;
+  font-size: 20rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  opacity: 0.4;
+  text-transform: uppercase;
+  letter-spacing: 4rpx;
+}
+
+/* 其他登录方式 */
+.alternative-login {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24rpx;
+  margin-bottom: 36rpx;
+}
+
+.alt-login-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx;
+  border: 4rpx solid var(--foreground);
+  border-radius: 32rpx;
+  box-shadow: 8rpx 8rpx 0rpx var(--foreground);
+  transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.alt-login-btn:active {
+  transform: translate(4rpx, 4rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+/* 微信一键登录 - 浅绿色背景 */
+.wechat-btn {
+  background: #D4EDD4;
+}
+
+/* 账号密码登录 */
+.account-btn {
+  background: var(--color-blue-macaron);
+}
+
+/* 免登录预览 - 浅蓝色背景 */
+.preview-btn {
+  background: #C8E6F5;
+}
+
+.alt-btn-icon {
+  width: 80rpx;
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12rpx;
+}
+
+.alt-login-btn:active .alt-btn-icon {
+  transform: scale(1.1);
+}
+
+.alt-btn-icon .icon {
+  font-size: 44rpx;
+}
+
+.alt-btn-text {
+  font-size: 20rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  text-align: center;
+}
+
+/* 隐私协议 */
+.privacy-agreement {
+  text-align: center;
+  font-size: 20rpx;
+  color: var(--foreground);
+  opacity: 0.4;
+  font-weight: var(--font-weight-bold);
+  padding: 0 32rpx;
+  line-height: 1.6;
+}
+
+.agreement-text {
+  font-size: 20rpx;
+}
+
+.agreement-link {
+  color: var(--primary);
+  text-decoration: underline;
+  margin: 0 4rpx;
+}
+
+/* 用户协议勾选框 */
+.agreement-section {
+  margin-bottom: 32rpx;
+  padding: 0 8rpx;
+}
+
+.agreement-checkbox {
+  display: flex;
+  align-items: flex-start;
+  font-size: 20rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  line-height: 1.5;
+  padding: 16rpx 0;
+}
+
+.agreement-checkbox-input {
+  margin-top: 4rpx;
+}
+
+.agreement-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-left: 12rpx;
+  flex: 1;
+}
+
+.agreement-prefix {
+  font-size: 20rpx;
+  color: var(--foreground);
+  opacity: 0.9;
+}
+
+.agreement-link {
+  color: var(--primary);
+  text-decoration: underline;
+  margin: 0 4rpx;
+  font-size: 20rpx;
+}
+
+.agreement-separator {
+  font-size: 20rpx;
+  color: var(--foreground);
+  opacity: 0.9;
+}
+
+/* 底部注册提示 */
+.footer-register {
+  margin-top: 48rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  align-items: center;
+  font-size: 28rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  z-index: 10;
+}
+
+.footer-text {
+  margin-right: 16rpx;
+}
+
+.register-link {
+  color: var(--primary);
+  transition: transform 0.2s ease;
+}
+
+.register-link:active {
+  transform: scale(1.05);
+}
+
+/* 滑块验证码模态窗口 - Macaron 风格 */
+.captcha-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8rpx);
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+  position: relative;
+  width: 90%;
+  max-width: 600rpx;
+  background: #FFEBCC; /* Macaron 橙色背景 - 匹配 Weixin bg-[#FFEBCC] */
+  border: 8rpx solid #5E4E3E;
+  border-radius: 48rpx;
+  overflow: hidden;
+  box-shadow: 16rpx 16rpx 0rpx #5E4E3E; /* Macaron 阴影 */
+  animation: slideUp 0.3s ease;
+  z-index: 10000;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32rpx 40rpx;
+  border-bottom: none; /* 移除边框 */
+}
+
+.modal-title {
+  font-size: 36rpx;
+  font-weight: 800;
+  color: #5E4E3E;
+}
+
+.modal-close {
+  width: 48rpx;
+  height: 48rpx;
+  color: #5E4E3E;
+  opacity: 1;
+  line-height: 1;
+  padding: 8rpx;
+  transition: transform 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close-icon {
+  width: 32rpx;
+  height: 32rpx;
+}
+
+.modal-close:active {
+  transform: scale(1.1);
+}
+
+.modal-body {
+  padding: 0 48rpx 48rpx 48rpx;
+}
+
+/* 动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100rpx);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ==================== SVG 图标样式 ==================== */
+
+/* 通用 SVG 图标容器 */
+.logo-icon-svg,
+.icon-user-input,
+.icon-lock,
+.icon-eye,
+.icon-eye-off,
+.icon-message,
+.icon-user-alt,
+.icon-eye-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Shield 图标 (Logo) - 替换为人形图标 */
+.icon-person-logo {
+  width: 80rpx;
+  height: 96rpx;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.person-head {
+  width: 44rpx;
+  height: 44rpx;
+  border: 6rpx solid #5E4E3E;
+  border-radius: 50%;
+  background: #ffffff;
+  margin-bottom: 8rpx;
+}
+
+.person-body {
+  width: 64rpx;
+  height: 36rpx;
+  border: 6rpx solid #5E4E3E;
+  border-bottom: none;
+  border-radius: 32rpx 32rpx 0 0;
+  background: #ffffff;
+}
+
+/* User 图标 (输入框) */
+.icon-user-input {
+  width: 36rpx;
+  height: 40rpx;
+  position: relative;
+}
+
+.user-head-input {
+  width: 16rpx;
+  height: 16rpx;
+  border: 4rpx solid #5E4E3E;
+  border-radius: 50%;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.user-body-input {
+  width: 28rpx;
+  height: 16rpx;
+  border: 4rpx solid #5E4E3E;
+  border-radius: 16rpx 16rpx 0 0;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Lock 图标 (锁) */
+.icon-lock {
+  width: 36rpx;
+  height: 40rpx;
+  position: relative;
+}
+
+.lock-body {
+  width: 32rpx;
+  height: 24rpx;
+  border: 4rpx solid #5E4E3E;
+  border-radius: 8rpx;
+  position: absolute;
+  bottom: 0;
+  left: 2rpx;
+  background-color: rgba(94, 78, 62, 0.1);
+}
+
+.lock-shackle {
+  width: 20rpx;
+  height: 16rpx;
+  border: 4rpx solid #5E4E3E;
+  border-bottom: none;
+  border-radius: 12rpx 12rpx 0 0;
+  position: absolute;
+  top: 0;
+  left: 8rpx;
+}
+
+/* Eye 图标 (显示密码) */
+.icon-eye {
+  width: 36rpx;
+  height: 24rpx;
+  position: relative;
+}
+
+.eye-circle {
+  width: 32rpx;
+  height: 20rpx;
+  border: 3rpx solid #5E4E3E;
+  border-radius: 50%;
+  position: absolute;
+  top: 2rpx;
+  left: 2rpx;
+}
+
+.eye-pupil {
+  width: 8rpx;
+  height: 8rpx;
+  background-color: #5E4E3E;
+  border-radius: 50%;
+  position: absolute;
+  top: 8rpx;
+  left: 14rpx;
+}
+
+/* EyeOff 图标 (隐藏密码) */
+.icon-eye-off {
+  width: 36rpx;
+  height: 24rpx;
+  position: relative;
+}
+
+.eye-circle-off {
+  width: 32rpx;
+  height: 20rpx;
+  border: 3rpx solid #5E4E3E;
+  border-radius: 50%;
+  position: absolute;
+  top: 2rpx;
+  left: 2rpx;
+}
+
+.eye-slash {
+  width: 40rpx;
+  height: 3rpx;
+  background-color: #5E4E3E;
+  position: absolute;
+  top: 10rpx;
+  left: -2rpx;
+  transform: rotate(-45deg);
+  border-radius: 2rpx;
+}
+
+/* MessageCircle 图标 (消息) */
+.icon-message {
+  width: 36rpx;
+  height: 36rpx;
+  position: relative;
+}
+
+.message-bubble {
+  width: 32rpx;
+  height: 28rpx;
+  border: 4rpx solid #5E4E3E;
+  border-radius: 16rpx;
+  position: absolute;
+  top: 0;
+  left: 2rpx;
+}
+
+.message-tail {
+  width: 0;
+  height: 0;
+  border-left: 8rpx solid transparent;
+  border-right: 8rpx solid transparent;
+  border-top: 8rpx solid #5E4E3E;
+  position: absolute;
+  bottom: 0;
+  left: 8rpx;
+}
+
+/* User 图标 (替代登录) */
+.icon-user-alt {
+  width: 36rpx;
+  height: 40rpx;
+  position: relative;
+}
+
+.user-head-alt {
+  width: 16rpx;
+  height: 16rpx;
+  border: 4rpx solid #5E4E3E;
+  border-radius: 50%;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.user-body-alt {
+  width: 28rpx;
+  height: 16rpx;
+  border: 4rpx solid #5E4E3E;
+  border-radius: 16rpx 16rpx 0 0;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Eye 图标 (预览) - 精致眼睛 */
+.icon-eye-preview {
+  width: 52rpx;
+  height: 40rpx;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 上眼睑弧线 */
+.eye-lash-top {
+  width: 48rpx;
+  height: 24rpx;
+  border: 4rpx solid #5E4E3E;
+  border-bottom: none;
+  border-radius: 24rpx 24rpx 0 0;
+  position: absolute;
+  top: 0;
+  left: 2rpx;
+}
+
+/* 下眼睑弧线 */
+.eye-lash-bottom {
+  width: 48rpx;
+  height: 16rpx;
+  border: 4rpx solid #5E4E3E;
+  border-top: none;
+  border-radius: 0 0 24rpx 24rpx;
+  position: absolute;
+  bottom: 0;
+  left: 2rpx;
+}
+
+/* 眼白区域 */
+.eye-white {
+  width: 28rpx;
+  height: 28rpx;
+  background: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* 虹膜 */
+.eye-iris {
+  width: 22rpx;
+  height: 22rpx;
+  background: #5E4E3E;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* 瞳孔 */
+.eye-pupil-preview {
+  width: 10rpx;
+  height: 10rpx;
+  background: #1a1a1a;
+  border-radius: 50%;
+}
+
+/* 高光点 */
+.eye-shine {
+  width: 6rpx;
+  height: 6rpx;
+  background: #ffffff;
+  border-radius: 50%;
+  position: absolute;
+  top: 3rpx;
+  right: 3rpx;
+}
+
+/* Home 图标 (微信一键登录) */
+.icon-home {
+  width: 48rpx;
+  height: 48rpx;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.home-roof {
+  width: 0;
+  height: 0;
+  border-left: 28rpx solid transparent;
+  border-right: 28rpx solid transparent;
+  border-bottom: 22rpx solid #5E4E3E;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.home-body {
+  width: 36rpx;
+  height: 26rpx;
+  border: 4rpx solid #5E4E3E;
+  border-top: none;
+  background: rgba(94, 78, 62, 0.1);
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.home-door {
+  width: 12rpx;
+  height: 16rpx;
+  border: 4rpx solid #5E4E3E;
+  border-bottom: none;
+  border-radius: 6rpx 6rpx 0 0;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ==================== PNG 图标样式 ==================== */
+.logo-icon {
+  width: 64rpx;
+  height: 64rpx;
+}
+.input-icon-img {
+  width: 40rpx;
+  height: 40rpx;
+}
+.alt-icon-img {
+  width: 44rpx;
+  height: 44rpx;
+}

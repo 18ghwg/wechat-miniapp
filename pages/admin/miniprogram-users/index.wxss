@@ -1,0 +1,637 @@
+/* 小程序账号管理页面样式 - Macaron Theme */
+@import '/style/macaron-theme.wxss';
+
+.miniprogram-users-container {
+  padding: 0 30rpx 30rpx;
+  background-color: var(--background);
+  min-height: 100vh;
+}
+
+/* 页面标题 */
+.page-header {
+  padding: 40rpx 0 30rpx;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.header-icon-wrapper {
+  width: 100rpx;
+  height: 100rpx;
+  background: var(--color-peach-macaron);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20rpx;
+  border: 4rpx solid var(--foreground);
+  box-shadow: 6rpx 6rpx 0rpx var(--foreground);
+}
+
+.header-icon {
+  width: 56rpx;
+  height: 56rpx;
+}
+
+.page-title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-bottom: 12rpx;
+}
+
+.page-subtitle {
+  font-size: 26rpx;
+  color: var(--muted-foreground);
+}
+
+/* 搜索卡片 */
+.search-card {
+  margin-bottom: 24rpx;
+  padding: var(--spacing-md);
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.search-icon {
+  width: 40rpx;
+  height: 40rpx;
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  min-height: 88rpx;
+}
+
+.action-bar {
+  display: flex;
+  gap: 16rpx;
+}
+
+.action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  min-height: 88rpx;
+  font-size: 26rpx;
+}
+
+.btn-icon-text {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+}
+
+.btn-icon {
+  width: 32rpx;
+  height: 32rpx;
+}
+
+/* 统计卡片 */
+.stats-card {
+  margin-bottom: 24rpx;
+  padding: var(--spacing-md);
+}
+
+.stats-grid {
+  display: flex;
+  justify-content: space-around;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  padding: 16rpx;
+  min-width: 120rpx;
+}
+
+.stat-value {
+  font-size: 40rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: var(--muted-foreground);
+}
+
+.stat-admin .stat-value {
+  color: #e74c3c;
+}
+
+.stat-user .stat-value {
+  color: var(--primary);
+}
+
+.stat-viewer .stat-value {
+  color: var(--muted-foreground);
+}
+
+/* 加载状态 */
+.loading-state {
+  text-align: center;
+  padding: 80rpx 50rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 6rpx solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20rpx;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: var(--muted-foreground);
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 80rpx 50rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.empty-icon {
+  width: 120rpx;
+  height: 120rpx;
+  margin-bottom: 24rpx;
+  opacity: 0.6;
+}
+
+.empty-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-bottom: 12rpx;
+}
+
+.empty-subtitle {
+  font-size: 26rpx;
+  color: var(--muted-foreground);
+}
+
+/* 用户列表 */
+.user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.user-item {
+  display: flex;
+  align-items: flex-start;
+  padding: var(--spacing-md);
+  gap: 20rpx;
+}
+
+/* 用户头像 */
+.user-avatar-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.user-avatar {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 20rpx;
+  border: 4rpx solid var(--foreground);
+  box-shadow: 4rpx 4rpx 0rpx var(--foreground);
+  background: var(--muted);
+}
+
+.user-status-dot {
+  position: absolute;
+  bottom: -4rpx;
+  right: -4rpx;
+  width: 28rpx;
+  height: 28rpx;
+  border-radius: 50%;
+  border: 4rpx solid var(--card);
+}
+
+.user-status-dot.active {
+  background: var(--color-mint-macaron);
+  border-color: var(--foreground);
+}
+
+.user-status-dot.inactive {
+  background: var(--color-pink-macaron);
+  border-color: var(--foreground);
+}
+
+/* 用户信息 */
+.user-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  min-width: 0;
+}
+
+.user-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex-wrap: wrap;
+}
+
+.user-nickname {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+/* 用户级别徽章 - 使用 status-badge 样式 */
+.level-badge-admin {
+  background: var(--color-pink-macaron) !important;
+  color: var(--foreground) !important;
+}
+
+.level-badge-user {
+  background: var(--color-blue-macaron) !important;
+  color: var(--foreground) !important;
+}
+
+.level-badge-viewer {
+  background: var(--muted) !important;
+  color: var(--foreground) !important;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.user-real-name,
+.user-web-info {
+  font-size: 26rpx;
+  color: var(--foreground);
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.detail-icon {
+  font-size: 24rpx;
+}
+
+.user-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.meta-item {
+  font-size: 22rpx;
+  color: var(--muted-foreground);
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+}
+
+/* 用户操作按钮 */
+.user-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  flex-shrink: 0;
+}
+
+.action-btn-small {
+  width: 72rpx;
+  height: 72rpx;
+  min-width: 88rpx;
+  min-height: 88rpx;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon-small {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+/* 分页 */
+.pagination-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24rpx;
+  margin-top: 30rpx;
+  padding: 20rpx;
+}
+
+.pagination-btn {
+  min-height: 88rpx;
+  padding: 16rpx 32rpx;
+  font-size: 26rpx;
+}
+
+.pagination-info {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 28rpx;
+  color: var(--foreground);
+}
+
+.page-current {
+  font-weight: var(--font-weight-bold);
+  color: var(--primary);
+}
+
+.page-separator {
+  color: var(--muted-foreground);
+}
+
+.page-total {
+  color: var(--muted-foreground);
+}
+
+.btn-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* 弹窗样式 */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(94, 78, 62, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.popup-container {
+  width: 85%;
+  max-width: 600rpx;
+  max-height: 80vh;
+  background: var(--card);
+  overflow: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.popup-large {
+  max-width: 700rpx;
+}
+
+.popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 30rpx;
+  background-color: var(--color-orange-light);
+  border-bottom: 4rpx solid var(--foreground);
+  border-radius: var(--radius-cartoon) var(--radius-cartoon) 0 0;
+  flex-shrink: 0;
+}
+
+.popup-title {
+  font-size: 32rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.popup-close {
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88rpx;
+  min-height: 88rpx;
+}
+
+.close-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.popup-content {
+  flex: 1;
+  padding: 30rpx;
+  overflow-y: auto;
+}
+
+.popup-footer {
+  display: flex;
+  gap: 20rpx;
+  padding: 20rpx 30rpx 30rpx;
+  border-top: 2rpx solid var(--border);
+  flex-shrink: 0;
+}
+
+.popup-btn {
+  flex: 1;
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+}
+
+.popup-btn-full {
+  width: 100%;
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+}
+
+/* 表单样式 */
+.form-group {
+  margin-bottom: 30rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: 28rpx;
+  font-weight: var(--font-weight-medium);
+  color: var(--foreground);
+  margin-bottom: 12rpx;
+}
+
+.required {
+  color: var(--destructive);
+}
+
+.input-error {
+  border-color: var(--destructive) !important;
+}
+
+.form-error {
+  display: block;
+  font-size: 24rpx;
+  color: var(--destructive);
+  margin-top: 8rpx;
+}
+
+/* Picker 样式 */
+.form-picker-macaron {
+  border: 4rpx solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.picker-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 30rpx;
+  min-height: 88rpx;
+}
+
+.picker-text {
+  font-size: 28rpx;
+  color: var(--foreground);
+}
+
+.picker-arrow {
+  font-size: 24rpx;
+  color: var(--muted-foreground);
+}
+
+/* Switch 样式 */
+.switch-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.switch-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  min-height: 88rpx;
+}
+
+.macaron-switch {
+  transform: scale(1.2);
+}
+
+.switch-label {
+  font-size: 26rpx;
+  color: var(--foreground);
+}
+
+/* 详情样式 */
+.detail-section {
+  margin-bottom: 30rpx;
+}
+
+.detail-section-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-bottom: 20rpx;
+  padding-bottom: 12rpx;
+  border-bottom: 2rpx solid var(--border);
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16rpx;
+  min-height: 48rpx;
+}
+
+.detail-label {
+  font-size: 26rpx;
+  color: var(--muted-foreground);
+  width: 180rpx;
+  flex-shrink: 0;
+}
+
+.detail-value {
+  font-size: 26rpx;
+  color: var(--foreground);
+  flex: 1;
+  word-break: break-all;
+}
+
+.detail-value-small {
+  font-size: 22rpx;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 30rpx;
+  padding-top: 30rpx;
+  border-top: 2rpx solid var(--border);
+}
+
+.detail-action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  min-height: 88rpx;
+  font-size: 26rpx;
+}
+
+/* 隐藏的头像生成Canvas */
+.hidden-canvas-container {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  visibility: hidden;
+}
+
+.hidden-canvas {
+  width: 120px;
+  height: 120px;
+}
+
+/* 减少动画（可访问性） */
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation: none;
+  }
+  
+  .cartoon-card,
+  .macaron-btn,
+  .form-input-macaron,
+  .form-picker-macaron {
+    transition: none;
+  }
+}

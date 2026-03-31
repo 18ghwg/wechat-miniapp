@@ -1,0 +1,255 @@
+/* components/slider-captcha/index.wxss */
+
+.slider-captcha-container {
+  width: 100%;
+  padding: 0;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.captcha-title {
+  font-size: 36rpx;
+  font-weight: 800;
+  color: #5E4E3E;
+  text-align: center;
+  margin-bottom: 30rpx;
+}
+
+/* 
+  关键：canvas-wrapper 用 border 画边框，overflow: hidden 裁剪圆角
+  Canvas 填满整个容器，在 JS 里用 roundRect clip 确保背景不超出圆角
+*/
+.canvas-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  aspect-ratio: 4 / 3;
+  margin: 0 auto 30rpx;
+  border-radius: 32rpx;
+  border: 4rpx solid #5E4E3E;
+  overflow: hidden;
+  background: #FFF5E6;
+}
+
+.captcha-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent;
+}
+
+.puzzle-canvas {
+  position: absolute;
+  z-index: 2;
+  background: transparent;
+}
+
+.loading-mask {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 245, 230, 0.8);
+  z-index: 10;
+}
+
+.loading-text {
+  color: #5E4E3E;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.success-mask {
+  display: none;
+}
+
+.fail-mask {
+  display: none;
+}
+
+/* 状态卡片 - 匹配 Weixin: bg-white p-2 rounded-full border-2 shadow-sm */
+.status-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.success-icon-wrap {
+  width: 96rpx;
+  height: 96rpx;
+  background: #ffffff;
+  border: 4rpx solid #5E4E3E;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 52rpx;
+  color: #4caf50;
+  font-weight: bold;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.fail-icon-wrap {
+  width: 96rpx;
+  height: 96rpx;
+  background: #ffffff;
+  border: 4rpx solid #5E4E3E;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 52rpx;
+  color: #f44336;
+  font-weight: bold;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.status-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  padding: 8rpx 24rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2rpx solid #5E4E3E;
+}
+
+.success-text-msg { color: #4caf50; }
+.fail-text-msg { color: #f44336; }
+
+.slider-wrapper {
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto 20rpx;
+  padding: 10rpx 0;
+}
+
+.slider-track {
+  position: relative;
+  width: 100%;
+  height: 96rpx;
+  background: #ffffff;
+  border: 4rpx solid #5E4E3E;
+  border-radius: 999rpx;
+  overflow: visible;
+}
+
+.slider-text {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(94, 78, 62, 0.3);
+  font-size: 28rpx;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.slider-button {
+  position: absolute;
+  top: 0; left: 0;
+  width: 96rpx;
+  height: 96rpx;
+  background: #FF9F43;
+  border: 4rpx solid #5E4E3E;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15);
+}
+
+.slider-button.success { background: #4caf50; }
+.slider-button.fail { background: #f44336; }
+
+.slider-icon {
+  display: flex;
+  gap: 4rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.slider-stripe {
+  width: 4rpx;
+  height: 32rpx;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 4rpx;
+}
+
+.captcha-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: #5E4E3E;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.refresh-btn::after { border: none; }
+.refresh-btn:active { color: #FF9F43; }
+
+.refresh-icon {
+  width: 32rpx;
+  height: 32rpx;
+  margin-right: 8rpx;
+}
+
+.captcha-hint {
+  font-size: 24rpx;
+  color: rgba(94, 78, 62, 0.6);
+  font-style: italic;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-10rpx); }
+  20%, 40%, 60%, 80% { transform: translateX(10rpx); }
+}
+
+.icon-refresh {
+  position: relative;
+  width: 32rpx;
+  height: 32rpx;
+}
+
+.refresh-circle {
+  position: absolute;
+  top: 4rpx; left: 4rpx;
+  width: 24rpx; height: 24rpx;
+  border: 4rpx solid currentColor;
+  border-radius: 50%;
+  border-top-color: transparent;
+  border-right-color: transparent;
+}
+
+.refresh-arrow {
+  position: absolute;
+  top: 2rpx; right: 6rpx;
+  width: 0; height: 0;
+  border-left: 6rpx solid transparent;
+  border-right: 6rpx solid transparent;
+  border-bottom: 8rpx solid currentColor;
+  transform: rotate(45deg);
+}

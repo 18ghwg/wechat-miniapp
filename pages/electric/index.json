@@ -1,0 +1,13 @@
+{
+  "navigationBarTitleText": "电费查询",
+  "navigationBarBackgroundColor": "#FFF9F2", 
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#FFF9F2",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 50,
+  "usingComponents": {
+    "guest-banner": "/components/guest-banner/index",
+    "login-required": "/components/login-required/index",
+    "rolling-number": "/components/rolling-number/index"
+  }
+}

@@ -1,0 +1,206 @@
+<!-- 微信通知群管理 - Macaron Theme -->
+<wxs module="utils">
+module.exports = {
+  formatTime: function(timeStr) {
+    if (!timeStr) return '未知';
+    return timeStr;
+  }
+}
+</wxs>
+
+<view class="notification-group-container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <view class="header-icon-wrapper">
+      <image class="header-icon" src="/assets/icons/bell.png" mode="aspectFit" />
+    </view>
+    <text class="page-title">微信通知群管理</text>
+    <text class="page-subtitle">管理系统通知的微信群，只能有一个激活群</text>
+  </view>
+
+  <!-- 添加按钮 -->
+  <view class="add-button-container">
+    <view class="macaron-btn macaron-btn-mint add-button" bindtap="addNotificationGroup">
+      <text class="add-icon">+</text>
+      <text class="add-text">添加通知群</text>
+    </view>
+  </view>
+
+  <!-- 通知群列表 -->
+  <view class="group-list" wx:if="{{!loading && notificationGroups.length > 0}}">
+    <view 
+      class="cartoon-card group-item {{item.IsActive ? 'active-group' : ''}}" 
+      wx:for="{{notificationGroups}}" 
+      wx:key="id"
+    >
+      <!-- 群信息 -->
+      <view class="group-info">
+        <view class="group-header">
+          <view class="group-name-wrapper">
+            <image class="group-icon" src="/assets/icons/users.png" mode="aspectFit" />
+            <text class="group-name">{{item.GroupName}}</text>
+          </view>
+          <view class="status-badges">
+            <view class="status-badge {{item.Status === '正常' ? 'status-active' : 'status-inactive'}}">
+              {{item.Status}}
+            </view>
+            <view class="status-badge active-badge" wx:if="{{item.IsActive}}">
+              当前通知群
+            </view>
+          </view>
+        </view>
+        
+        <view class="group-details">
+          <view class="detail-item">
+            <text class="detail-label">群号：</text>
+            <text class="detail-value">{{item.WxQunID}}</text>
+          </view>
+          <view class="detail-item">
+            <text class="detail-label">添加时间：</text>
+            <text class="detail-value">{{utils.formatTime(item.AddTime)}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 操作按钮 -->
+      <view class="group-actions">
+        <view 
+          class="macaron-btn macaron-btn-blue action-btn {{item.IsActive ? 'btn-disabled' : ''}}" 
+          data-group="{{item}}"
+          bindtap="{{item.IsActive ? '' : 'setAsActiveGroup'}}"
+        >
+          <image class="btn-icon" src="/assets/icons/check-circle.png" mode="aspectFit" />
+          <text>{{item.IsActive ? '已激活' : '设为当前'}}</text>
+        </view>
+        
+        <view 
+          class="macaron-btn macaron-btn-yellow action-btn" 
+          data-group="{{item}}"
+          bindtap="editNotificationGroup"
+        >
+          <image class="btn-icon" src="/assets/icons/edit.png" mode="aspectFit" />
+          <text>编辑</text>
+        </view>
+        
+        <view 
+          class="macaron-btn macaron-btn-pink action-btn" 
+          data-group="{{item}}"
+          bindtap="deleteNotificationGroup"
+        >
+          <image class="btn-icon" src="/assets/icons/trash.png" mode="aspectFit" />
+          <text>删除</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="cartoon-card empty-state" wx:if="{{!loading && notificationGroups.length === 0}}">
+    <image class="empty-icon" src="/assets/icons/bell.png" mode="aspectFit" />
+    <text class="empty-title">暂无通知群</text>
+    <text class="empty-subtitle">点击上方按钮添加第一个通知群</text>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="cartoon-card loading-state" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 添加/编辑弹窗 -->
+  <view class="popup-overlay" wx:if="{{showPopup}}" bindtap="closePopup">
+    <view class="cartoon-card popup-container" catchtap="">
+      <view class="popup-header" catchtap="">
+        <text class="popup-title">{{popupTitle}}</text>
+        <view class="popup-close" catchtap="closePopup" data-close-popup="true">
+          <image class="close-icon" src="/assets/icons/close.png" mode="aspectFit" />
+        </view>
+      </view>
+      
+      <view class="popup-content" catchtap="">
+        <!-- 群名称 -->
+        <view class="form-group" catchtap="">
+          <text class="form-label">群名称</text>
+          <input 
+            class="form-input-macaron" 
+            placeholder="请输入群名称（用于备注识别）"
+            value="{{formData.GroupName}}"
+            bindinput="onGroupNameChange"
+            maxlength="50"
+          />
+        </view>
+        
+        <!-- 微信群号ID -->
+        <view class="form-group" catchtap="">
+          <text class="form-label">微信群号ID</text>
+          <input 
+            class="form-input-macaron" 
+            placeholder="请输入微信群号ID"
+            value="{{formData.WxQunID}}"
+            bindinput="onWxQunIDChange"
+            maxlength="100"
+          />
+          <text class="form-hint">在微信群中获取群号ID，用于发送消息</text>
+        </view>
+        
+        <!-- 群状态 -->
+        <view class="form-group status-group" catchtap="">
+          <text class="form-label">群状态</text>
+          <view class="custom-select" catchtap="toggleStatusDropdown">
+            <text class="select-text">{{formData.Status}}</text>
+            <text class="select-arrow {{showStatusDropdown ? 'rotate' : ''}}">▼</text>
+          </view>
+          
+          <!-- 状态下拉选项 -->
+          <view class="dropdown-options {{showStatusDropdown ? 'show' : ''}}" catchtap="">
+            <block wx:if="{{statusOptions && statusOptions.length > 0}}">
+              <view 
+                class="dropdown-item {{item === formData.Status ? 'selected' : ''}}"
+                wx:for="{{statusOptions}}"
+                wx:key="index"
+                data-index="{{index}}"
+                data-status="{{item}}"
+                catchtap="selectStatus"
+              >
+                <text class="item-text">{{item}}</text>
+                <text class="item-check" wx:if="{{item === formData.Status}}">✓</text>
+              </view>
+            </block>
+          </view>
+        </view>
+      </view>
+      
+      <view class="popup-footer" catchtap="">
+        <view class="macaron-btn macaron-btn-lavender popup-btn" catchtap="closePopup" data-close-popup="true">
+          取消
+        </view>
+        <view class="macaron-btn macaron-btn-peach popup-btn" catchtap="saveNotificationGroup">
+          保存
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 确认对话框 -->
+  <view class="dialog-overlay" wx:if="{{showConfirmDialog}}" bindtap="closeConfirmDialog">
+    <view class="cartoon-card dialog-container" catchtap="">
+      <view class="dialog-header">
+        <image class="dialog-icon" src="/assets/icons/alert-circle.png" mode="aspectFit" />
+        <text class="dialog-title">{{confirmTitle}}</text>
+      </view>
+      
+      <view class="dialog-content">
+        <text class="dialog-message">{{confirmMessage}}</text>
+      </view>
+      
+      <view class="dialog-footer">
+        <view class="macaron-btn macaron-btn-lavender dialog-btn" bindtap="closeConfirmDialog">
+          取消
+        </view>
+        <view class="macaron-btn macaron-btn-pink dialog-btn" bindtap="onConfirmDialogConfirm">
+          确认
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

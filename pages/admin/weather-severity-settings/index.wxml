@@ -1,0 +1,185 @@
+<!-- 天气严重程度自定义设置页面 - Macaron Theme -->
+<view class="severity-settings-container">
+  <!-- Loading -->
+  <view wx:if="{{loading}}" class="loading-container">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+  
+  <!-- Content -->
+  <view wx:else class="content">
+    <!-- 页面标题 -->
+    <view class="page-header">
+      <view class="header-icon-wrapper">
+        <image class="header-icon" src="/assets/icons/alert-triangle.png" mode="aspectFit" />
+      </view>
+      <text class="page-title">天气严重程度设置</text>
+      <text class="page-subtitle">自定义每种天气的严重程度，控制预警敏感度</text>
+    </view>
+    
+    <!-- 预设配置选择 -->
+    <view class="section-container">
+      <view class="section-header">
+        <view class="section-icon-wrapper icon-peach">
+          <image class="section-icon" src="/assets/icons/briefcase.png" mode="aspectFit" />
+        </view>
+        <view class="section-title-group">
+          <text class="section-title">预设配置</text>
+          <text class="section-desc">快速选择适合的配置方案</text>
+        </view>
+      </view>
+      
+      <view class="preset-cards">
+        <view 
+          wx:for="{{presetOptions}}" 
+          wx:key="value"
+          class="cartoon-card preset-card {{presetType === item.value && !isCustom ? 'preset-active' : ''}}"
+          bindtap="onPresetChange"
+          data-preset="{{item.value}}"
+        >
+          <view class="preset-icon-wrapper {{item.value === 'conservative' ? 'icon-pink' : item.value === 'standard' ? 'icon-mint' : 'icon-blue'}}">
+            <!-- 使用PNG图标替换emoji -->
+            <image wx:if="{{item.value === 'conservative'}}" class="preset-icon-img" src="/assets/icons/shield.png" mode="aspectFit" />
+            <image wx:elif="{{item.value === 'standard'}}" class="preset-icon-img" src="/assets/icons/users.png" mode="aspectFit" />
+            <image wx:else class="preset-icon-img" src="/assets/icons/zap.png" mode="aspectFit" />
+          </view>
+          <view class="preset-info">
+            <text class="preset-label">{{item.label}}</text>
+            <text class="preset-desc">{{item.desc}}</text>
+          </view>
+          <view wx:if="{{presetType === item.value && !isCustom}}" class="preset-badge">
+            <text class="badge-text">当前</text>
+          </view>
+        </view>
+      </view>
+      
+      <view wx:if="{{isCustom}}" class="custom-badge-card">
+        <image class="custom-badge-icon-img" src="/assets/icons/edit.png" mode="aspectFit" />
+        <text class="custom-badge-text">当前为自定义配置</text>
+      </view>
+    </view>
+    
+    <!-- 高级设置 -->
+    <view class="section-container">
+      <view class="section-header clickable" bindtap="toggleAdvanced">
+        <view class="section-icon-wrapper icon-lavender">
+          <image class="section-icon" src="/assets/icons/settings.png" mode="aspectFit" />
+        </view>
+        <view class="section-title-group">
+          <text class="section-title">高级设置</text>
+          <text class="section-desc">详细自定义每种天气的严重程度</text>
+        </view>
+        <view class="expand-btn">
+          <text class="expand-icon">{{showAdvanced ? '▲' : '▼'}}</text>
+        </view>
+      </view>
+      
+      <!-- 天气类型列表 -->
+      <view wx:if="{{showAdvanced}}" class="weather-categories">
+        <view 
+          wx:for="{{weatherCategories}}" 
+          wx:key="name"
+          class="weather-category"
+        >
+          <!-- 分类标题 -->
+          <view class="cartoon-card category-header" bindtap="toggleCategory" data-index="{{index}}">
+            <view class="category-icon-wrapper">
+              <!-- 使用PNG图标替换emoji -->
+              <image wx:if="{{item.name === '降雨天气'}}" class="category-icon-img" src="/assets/icons/cloud-sun.png" mode="aspectFit" />
+              <image wx:elif="{{item.name === '降雪天气'}}" class="category-icon-img" src="/assets/icons/cloud-sun.png" mode="aspectFit" />
+              <image wx:elif="{{item.name === '能见度影响'}}" class="category-icon-img" src="/assets/icons/eye-off.png" mode="aspectFit" />
+              <image wx:elif="{{item.name === '其他极端天气'}}" class="category-icon-img" src="/assets/icons/alert-triangle.png" mode="aspectFit" />
+              <image wx:else class="category-icon-img" src="/assets/icons/sun.png" mode="aspectFit" />
+            </view>
+            <view class="category-info">
+              <text class="category-name">{{item.name}}</text>
+              <text class="category-count">{{item.weathers.length}}种天气</text>
+            </view>
+            <view class="category-expand-btn">
+              <text class="category-expand-icon">{{item.expanded ? '▲' : '▼'}}</text>
+            </view>
+          </view>
+          
+          <!-- 天气列表 -->
+          <view wx:if="{{item.expanded}}" class="weather-items">
+            <view 
+              wx:for="{{item.weathers}}" 
+              wx:for-item="weather"
+              wx:key="weather"
+              class="weather-item"
+              bindtap="onSeverityChange"
+              data-weather="{{weather}}"
+            >
+              <text class="weather-name">{{weather}}</text>
+              <view class="weather-severity-wrapper">
+                <view 
+                  class="severity-badge-macaron"
+                  style="background-color: {{item.colors[weather]}}"
+                >
+                  <text class="severity-badge-text">{{currentConfig[weather] || 0}}级</text>
+                </view>
+                <view class="severity-arrow-btn">
+                  <image class="severity-arrow-icon" src="/assets/icons/chevron-left.png" mode="aspectFit" />
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 说明信息 -->
+    <view class="cartoon-card info-section">
+      <view class="info-header">
+        <view class="info-icon-wrapper icon-yellow">
+          <image class="info-icon" src="/assets/icons/alert-circle.png" mode="aspectFit" />
+        </view>
+        <text class="info-title">严重程度说明</text>
+      </view>
+      
+      <view class="severity-legend">
+        <view wx:for="{{severityLevels}}" wx:key="value" class="severity-legend-item">
+          <view 
+            class="severity-dot"
+            style="background-color: {{item.color}}"
+          ></view>
+          <text class="severity-legend-text">{{item.label}} - {{item.desc}}</text>
+        </view>
+      </view>
+      
+      <view class="info-tips-card">
+        <view class="tip-item">
+          <image class="tip-icon-img" src="/assets/icons/alert-circle.png" mode="aspectFit" />
+          <text class="tip-text">预警阈值：只有达到或超过"预警严重程度阈值"的天气才会触发预警</text>
+        </view>
+        <view class="tip-item">
+          <image class="tip-icon-img" src="/assets/icons/history.png" mode="aspectFit" />
+          <text class="tip-text">配置实时生效：保存后立即应用于天气预警任务</text>
+        </view>
+        <view class="tip-item">
+          <image class="tip-icon-img" src="/assets/icons/check-circle.png" mode="aspectFit" />
+          <text class="tip-text">推荐配置：如不确定如何设置，建议选择预设配置</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 占位，防止被底部按钮遮挡 -->
+    <view class="bottom-placeholder"></view>
+  </view>
+  
+  <!-- 底部按钮 -->
+  <view class="button-group">
+    <button class="macaron-btn macaron-btn-lavender reset-btn" bindtap="onReset">
+      <image class="btn-icon" src="/assets/icons/history.png" mode="aspectFit" />
+      <text>重置为推荐</text>
+    </button>
+    <button 
+      class="macaron-btn macaron-btn-peach save-btn" 
+      bindtap="onSave"
+      disabled="{{saving}}"
+    >
+      <image class="btn-icon" src="/assets/icons/check-circle.png" mode="aspectFit" />
+      <text>{{saving ? '保存中...' : '保存设置'}}</text>
+    </button>
+  </view>
+</view>

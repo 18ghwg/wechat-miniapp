@@ -1,0 +1,261 @@
+.cron-editor {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  box-sizing: border-box;
+}
+
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20rpx;
+  margin-bottom: 20rpx;
+  border-bottom: 1px solid #eee;
+}
+
+/* 可滚动内容区域 */
+.editor-scroll-content {
+  height: 60vh;
+  max-height: 1100rpx;
+  margin-bottom: 16rpx;
+  box-sizing: border-box;
+}
+
+.header-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.header-field {
+  font-size: 28rpx;
+  color: #666;
+}
+
+/* 快捷选项 */
+.quick-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+
+.option-item {
+  flex: 0 0 calc(50% - 8rpx);
+  background: #f5f5f5;
+  border-radius: 12rpx;
+  padding: 16rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  transition: all 0.3s;
+}
+
+.option-item.active {
+  background: #e3f2fd;
+  border: 2px solid #2196F3;
+}
+
+.option-label {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.option-item.active .option-label {
+  color: #2196F3;
+  font-weight: bold;
+}
+
+.option-value {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  font-family: 'Courier New', monospace;
+}
+
+.option-item.active .option-value {
+  color: #2196F3;
+}
+
+/* 配置区域 */
+.config-area {
+  background: #f9f9f9;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+  min-height: 100rpx;
+}
+
+.config-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+}
+
+.input-label {
+  font-size: 28rpx;
+  color: #666;
+  min-width: 100rpx;
+}
+
+.config-input {
+  flex: 1;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8rpx;
+  padding: 15rpx 20rpx;
+  font-size: 28rpx;
+}
+
+.config-input.full {
+  flex: 1;
+}
+
+.input-separator {
+  font-size: 28rpx;
+  color: #999;
+  padding: 0 10rpx;
+}
+
+.input-unit {
+  font-size: 26rpx;
+  color: #999;
+  min-width: 60rpx;
+  text-align: right;
+}
+
+.panel-hint {
+  font-size: 24rpx;
+  color: #999;
+  padding: 12rpx 15rpx;
+  background: #fff;
+  border-left: 3rpx solid #2196F3;
+  border-radius: 4rpx;
+  line-height: 1.4;
+  margin-top: 8rpx;
+}
+
+/* 表达式结果 */
+.expression-result {
+  background: #e8f5e9;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  margin-bottom: 16rpx;
+  transition: all 0.3s ease;
+}
+
+.expression-result.valid {
+  background: #e8f5e9;
+  border: 2px solid #4caf50;
+}
+
+.expression-result.invalid {
+  background: #ffebee;
+  border: 2px solid #f44336;
+  animation: shake 0.5s;
+}
+
+.result-label {
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 8rpx;
+}
+
+.result-value {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #4caf50;
+  font-family: 'Courier New', monospace;
+  word-break: break-all;
+  margin-bottom: 8rpx;
+  line-height: 1.4;
+}
+
+.expression-result.invalid .result-value {
+  color: #f44336;
+}
+
+.result-message {
+  font-size: 24rpx;
+  color: #4caf50;
+  line-height: 1.4;
+}
+
+.expression-result.invalid .result-message {
+  color: #f44336;
+}
+
+/* 操作按钮（固定在底部） */
+.action-buttons {
+  display: flex;
+  gap: 16rpx;
+  flex-shrink: 0;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #e0e0e0;
+}
+
+.btn-cancel,
+.btn-confirm {
+  flex: 1;
+  height: 76rpx;
+  line-height: 76rpx;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  border: none;
+}
+
+.btn-cancel {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.btn-confirm {
+  background: #2196F3;
+  color: #fff;
+}
+
+/* 快捷选择 */
+.quick-select {
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1px dashed #ddd;
+}
+
+.quick-label {
+  display: block;
+  font-size: 24rpx;
+  color: #999;
+  margin-bottom: 15rpx;
+}
+
+.quick-buttons {
+  display: flex;
+  gap: 15rpx;
+  flex-wrap: wrap;
+}
+
+.quick-btn {
+  flex: 0 0 auto;
+  height: 60rpx;
+  line-height: 60rpx;
+  padding: 0 20rpx;
+  background: #fff;
+  border: 1px solid #2196F3;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  color: #2196F3;
+  margin: 0;
+}
+
+.quick-btn::after {
+  border: none;
+}
+

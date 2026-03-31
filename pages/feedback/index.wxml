@@ -1,0 +1,168 @@
+<!-- 意见反馈页面 - Macaron 马卡龙风格 -->
+<view class="container">
+  <!-- 欢迎语 - cartoon-card 样式 -->
+  <view class="welcome-section cartoon-card" wx:if="{{feedbackSetting && feedbackSetting.welcome_message}}">
+    <view class="welcome-icon-wrapper">
+      <image class="welcome-icon-img" src="/assets/icons/megaphone.png" mode="aspectFit" />
+    </view>
+    <text class="welcome-text">{{feedbackSetting.welcome_message}}</text>
+  </view>
+
+  <!-- 反馈表单 - cartoon-card 样式 -->
+  <view class="form-section cartoon-card" wx:if="{{isEnabled}}">
+    <view class="section-header">
+      <image class="section-icon-img" src="/assets/icons/edit.png" mode="aspectFit" />
+      <text class="section-title">提交反馈</text>
+    </view>
+    
+    <!-- 反馈类型 - 马卡龙风格单选组 -->
+    <view class="form-item">
+      <view class="form-label">
+        <image class="label-icon-img" src="/assets/icons/filter.png" mode="aspectFit" />
+        <text class="label-text">反馈类型</text>
+      </view>
+      <view class="type-radio-group">
+        <view 
+          wx:for="{{feedbackTypes}}" 
+          wx:key="value"
+          class="type-radio-item {{formData.feedback_type === item.value ? 'selected' : ''}}"
+          bindtap="onTypeSelect"
+          data-value="{{item.value}}"
+        >
+          <view class="type-radio-icon">
+            <image class="type-icon-img" src="/assets/icons/{{item.value === 'bug' ? 'alert-circle' : item.value === 'suggestion' ? 'trending-up' : 'alert-triangle'}}.png" mode="aspectFit" />
+          </view>
+          <text class="type-radio-label">{{item.label}}</text>
+          <view class="type-check-mark" wx:if="{{formData.feedback_type === item.value}}">
+            <image class="check-icon-img" src="/assets/icons/check-circle.png" mode="aspectFit" />
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 反馈标题 -->
+    <view class="form-item">
+      <view class="form-label">
+        <image class="label-icon-img" src="/assets/icons/edit.png" mode="aspectFit" />
+        <text class="label-text">反馈标题 *</text>
+      </view>
+      <input 
+        class="form-input-macaron" 
+        placeholder="请简要描述您的问题或建议"
+        value="{{formData.title}}"
+        data-field="title"
+        bindinput="onInputChange"
+        maxlength="100"
+      />
+    </view>
+
+    <!-- 反馈内容 - form-textarea-macaron 样式 -->
+    <view class="form-item">
+      <view class="form-label">
+        <image class="label-icon-img" src="/assets/icons/clipboard.png" mode="aspectFit" />
+        <text class="label-text">详细内容 *</text>
+      </view>
+      <view class="textarea-wrapper">
+        <textarea 
+          class="form-textarea-macaron" 
+          placeholder="请详细描述您遇到的问题、建议或意见..."
+          value="{{formData.content}}"
+          data-field="content"
+          bindinput="onInputChange"
+          maxlength="1000"
+          auto-height
+        ></textarea>
+        <view class="char-count">
+          <text class="char-current">{{formData.content.length || 0}}</text>
+          <text class="char-separator">/</text>
+          <text class="char-max">1000</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 提交按钮 - macaron-btn-peach 样式 -->
+    <button 
+      class="macaron-btn macaron-btn-peach submit-btn {{submitting ? 'loading' : ''}}" 
+      bindtap="onSubmit" 
+      disabled="{{submitting || !isEnabled}}"
+    >
+      <text wx:if="{{!submitting}}">提交反馈</text>
+      <view wx:else class="submitting-content">
+        <view class="loading-spinner-small"></view>
+        <text>提交中...</text>
+      </view>
+    </button>
+  </view>
+
+  <!-- 功能关闭提示 - cartoon-card 样式 -->
+  <view class="disabled-notice cartoon-card" wx:if="{{!isEnabled}}">
+    <view class="notice-icon-wrapper">
+      <image class="notice-icon-img" src="/assets/icons/alert-triangle.png" mode="aspectFit" />
+    </view>
+    <text class="notice-title">功能暂时关闭</text>
+    <text class="notice-content">意见反馈功能暂时关闭，如有紧急问题请联系管理员。</text>
+  </view>
+
+  <!-- 历史反馈 - cartoon-card 列表样式 -->
+  <view class="history-section" wx:if="{{userFeedbacks.length > 0}}">
+    <view class="history-header" bindtap="onToggleHistory">
+      <view class="history-header-left">
+        <image class="history-icon-img" src="/assets/icons/history.png" mode="aspectFit" />
+        <text class="history-title">我的反馈记录</text>
+        <view class="history-count status-badge status-inactive">{{userFeedbacks.length}}</view>
+      </view>
+      <view class="toggle-btn">
+        <text class="toggle-text">{{showHistory ? '收起' : '展开'}}</text>
+        <text class="toggle-icon {{showHistory ? 'expanded' : ''}}">▼</text>
+      </view>
+    </view>
+    
+    <view class="feedback-list" wx:if="{{showHistory}}">
+      <view 
+        class="feedback-item cartoon-card"
+        wx:for="{{userFeedbacks}}"
+        wx:key="id"
+        data-item="{{item}}"
+        bindtap="onFeedbackTap"
+      >
+        <view class="feedback-header">
+          <text class="feedback-title">{{item.title}}</text>
+          <view class="feedback-status status-badge {{item.status === 'resolved' ? 'status-active' : item.status === 'processing' ? 'status-processing' : item.status === 'closed' ? 'status-closed' : 'status-pending'}}">
+            {{item.status === 'pending' ? '待处理' : 
+              item.status === 'processing' ? '处理中' : 
+              item.status === 'resolved' ? '已解决' : '已关闭'}}
+          </view>
+        </view>
+        <text class="feedback-content">{{item.content}}</text>
+        <view class="feedback-footer">
+          <view class="feedback-time-wrapper">
+            <image class="time-icon-img" src="/assets/icons/calendar.png" mode="aspectFit" />
+            <text class="feedback-time">{{item.create_time}}</text>
+          </view>
+          <view class="feedback-type-badge">
+            <image class="type-badge-icon-img" src="/assets/icons/{{item.feedback_type === 'bug' ? 'alert-circle' : item.feedback_type === 'suggestion' ? 'trending-up' : 'alert-triangle'}}.png" mode="aspectFit" />
+            <text class="feedback-type-text">
+              {{item.feedback_type === 'bug' ? '问题反馈' : 
+                item.feedback_type === 'suggestion' ? '意见建议' : '其他'}}
+            </text>
+          </view>
+        </view>
+        <view class="feedback-reply" wx:if="{{item.admin_reply}}">
+          <view class="reply-header">
+            <image class="reply-icon-img" src="/assets/icons/megaphone.png" mode="aspectFit" />
+            <text class="reply-label">管理员回复</text>
+          </view>
+          <text class="reply-content">{{item.admin_reply}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 管理员功能 -->
+  <view class="admin-section" wx:if="{{isAdmin}}">
+    <button class="macaron-btn macaron-btn-lavender admin-btn" bindtap="onManageFeedbacks">
+      <image class="admin-btn-icon-img" src="/assets/icons/settings.png" mode="aspectFit" />
+      <text>管理所有反馈</text>
+    </button>
+  </view>
+</view>

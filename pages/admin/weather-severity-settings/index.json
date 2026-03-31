@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "天气严重程度设置",
+  "navigationBarBackgroundColor": "#FFF9F2",
+  "navigationBarTextStyle": "black",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#FFF9F2",
+  "backgroundTextStyle": "dark"
+}

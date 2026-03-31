@@ -1,0 +1,437 @@
+/* 首页样式 - 完全匹配 Weixin-main HomePage 设计 */
+/* 使用 macaron-theme.wxss 主题样式 */
+@import '/style/macaron-theme.wxss';
+
+page {
+  height: 100%;
+  background: linear-gradient(135deg, #FFE5E5 0%, #E5D4FF 50%, #D4E5FF 100%);
+}
+
+/* 首页容器 */
+.home-page {
+  min-height: 100vh;
+  padding: 96rpx 48rpx;
+}
+
+/* 加载状态 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+}
+
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 4rpx solid #e3e3e3;
+  border-top: 4rpx solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  margin-top: 32rpx;
+  font-size: 28rpx;
+  color: var(--foreground);
+  font-weight: var(--font-weight-medium);
+  opacity: 0.6;
+}
+
+/* 主要内容 */
+.main-content {
+  max-width: 1200rpx;
+  margin: 0 auto;
+}
+
+/* 页面头部 */
+.page-header {
+  text-align: center;
+  margin-bottom: 96rpx;
+  padding-top: 64rpx;
+}
+
+.header-title-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24rpx;
+}
+
+/* Sparkles 图标容器 - 脉冲动画 */
+.sparkle-icon-svg {
+  position: absolute;
+  top: -16rpx;
+  right: -48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+.page-title {
+  font-size: 96rpx;
+  font-weight: var(--font-weight-bold);
+  background: linear-gradient(135deg, #9333EA 0%, #EC4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.page-subtitle {
+  font-size: 36rpx;
+  color: #666;
+  font-weight: var(--font-weight-medium);
+}
+
+/* 功能卡片网格 */
+.feature-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 48rpx;
+  margin-bottom: 96rpx;
+}
+
+/* 功能卡片基础样式 - cartoon-card 风格 */
+.feature-card {
+  position: relative;
+  border-radius: var(--radius-cartoon);
+  overflow: hidden;
+  border: 6rpx solid var(--foreground);
+  box-shadow: var(--shadow-cartoon);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  /* 确保最小触摸区域 88rpx × 88rpx */
+  min-height: 300rpx;
+}
+
+/* 卡片 :active 按压效果 - 匹配 cartoon-card 样式 */
+.feature-card:active {
+  transform: translate(6rpx, 6rpx);
+  box-shadow: 0rpx 0rpx 0rpx var(--foreground);
+}
+
+/* 考勤卡片 - 蓝色到青色渐变 */
+.attendance-card {
+  background: linear-gradient(135deg, #60A5FA 0%, #22D3EE 100%);
+}
+
+/* 电费卡片 - 黄色到橙色渐变 */
+.electricity-card {
+  background: linear-gradient(135deg, #FBBF24 0%, #FB923C 100%);
+}
+
+/* 卡片内容 */
+.card-content {
+  padding: 64rpx 48rpx;
+  position: relative;
+  z-index: 10;
+}
+
+/* 卡片图标容器 */
+.card-icon-wrapper {
+  width: 160rpx;
+  height: 160rpx;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20rpx);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 48rpx;
+  transition: transform 0.2s ease;
+}
+
+.feature-card:active .card-icon-wrapper {
+  transform: scale(1.1);
+}
+
+/* 卡片标题 */
+.card-title {
+  display: block;
+  font-size: 56rpx;
+  font-weight: var(--font-weight-bold);
+  color: white;
+  margin-bottom: 24rpx;
+}
+
+/* 卡片描述 */
+.card-desc {
+  display: block;
+  font-size: 32rpx;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.5;
+  font-weight: var(--font-weight-medium);
+}
+
+/* 装饰圆圈 */
+.deco-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.deco-circle-1 {
+  width: 256rpx;
+  height: 256rpx;
+  top: -80rpx;
+  right: -80rpx;
+}
+
+.deco-circle-2 {
+  width: 320rpx;
+  height: 320rpx;
+  bottom: -80rpx;
+  left: -80rpx;
+}
+
+/* 底部提示 */
+.footer-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  margin-top: 96rpx;
+}
+
+.tip-text {
+  font-size: 28rpx;
+  color: #999;
+  font-weight: var(--font-weight-medium);
+}
+
+/* 响应式设计 - 小屏幕单列布局 */
+@media (max-width: 600px) {
+  .feature-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== 减少动画（可访问性）===== */
+@media (prefers-reduced-motion: reduce) {
+  .feature-card,
+  .card-icon-wrapper,
+  .sparkle-icon-svg {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* ==================== SVG 图标样式 ==================== */
+
+/* Sparkles 图标 (闪光) - 黄色主题 */
+.icon-sparkles {
+  width: 56rpx;
+  height: 56rpx;
+  position: relative;
+}
+
+.sparkle {
+  position: absolute;
+  background-color: #FFD93D;
+}
+
+.sparkle-1 {
+  width: 8rpx;
+  height: 24rpx;
+  top: 16rpx;
+  left: 24rpx;
+  border-radius: 4rpx;
+}
+
+.sparkle-1::before {
+  content: '';
+  position: absolute;
+  width: 24rpx;
+  height: 8rpx;
+  background-color: #FFD93D;
+  top: 8rpx;
+  left: -8rpx;
+  border-radius: 4rpx;
+}
+
+.sparkle-2 {
+  width: 6rpx;
+  height: 16rpx;
+  top: 8rpx;
+  right: 12rpx;
+  border-radius: 3rpx;
+}
+
+.sparkle-2::before {
+  content: '';
+  position: absolute;
+  width: 16rpx;
+  height: 6rpx;
+  background-color: #FFD93D;
+  top: 5rpx;
+  left: -5rpx;
+  border-radius: 3rpx;
+}
+
+.sparkle-3 {
+  width: 6rpx;
+  height: 16rpx;
+  bottom: 8rpx;
+  left: 8rpx;
+  border-radius: 3rpx;
+}
+
+.sparkle-3::before {
+  content: '';
+  position: absolute;
+  width: 16rpx;
+  height: 6rpx;
+  background-color: #FFD93D;
+  top: 5rpx;
+  left: -5rpx;
+  border-radius: 3rpx;
+}
+
+/* Sparkles 图标 (微小) - 底部提示用 */
+.tip-sparkle-svg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-sparkles-tiny {
+  width: 32rpx;
+  height: 32rpx;
+  position: relative;
+}
+
+.sparkle-tiny {
+  position: absolute;
+  background-color: #FFD93D;
+}
+
+.sparkle-tiny-1 {
+  width: 4rpx;
+  height: 16rpx;
+  top: 8rpx;
+  left: 14rpx;
+  border-radius: 2rpx;
+}
+
+.sparkle-tiny-1::before {
+  content: '';
+  position: absolute;
+  width: 16rpx;
+  height: 4rpx;
+  background-color: #FFD93D;
+  top: 6rpx;
+  left: -6rpx;
+  border-radius: 2rpx;
+}
+
+.sparkle-tiny-2 {
+  width: 3rpx;
+  height: 10rpx;
+  top: 4rpx;
+  right: 8rpx;
+  border-radius: 2rpx;
+}
+
+.sparkle-tiny-2::before {
+  content: '';
+  position: absolute;
+  width: 10rpx;
+  height: 3rpx;
+  background-color: #FFD93D;
+  top: 3rpx;
+  left: -3rpx;
+  border-radius: 2rpx;
+}
+
+/* Clock 图标 (卡片) - 白色主题 */
+.card-icon-svg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-clock-card {
+  width: 80rpx;
+  height: 80rpx;
+  position: relative;
+}
+
+.clock-circle-card {
+  width: 72rpx;
+  height: 72rpx;
+  border: 6rpx solid white;
+  border-radius: 50%;
+  position: absolute;
+  top: 4rpx;
+  left: 4rpx;
+}
+
+.clock-hour-card {
+  width: 6rpx;
+  height: 24rpx;
+  background-color: white;
+  position: absolute;
+  top: 20rpx;
+  left: 37rpx;
+  transform-origin: bottom center;
+  border-radius: 3rpx;
+}
+
+.clock-minute-card {
+  width: 4rpx;
+  height: 32rpx;
+  background-color: white;
+  position: absolute;
+  top: 12rpx;
+  left: 38rpx;
+  transform-origin: bottom center;
+  border-radius: 2rpx;
+}
+
+/* Zap 图标 (卡片) - 白色主题 */
+.icon-zap-card {
+  width: 80rpx;
+  height: 88rpx;
+  position: relative;
+}
+
+.zap-bolt-card {
+  width: 0;
+  height: 0;
+  border-left: 40rpx solid transparent;
+  border-right: 40rpx solid transparent;
+  border-top: 48rpx solid white;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.zap-bolt-card::before {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 24rpx solid transparent;
+  border-right: 24rpx solid transparent;
+  border-bottom: 40rpx solid white;
+  top: 48rpx;
+  left: -24rpx;
+}

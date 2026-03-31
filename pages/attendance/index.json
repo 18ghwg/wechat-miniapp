@@ -1,0 +1,12 @@
+{
+  "navigationBarTitleText": "考勤管理",
+  "navigationBarBackgroundColor": "#FFF9F2",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#FFF9F2",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "guest-banner": "/components/guest-banner/index",
+    "login-required": "/components/login-required/index",
+    "notice-modal": "/components/notice-modal/index"
+  }
+}

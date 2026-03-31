@@ -1,0 +1,535 @@
+/* 电费历史记录页面 - 马卡龙风格 */
+@import "../../../style/macaron-theme.wxss";
+
+.history-container {
+  min-height: 100vh;
+  background-color: var(--background);
+  padding: 32rpx;
+  padding-bottom: 180rpx;
+}
+
+/* ==================== Header ==================== */
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  margin-bottom: 32rpx;
+}
+
+.back-btn {
+  width: 34rpx;
+  height: 34rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+  flex-shrink: 0;
+}
+
+.back-btn:active {
+  transform: translate(4rpx, 4rpx);
+  box-shadow: none;
+}
+
+.back-icon {
+  width: 22rpx;
+  height: 22rpx;
+}
+
+.page-title {
+  flex: 1;
+  font-size: 48rpx;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+.export-btn {
+  width: 80rpx;
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--mint-macaron);
+  flex-shrink: 0;
+}
+
+.export-btn:active {
+  transform: translate(4rpx, 4rpx);
+  box-shadow: none;
+}
+
+.export-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+/* ==================== Filter Card ==================== */
+.filter-card {
+  background-color: white;
+  padding: 40rpx;
+  margin-bottom: 32rpx;
+}
+
+.filter-header {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+
+.filter-icon {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.filter-title {
+  font-size: 28rpx;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+.filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-bottom: 32rpx;
+}
+
+.filter-btn {
+  padding: 16rpx 28rpx;
+  border-radius: 40rpx;
+  border: 4rpx solid var(--foreground);
+  background-color: #f8f9fa;
+  opacity: 0.6;
+  transition: all 0.2s;
+}
+
+.filter-btn text {
+  font-size: 24rpx;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+.filter-btn.active {
+  background-color: var(--peach-macaron);
+  opacity: 1;
+  box-shadow: 6rpx 6rpx 0 var(--foreground);
+}
+
+.filter-btn:active {
+  transform: translate(3rpx, 3rpx);
+  box-shadow: 3rpx 3rpx 0 var(--foreground);
+}
+
+/* Stats Row */
+.stats-row {
+  display: flex;
+  gap: 16rpx;
+}
+
+.stat-box {
+  flex: 1;
+  padding: 24rpx 16rpx;
+  border-radius: 24rpx;
+  border: 4rpx solid;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.stat-orange {
+  background-color: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.stat-orange .stat-label {
+  color: rgba(234, 88, 12, 0.6);
+}
+
+.stat-orange .stat-value {
+  color: #c2410c;
+}
+
+.stat-blue {
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.stat-blue .stat-label {
+  color: rgba(37, 99, 235, 0.6);
+}
+
+.stat-blue .stat-value {
+  color: #1d4ed8;
+}
+
+.stat-green {
+  background-color: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.stat-green .stat-label {
+  color: rgba(22, 163, 74, 0.6);
+}
+
+.stat-green .stat-value {
+  color: #15803d;
+}
+
+.stat-red {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+}
+
+.stat-red .stat-label {
+  color: rgba(220, 38, 38, 0.6);
+}
+
+.stat-red .stat-value {
+  color: #dc2626;
+}
+
+.stat-label {
+  font-size: 18rpx;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  font-size: 28rpx;
+  font-weight: 900;
+}
+
+/* ==================== Chart Section ==================== */
+.chart-section {
+  margin-bottom: 32rpx;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+  padding: 0 8rpx;
+}
+
+.section-icon {
+  width: 44rpx;
+  height: 44rpx;
+}
+
+.section-title {
+  font-size: 40rpx;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+.chart-card {
+  background-color: white;
+  padding: 48rpx;
+  height: 480rpx;
+  position: relative;
+}
+
+.chart-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* Chart Tooltip - 与 Web 端一致的马卡龙风格 */
+.chart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.chart-tooltip.show {
+  opacity: 1;
+}
+
+.tooltip-content {
+  background-color: #ffffff;
+  border-radius: 32rpx;
+  border: 6rpx solid #5E4E3E;
+  box-shadow: 8rpx 8rpx 0rpx #5E4E3E;
+  padding: 24rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12rpx;
+  white-space: nowrap;
+}
+
+.tooltip-date {
+  font-size: 28rpx;
+  font-weight: 900;
+  color: #5E4E3E;
+}
+
+.tooltip-value {
+  font-size: 32rpx;
+  font-weight: 900;
+  color: #FF9F43;
+}
+
+/* ==================== Records Section ==================== */
+.records-section {
+  margin-bottom: 32rpx;
+}
+
+.records-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.record-card {
+  background-color: white;
+  padding: 40rpx;
+}
+
+/* Record Row 1: 户号 + 查询时间 */
+.record-row-1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.record-account {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.record-icon {
+  width: 32rpx;
+  height: 32rpx;
+}
+
+.record-account-no {
+  font-size: 28rpx;
+  font-weight: 900;
+  color: var(--foreground);
+  font-family: monospace;
+}
+
+.record-time {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+/* Record Row 2: 数据日期 */
+.record-row-2 {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.record-icon-small {
+  width: 24rpx;
+  height: 24rpx;
+}
+
+.record-date {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+/* Record Row 3: Usage + Balance */
+.record-row-3 {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.record-usage,
+.record-balance {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.record-balance {
+  align-items: flex-end;
+}
+
+.record-label {
+  font-size: 24rpx;
+  font-weight: 900;
+  color: var(--muted-foreground);
+}
+
+.record-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4rpx;
+}
+
+.record-usage-value {
+  font-size: 42rpx;
+  font-weight: 900;
+  color: var(--peach-macaron);
+}
+
+.record-unit {
+  font-size: 28rpx;
+  font-weight: 900;
+  color: var(--peach-macaron);
+}
+
+.record-balance-value {
+  font-size: 42rpx;
+  font-weight: 900;
+}
+
+.record-balance-value.positive {
+  color: #16a34a;
+}
+
+.record-balance-value.negative {
+  color: #dc2626;
+}
+
+/* Record Row 4: Address + Owner */
+.record-row-4 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24rpx;
+  padding-top: 24rpx;
+  border-top: 4rpx dashed #f1f5f9;
+}
+
+.record-address,
+.record-owner {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.record-icon-tiny {
+  width: 20rpx;
+  height: 20rpx;
+}
+
+.record-small-text {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+/* ==================== Loading State ==================== */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120rpx 0;
+}
+
+.loading-spinner {
+  width: 64rpx;
+  height: 64rpx;
+  border: 6rpx solid var(--foreground);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-spinner-small {
+  width: 40rpx;
+  height: 40rpx;
+  border: 4rpx solid var(--foreground);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  margin-top: 24rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+/* ==================== Empty State ==================== */
+.empty-state {
+  background-color: rgba(255, 255, 255, 0.4);
+  border: 8rpx dashed rgba(94, 78, 62, 0.1);
+  padding: 160rpx 64rpx;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.empty-icon-wrapper {
+  width: 160rpx;
+  height: 160rpx;
+  background-color: #f3f4f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32rpx;
+}
+
+.empty-icon {
+  width: 80rpx;
+  height: 80rpx;
+  opacity: 0.3;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  font-weight: 900;
+  color: var(--muted-foreground);
+}
+
+/* ==================== Load More ==================== */
+.load-more {
+  padding: 32rpx 0;
+  display: flex;
+  justify-content: center;
+}
+
+.load-more-btn {
+  background-color: white;
+  padding: 24rpx 64rpx;
+}
+
+.load-more-btn text {
+  font-size: 28rpx;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+.load-more-btn:active {
+  transform: translate(4rpx, 4rpx);
+  box-shadow: none;
+}
+
+.loading-more {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.loading-more .loading-text {
+  margin-top: 0;
+}
+
+/* Bottom Spacing */
+.bottom-spacing {
+  height: 48rpx;
+}

@@ -1,0 +1,167 @@
+<!--网盘账号管理页面-->
+<view class="netdisk-container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <view class="header-content">
+      <text class="page-title">网盘账号管理</text>
+      <text class="page-subtitle">管理您的网盘账号信息</text>
+    </view>
+    <view class="header-decoration">
+      <view class="decoration-circle circle-1"></view>
+      <view class="decoration-circle circle-2"></view>
+      <view class="decoration-circle circle-3"></view>
+    </view>
+  </view>
+
+  <!-- 用户信息卡片 -->
+  <view class="info-card">
+    <view class="card-header">
+      <icon type="info" size="20" style="color: #007AFF;"></icon>
+      <text class="card-title">当前用户信息</text>
+    </view>
+    <view class="user-info">
+      <text class="user-name">{{(userInfo && userInfo.real_name) || (userInfo && userInfo.nickname) || '未知用户'}}</text>
+      <view class="user-badges">
+        <text class="badge admin" wx:if="{{isAdmin}}">管理员</text>
+        <text class="badge test" wx:if="{{testMode}}">测试模式</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 管理员用户选择 -->
+  <view class="form-section" wx:if="{{isAdmin && allUsers && allUsers.length > 0}}">
+    <view class="section-title">选择用户</view>
+    <picker 
+      mode="selector" 
+      range="{{allUsers}}" 
+      range-key="name"
+      value="{{selectedUserIndex}}"
+      bindchange="onUserSelect"
+    >
+      <view class="picker-input">
+        <text>{{(formData && formData.user_name) || '请选择用户'}}</text>
+        <icon type="download" size="16" style="transform: rotate(90deg);"></icon>
+      </view>
+    </picker>
+  </view>
+
+  <!-- 网盘账号信息表单 -->
+  <view class="form-section">
+    <view class="section-title">
+      <text>网盘账号信息</text>
+    </view>
+
+    <!-- 加载状态 -->
+    <view class="loading-container" wx:if="{{loading}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <!-- 表单内容 -->
+    <view class="form-content" wx:elif="{{!loading}}">
+      <!-- 用户名 -->
+      <view class="form-item" wx:if="{{!isAdmin}}">
+        <view class="form-label">用户姓名</view>
+        <input 
+          class="form-input disabled"
+          value="{{formData && formData.user_name || ''}}"
+          disabled="{{true}}"
+          placeholder="用户姓名"
+        />
+      </view>
+
+      <!-- 网盘用户名 -->
+      <view class="form-item">
+        <view class="form-label">网盘用户名</view>
+        <input 
+          class="form-input {{isEditing ? '' : 'disabled'}}"
+          value="{{formData && formData.sony_username || ''}}"
+          data-field="sony_username"
+          bindinput="onInputChange"
+          disabled="{{!isEditing}}"
+          placeholder="请输入网盘用户名"
+        />
+      </view>
+
+      <!-- 网盘密码 -->
+      <view class="form-item">
+        <view class="form-label">网盘密码</view>
+        <input 
+          class="form-input {{isEditing ? '' : 'disabled'}}"
+          value="{{formData && formData.sony_password || ''}}"
+          data-field="sony_password"
+          bindinput="onInputChange"
+          disabled="{{!isEditing}}"
+          password="{{!isEditing}}"
+          placeholder="请输入网盘密码"
+        />
+      </view>
+
+      <!-- 自动生成工资条 -->
+      <view class="form-item switch-item">
+        <view class="form-label">自动生成工资条</view>
+        <switch 
+          checked="{{formData && formData.is_auto_create_salary || false}}"
+          data-field="is_auto_create_salary"
+          bindchange="onSwitchChange"
+          disabled="{{!isEditing}}"
+          color="#007AFF"
+        />
+      </view>
+    </view>
+  </view>
+
+  <!-- 编辑按钮区域 -->
+  <view class="edit-section" wx:if="{{!loading && !isEditing && netdiskInfo}}">
+    <button class="edit-action-btn" bindtap="toggleEditMode">
+      <icon type="pencil" size="20" style="color: #007AFF;"></icon>
+      <text>编辑网盘信息</text>
+    </button>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="action-buttons" wx:if="{{!loading}}">
+    <!-- 编辑模式按钮 -->
+    <view wx:if="{{isEditing}}">
+      <button class="action-btn primary" bindtap="saveNetdiskInfo">
+        <icon type="success" size="16"></icon>
+        <text>保存信息</text>
+      </button>
+      <button class="action-btn secondary" bindtap="toggleEditMode">
+        <icon type="cancel" size="16"></icon>
+        <text>取消编辑</text>
+      </button>
+    </view>
+
+    <!-- 查看模式按钮 -->
+    <view wx:else>
+      <button class="action-btn primary" wx:if="{{!netdiskInfo}}" bindtap="toggleEditMode">
+        <icon type="success" size="16"></icon>
+        <text>添加网盘信息</text>
+      </button>
+      
+      <button 
+        class="action-btn danger" 
+        wx:if="{{netdiskInfo && isAdmin}}" 
+        bindtap="deleteNetdiskInfo"
+      >
+        <icon type="warn" size="16"></icon>
+        <text>删除信息</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 说明信息 -->
+  <view class="help-section">
+    <view class="help-header">
+      <icon type="info" size="16" style="color: #999;"></icon>
+      <text class="help-title">使用说明</text>
+    </view>
+    <view class="help-content">
+      <text class="help-text">• 网盘账号用于自动上传考勤Excel文件到公司网盘</text>
+      <text class="help-text">• 未配置网盘信息的用户无法提交考勤记录</text>
+      <text class="help-text">• 请联系管理员配置您的网盘账号信息</text>
+      <text class="help-text" wx:if="{{isAdmin}}">• 管理员可以管理所有用户的网盘账号</text>
+    </view>
+  </view>
+</view>

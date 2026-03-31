@@ -1,0 +1,170 @@
+<!--电费历史记录页面 - 马卡龙风格-->
+<view class="history-container">
+  <!-- Header -->
+  <view class="page-header">
+    <view class="back-btn cartoon-card" bindtap="goBack">
+      <image class="back-icon" src="/assets/icons/chevron-left.png" mode="aspectFit"/>
+    </view>
+    <text class="page-title">电费历史记录</text>
+  </view>
+
+  <!-- Filter Card -->
+  <view class="filter-card cartoon-card">
+    <view class="filter-header">
+      <image class="filter-icon" src="/assets/icons/filter.png" mode="aspectFit"/>
+      <text class="filter-title">筛选电网账号</text>
+    </view>
+    
+    <!-- Account Filter Buttons -->
+    <view class="filter-buttons">
+      <view 
+        class="filter-btn {{selectedAccountId === 'all' ? 'active' : ''}}"
+        bindtap="onSelectAccount"
+        data-id="all"
+      >
+        <text>全部账号</text>
+      </view>
+      <view 
+        class="filter-btn {{selectedAccountId === item.id ? 'active' : ''}}"
+        wx:for="{{accountOptions}}"
+        wx:key="id"
+        bindtap="onSelectAccount"
+        data-id="{{item.id}}"
+      >
+        <text>{{item.address}}</text>
+      </view>
+    </view>
+
+    <!-- Stats Row -->
+    <view class="stats-row">
+      <view class="stat-box stat-orange">
+        <text class="stat-label">查询次数</text>
+        <text class="stat-value">{{stats.totalQueries}}次</text>
+      </view>
+      <view class="stat-box stat-blue">
+        <text class="stat-label">日均用电</text>
+        <text class="stat-value">{{stats.avgUsage}}度</text>
+      </view>
+      <view class="stat-box {{stats.latestBalance < 0 ? 'stat-red' : 'stat-green'}}">
+        <text class="stat-label">上月电费</text>
+        <text class="stat-value">¥{{stats.latestBalance}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Monthly Usage Trend Chart -->
+  <view class="chart-section" wx:if="{{!loading && historyData.length > 0}}">
+    <view class="section-header">
+      <image class="section-icon" src="/assets/icons/trending-up.png" mode="aspectFit"/>
+      <text class="section-title">本月用电趋势</text>
+    </view>
+    <view class="chart-card cartoon-card">
+      <canvas 
+        class="chart-canvas" 
+        type="2d"
+        id="dailyUsageChart"
+        bindtouchstart="onChartTouchStart"
+        bindtouchmove="onChartTouchMove"
+        bindtouchend="onChartTouchEnd"
+      ></canvas>
+      <!-- Tooltip -->
+      <view 
+        class="chart-tooltip {{chartTooltip.show ? 'show' : ''}}" 
+        style="left: {{chartTooltip.x}}px; top: {{chartTooltip.y}}px; transform: translateX(-50%);"
+        wx:if="{{chartTooltip.show}}"
+      >
+        <view class="tooltip-content">
+          <text class="tooltip-date">{{chartTooltip.date}}</text>
+          <text class="tooltip-value">{{chartTooltip.label}}：{{chartTooltip.value}} {{chartTooltip.unit}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Records List -->
+  <view class="records-section">
+    <view class="section-header">
+      <image class="section-icon" src="/assets/icons/zap.png" mode="aspectFit"/>
+      <text class="section-title">查询记录明细</text>
+    </view>
+
+    <!-- Loading State -->
+    <view class="loading-container" wx:if="{{loading}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <!-- Records List -->
+    <view class="records-list" wx:elif="{{historyData.length > 0}}">
+      <view 
+        class="record-card cartoon-card"
+        wx:for="{{historyData}}"
+        wx:key="id"
+      >
+        <!-- Row 1: 户号 + 查询时间 -->
+        <view class="record-row-1">
+          <view class="record-account">
+            <image class="record-icon" src="/assets/icons/home.png" mode="aspectFit"/>
+            <text class="record-account-no">{{item.account_number}}</text>
+          </view>
+          <text class="record-time">{{item.check_time}}</text>
+        </view>
+
+        <!-- Row 2: 数据日期 -->
+        <view class="record-row-2">
+          <image class="record-icon-small" src="/assets/icons/calendar.png" mode="aspectFit"/>
+          <text class="record-date">{{item.daily_date}}</text>
+        </view>
+
+        <!-- Row 3: Usage + Balance -->
+        <view class="record-row-3">
+          <view class="record-usage">
+            <text class="record-label">日用电量</text>
+            <view class="record-value-row">
+              <text class="record-usage-value">{{item.daily_usage_display}}</text>
+              <text class="record-unit">度</text>
+            </view>
+          </view>
+          <view class="record-balance">
+            <text class="record-label">账户余额</text>
+            <text class="record-balance-value {{item.balance_num < 0 ? 'negative' : 'positive'}}">¥{{item.balance}}</text>
+          </view>
+        </view>
+
+        <!-- Row 4: Address + Owner -->
+        <view class="record-row-4">
+          <view class="record-address">
+            <image class="record-icon-tiny" src="/assets/icons/home.png" mode="aspectFit"/>
+            <text class="record-small-text">{{item.address || item.room_name}}</text>
+          </view>
+          <view class="record-owner" wx:if="{{item.owner_name}}">
+            <image class="record-icon-tiny" src="/assets/icons/user.png" mode="aspectFit"/>
+            <text class="record-small-text">{{item.owner_name}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- Empty State -->
+    <view class="empty-state cartoon-card" wx:elif="{{!loading}}">
+      <view class="empty-icon-wrapper">
+        <image class="empty-icon" src="/assets/icons/zap.png" mode="aspectFit"/>
+      </view>
+      <text class="empty-text">暂无查询记录</text>
+    </view>
+  </view>
+
+  <!-- Load More -->
+  <view class="load-more" wx:if="{{!loading && historyData.length > 0 && hasMoreData}}">
+    <view class="load-more-btn cartoon-card" bindtap="loadMore" wx:if="{{!loadingMore}}">
+      <text>加载更多</text>
+    </view>
+    <view class="loading-more" wx:else>
+      <view class="loading-spinner-small"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+  </view>
+
+  <!-- Bottom Spacing -->
+  <view class="bottom-spacing"></view>
+</view>
