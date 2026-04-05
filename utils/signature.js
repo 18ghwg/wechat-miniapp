@@ -211,8 +211,8 @@ class SignatureUtil {
 }
 
 // API签名密钥（必须与后端config.py中的API_SIGNATURE_SECRET保持一致）
-// 生产环境应该考虑混淆或从服务器获取
-SignatureUtil.SECRET_KEY = 'miniapp-api-sign-key-2025-v1!!';
+// 小程序端不再内置真实密钥，默认使用占位值；如需启用签名，请在构建时注入
+SignatureUtil.SECRET_KEY = 'change-me-in-production';
 
 module.exports = SignatureUtil;
 
