@@ -182,6 +182,19 @@
   box-shadow: 0 12rpx 0px var(--foreground);
 }
 
+/* 今日已打卡状态 */
+.checkin-button-done {
+  background: #b0b0b0;
+  box-shadow: 0 24rpx 0px #888888;
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.checkin-button-done:active {
+  transform: none;
+  box-shadow: 0 24rpx 0px #888888;
+}
+
 .checkin-icon-circle {
   width: 128rpx;
   height: 128rpx;
@@ -227,6 +240,49 @@
   font-size: 42rpx;
   font-weight: var(--font-weight-bold);
   color: var(--foreground);
+}
+
+.calendar-header-row {
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.calendar-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  min-width: 0;
+}
+
+.sync-ding-btn {
+  flex-shrink: 0;
+  min-height: 64rpx;
+  padding: 0 20rpx;
+  border: 4rpx solid var(--foreground);
+  border-radius: 16rpx;
+  background: #DBEAFE;
+  box-shadow: 4rpx 4rpx 0 var(--foreground);
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 24rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.sync-ding-btn:active {
+  transform: translate(2rpx, 2rpx);
+  box-shadow: 2rpx 2rpx 0 var(--foreground);
+}
+
+.sync-ding-btn-disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.sync-ding-icon {
+  width: 28rpx;
+  height: 28rpx;
 }
 
 .calendar-card {
@@ -363,16 +419,92 @@
   border: 3rpx solid #5E4E3E;
 }
 
+.calendar-day.manual-overtime {
+  box-shadow: inset 0 0 0 3rpx #7C3AED;
+}
+
 .calendar-day:not(.empty):active {
   transform: scale(0.92);
 }
 
 .day-number {
+  position: absolute;
+  top: 6rpx;
+  left: 8rpx;
   font-size: 24rpx;
   color: var(--foreground);
   font-weight: var(--font-weight-bold);
   line-height: 1;
-  margin-bottom: 2rpx;
+  margin-bottom: 0;
+  z-index: 2;
+}
+
+.day-stamp {
+  position: absolute;
+  bottom: 4rpx;
+  right: 4rpx;
+  min-width: 42rpx;
+  height: 22rpx;
+  padding: 0 6rpx;
+  border-radius: 999rpx;
+  border: 2rpx solid var(--foreground);
+  background: #FDE68A;
+  color: var(--foreground);
+  font-size: 14rpx;
+  font-weight: var(--font-weight-bold);
+  line-height: 22rpx;
+  text-align: center;
+  box-sizing: border-box;
+  z-index: 2;
+}
+
+.stamp-legal_holiday {
+  background: #FECACA;
+}
+
+.stamp-rest_day {
+  background: #D1FAE5;
+}
+
+.ding-dot {
+  position: absolute;
+  left: 6rpx;
+  bottom: 6rpx;
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: #2563EB;
+  border: 2rpx solid var(--foreground);
+}
+
+.manual-overtime-badge {
+  position: absolute;
+  top: 6rpx;
+  right: 5rpx;
+  max-width: 48rpx;
+  height: 20rpx;
+  padding: 0 5rpx;
+  border-radius: 999rpx;
+  background: #7C3AED;
+  color: #FFFFFF;
+  font-size: 13rpx;
+  font-weight: var(--font-weight-bold);
+  line-height: 20rpx;
+  text-align: center;
+  box-sizing: border-box;
+  z-index: 3;
+}
+
+.overtime-mini {
+  position: absolute;
+  right: 4rpx;
+  bottom: 30rpx;
+  max-width: 52rpx;
+  font-size: 16rpx;
+  font-weight: var(--font-weight-bold);
+  color: #B45309;
+  line-height: 1.1;
+  z-index: 2;
 }
 
 .day-svg-icon {
@@ -434,6 +566,21 @@
   background: #FEE2E2;
   border-style: dashed;
   border-color: #F87171;
+}
+
+.legend-pay-double {
+  background: #D1FAE5;
+}
+
+.legend-pay-triple {
+  background: #FECACA;
+}
+
+.legend-pay-text {
+  font-size: 18rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  line-height: 1;
 }
 
 .legend-text {
@@ -2133,4 +2280,185 @@
 .delete-result-confirm-btn:active {
   transform: translate(2rpx, 2rpx);
   box-shadow: 2rpx 2rpx 0 #5E4E3E;
+}
+
+
+.ding-info-panel {
+  margin: 24rpx 0;
+  padding: 24rpx;
+  border: 4rpx solid var(--foreground);
+  border-radius: 20rpx;
+  background: #F8FAFC;
+}
+
+.ding-info-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 18rpx;
+}
+
+.ding-info-icon {
+  width: 32rpx;
+  height: 32rpx;
+}
+
+.ding-info-title {
+  font-size: 28rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.ding-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16rpx;
+}
+
+.ding-info-item {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.ding-info-label {
+  font-size: 22rpx;
+  color: var(--foreground);
+  opacity: 0.65;
+}
+
+.ding-info-value {
+  font-size: 28rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  word-break: break-word;
+}
+
+.ding-info-rule {
+  display: block;
+  margin-top: 18rpx;
+  font-size: 22rpx;
+  color: var(--foreground);
+  opacity: 0.72;
+  line-height: 1.5;
+}
+
+.overtime-calc-panel {
+  margin: 24rpx 0 32rpx;
+  padding: 24rpx;
+  border: 4rpx solid #5E4E3E;
+  border-radius: 20rpx;
+  background: #FFF7ED;
+  box-shadow: 4rpx 4rpx 0 rgba(94, 78, 62, 0.16);
+}
+
+.overtime-calc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 18rpx;
+}
+
+.overtime-calc-title {
+  min-width: 0;
+  font-size: 28rpx;
+  font-weight: 900;
+  color: #5E4E3E;
+}
+
+.overtime-calc-tag {
+  flex-shrink: 0;
+  max-width: 240rpx;
+  padding: 8rpx 16rpx;
+  border: 3rpx solid #5E4E3E;
+  border-radius: 999rpx;
+  background: #C7E9FB;
+  color: #5E4E3E;
+  font-size: 22rpx;
+  font-weight: 900;
+  text-align: center;
+  overflow-wrap: break-word;
+}
+
+.overtime-calc-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16rpx;
+}
+
+.overtime-calc-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  padding: 18rpx;
+  border: 3rpx solid rgba(94, 78, 62, 0.25);
+  border-radius: 16rpx;
+  background: #FFFFFF;
+}
+
+.overtime-calc-label {
+  font-size: 22rpx;
+  color: #8B7E74;
+  font-weight: 700;
+}
+
+.overtime-calc-value {
+  font-size: 30rpx;
+  color: #5E4E3E;
+  font-weight: 900;
+  overflow-wrap: break-word;
+}
+
+.overtime-calc-value.money {
+  color: #D97706;
+}
+
+.overtime-hours-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  min-width: 0;
+}
+
+.overtime-hours-input {
+  flex: 1;
+  min-width: 0;
+  height: 54rpx;
+  padding: 0 12rpx;
+  border: 3rpx solid rgba(94, 78, 62, 0.32);
+  border-radius: 12rpx;
+  background: #FFF;
+  color: #5E4E3E;
+  font-size: 28rpx;
+  font-weight: 900;
+  box-sizing: border-box;
+}
+
+.overtime-hours-unit {
+  flex-shrink: 0;
+  color: #5E4E3E;
+  font-size: 24rpx;
+  font-weight: 900;
+}
+
+.overtime-calc-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  margin-top: 18rpx;
+}
+
+.overtime-calc-line {
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: #5E4E3E;
+  overflow-wrap: break-word;
+}
+
+.overtime-calc-line.warn {
+  color: #B45309;
+  font-weight: 700;
 }

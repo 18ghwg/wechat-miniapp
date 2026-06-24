@@ -37,11 +37,14 @@
 
       <!-- 大圆形打卡按钮 -->
       <view class="checkin-button-wrapper">
-        <view class="checkin-button" bindtap="onOpenCheckInModal">
+        <view
+          class="checkin-button {{todayCheckedIn ? 'checkin-button-done' : ''}}"
+          bindtap="onOpenCheckInModal"
+        >
           <view class="checkin-icon-circle">
-            <text class="plus-icon">+</text>
+            <text class="plus-icon">{{todayCheckedIn ? '✓' : '+'}}</text>
           </view>
-          <text class="checkin-text">考勤打卡</text>
+          <text class="checkin-text">{{todayCheckedIn ? '今日已打卡' : '考勤打卡'}}</text>
         </view>
       </view>
     </view>
@@ -62,9 +65,15 @@
 
     <!-- Calendar View - 匹配设计 -->
     <view class="calendar-section {{cardAnimationClass}} card-enter-delay-3">
-      <view class="section-header-with-icon">
-        <image class="section-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
-        <text class="section-title">考勤日历</text>
+      <view class="section-header-with-icon calendar-header-row">
+        <view class="calendar-title-wrap">
+          <image class="section-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
+          <text class="section-title">考勤日历</text>
+        </view>
+        <view class="sync-ding-btn {{syncingDingtalk ? 'sync-ding-btn-disabled' : ''}}" bindtap="onSyncDingtalk">
+          <image class="sync-ding-icon" src="/assets/icons/clock.png" mode="aspectFit"/>
+          <text>{{syncingDingtalk ? '同步中' : '同步钉钉'}}</text>
+        </view>
       </view>
       <view class="calendar-card">
         <!-- 月份选择器 -->
@@ -90,12 +99,16 @@
           <view
             wx:for="{{calendarDays}}"
             wx:key="index"
-            class="calendar-day {{item.isEmpty ? 'empty' : ''}} {{item.isToday ? 'today' : ''}} {{item.isMissed ? 'missed' : ''}} {{item.isWeekend && !item.hasAttendance && !item.isMissed && !item.isToday ? 'weekend' : ''}} type-{{item.attendanceType}}"
+            class="calendar-day {{item.isEmpty ? 'empty' : ''}} {{item.isToday ? 'today' : ''}} {{item.isMissed ? 'missed' : ''}} {{item.manualOvertimeOverride ? 'manual-overtime' : ''}} {{item.isWeekend && !item.hasAttendance && !item.isMissed && !item.isToday ? 'weekend' : ''}} type-{{item.attendanceType}}"
             bindtap="onCalendarDayTap"
             data-date="{{item.date}}"
             data-is-missed="{{item.isMissed}}"
           >
             <text class="day-number" wx:if="{{!item.isEmpty}}">{{item.day}}</text>
+            <text class="manual-overtime-badge" wx:if="{{item.manualOvertimeOverride}}">手动</text>
+            <text class="day-stamp stamp-{{item.calendarStampType}}" wx:if="{{item.calendarStamp}}">{{item.calendarStamp}}</text>
+            <view class="ding-dot" wx:if="{{item.hasDingAttendance}}"></view>
+            <text class="overtime-mini" wx:if="{{item.overtimeHours > 0}}">{{item.overtimeHours}}h</text>
             <!-- 公司上班 -->
             <image class="day-status-icon" wx:if="{{item.hasAttendance && item.attendanceType === 'office'}}" src="/assets/icons/check-circle.png" mode="aspectFit"/>
             <!-- 国内出差 -->
@@ -148,6 +161,18 @@
               <image class="legend-icon" src="/assets/icons/alert-circle.png" mode="aspectFit"/>
             </view>
             <text class="legend-text">缺卡</text>
+          </view>
+          <view class="legend-item">
+            <view class="legend-box legend-pay-double">
+              <text class="legend-pay-text">双</text>
+            </view>
+            <text class="legend-text">双倍</text>
+          </view>
+          <view class="legend-item">
+            <view class="legend-box legend-pay-triple">
+              <text class="legend-pay-text">三</text>
+            </view>
+            <text class="legend-text">三倍</text>
           </view>
         </view>
       </view>
@@ -288,6 +313,59 @@
       </view>
     </view>
 
+    <!-- 钉钉同步信息 -->
+    <view class="ding-info-panel" wx:if="{{editForm.hasDingAttendance || editForm.calendarStamp}}">
+      <view class="ding-info-header">
+        <image class="ding-info-icon" src="/assets/icons/clock.png" mode="aspectFit"/>
+        <text class="ding-info-title">钉钉考勤</text>
+      </view>
+      <view class="ding-info-grid">
+        <view class="ding-info-item" wx:if="{{editForm.calendarStamp}}">
+          <text class="ding-info-label">日历标记</text>
+          <text class="ding-info-value">{{editForm.calendarStamp}} {{editForm.holidayInfo.work_type_text || ''}}</text>
+        </view>
+        <view class="ding-info-item" wx:if="{{editForm.dingAttendance.check_in_time_text}}">
+          <text class="ding-info-label">上班</text>
+          <text class="ding-info-value">{{editForm.dingAttendance.check_in_time_text}}</text>
+        </view>
+        <view class="ding-info-item" wx:if="{{editForm.dingAttendance.check_out_time_text}}">
+          <text class="ding-info-label">下班</text>
+          <text class="ding-info-value">{{editForm.dingAttendance.check_out_time_text}}</text>
+        </view>
+        <view class="ding-info-item" wx:if="{{editForm.overtime.effective_hours > 0}}">
+          <text class="ding-info-label">有效加班</text>
+          <text class="ding-info-value">{{editForm.overtime.effective_hours}} 小时</text>
+        </view>
+      </view>
+      <text class="ding-info-rule" wx:if="{{editForm.overtime.rule_text}}">{{editForm.overtime.rule_text}}</text>
+    </view>
+
+    <!-- 当天加班计算 -->
+    <view class="overtime-calc-panel" wx:if="{{editForm.overtimeCalc && editForm.overtimeCalc.show}}">
+      <view class="overtime-calc-header">
+        <text class="overtime-calc-title">当天加班计算</text>
+        <text class="overtime-calc-tag">{{editForm.overtimeCalc.typeText}}</text>
+      </view>
+      <view class="overtime-calc-summary">
+        <view class="overtime-calc-card">
+          <text class="overtime-calc-label">加班时间</text>
+          <view class="overtime-hours-input-wrap">
+            <input class="overtime-hours-input" type="digit" value="{{editForm.overtimeHoursInput}}" bindinput="onEditOvertimeHoursChange"/>
+            <text class="overtime-hours-unit">小时</text>
+          </view>
+        </view>
+        <view class="overtime-calc-card">
+          <text class="overtime-calc-label">加班费用</text>
+          <text class="overtime-calc-value money">¥{{editForm.overtimeCalc.amountText}}</text>
+        </view>
+      </view>
+      <view class="overtime-calc-detail">
+        <text class="overtime-calc-line">规则：{{editForm.overtimeCalc.multiplierText}}加班，倍数内 {{editForm.overtimeCalc.baseHoursText}}h，超出 {{editForm.overtimeCalc.extraHoursText}}h</text>
+        <text class="overtime-calc-line">公式：{{editForm.overtimeCalc.formulaText}}</text>
+        <text class="overtime-calc-line warn" wx:if="{{editForm.overtimeCalc.warningText}}">{{editForm.overtimeCalc.warningText}}</text>
+      </view>
+    </view>
+
     <!-- 出差专属字段 -->
     <view wx:if="{{editForm.type === 'domestic' || editForm.type === 'international'}}">
       <view class="edit-section">
@@ -332,7 +410,7 @@
 
 <!-- 删除进度弹窗 -->
 <view class="delete-progress-overlay" wx:if="{{isDeleting}}">
-  <view class="delete-progress-card" catchtap="">
+  <view class="delete-progress-card" catchtap="onStopPropagation">
     <text class="delete-progress-title">正在删除记录</text>
     <text class="delete-progress-desc">{{deleteCurrentStep}}</text>
     <view class="delete-progress-bar-wrap">
@@ -347,7 +425,7 @@
 
 <!-- 删除结果弹窗 -->
 <view class="delete-result-overlay" wx:if="{{showDeleteResult}}" bindtap="onCloseDeleteResult">
-  <view class="delete-result-card" catchtap="">
+  <view class="delete-result-card" catchtap="onStopPropagation">
     <view class="delete-result-close" catchtap="onCloseDeleteResult">
       <image class="close-icon" src="/assets/icons/close.png" mode="aspectFit"/>
     </view>

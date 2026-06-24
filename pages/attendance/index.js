@@ -12,6 +12,7 @@ Page({
     pageAnimationClass: '',
     cardAnimationClass: '',
     todayAttendance: null,
+    todayCheckedIn: false, // 今日是否已打卡
     recentAttendance: [],
     monthStats: null,
     workStatusOptions: [
@@ -33,17 +34,26 @@ Page({
     calendarMonth: 0,
     calendarDays: [], // 日历日期数组
     attendanceMap: {}, // 考勤记录映射 {date: {work_status, icon, ...}}
+    calendarSummary: null,
+    salaryRateConfig: {
+      loaded: false,
+      loading: false,
+      overtimePayPerDay: 0,
+      overtimePayPerHour: 0,
+      workRestMode: 'double_rest'
+    },
+    syncingDingtalk: false,
     showCalendar: true, // 是否显示日历
-    // �游客模式相关
+    // 游客模式相关
     isGuest: false, // 是否为游客模式
     showGuestBanner: false, // 是否显示游客模式横幅
-    // �时间显示相关
+    // 时间显示相关
     currentTime: '00:00:00',
     formattedDate: '',
     greetingText: '你好', // 问候语
     greetingIcon: '/assets/icons/sun.png', // 问候图标
     hasNotification: false,
-    // �编辑弹窗相关
+    // 编辑弹窗相关
     showEditModal: false,
     editForm: {
       id: '',
@@ -52,16 +62,24 @@ Page({
       time: '',
       location: '',
       baseName: '',
-      subsidy: ''
+      subsidy: '',
+      hasDingAttendance: false,
+      dingAttendance: {},
+      holidayInfo: {},
+      overtime: {},
+      overtimeCalc: null,
+      overtimeHoursInput: '',
+      overtimeHoursTouched: false,
+      calendarStamp: ''
     },
-    // �保存结果弹窗相关
+    // 保存结果弹窗相关
     showResultModal: false,
     resultSuccess: true,
     resultMsg: '',
-    // �公告弹窗相关
+    // 公告弹窗相关
     showNoticeModal: false,
     noticeModalList: [],
-    // �打卡弹窗相关
+    // 打卡弹窗相关
     showCheckinModal: false,
     checkinForm: {
       type: 'office',
@@ -69,10 +87,10 @@ Page({
       baseName: '',
       subsidy: ''
     },
-    // �删除确认弹窗相关
+    // 删除确认弹窗相关
     showDeleteModal: false,
     deleteRecordId: null,
-    // �删除进度弹窗相关
+    // 删除进度弹窗相关
     isDeleting: false,
     deleteProgress: 0,
     deleteCurrentStep: '',
@@ -89,7 +107,7 @@ Page({
     }
   },
 
-  // ========== 性能优化相�==========
+  // ========== 性能优化相关 ==========
   _isTestMode: false,           // 缓存测试模式状态
   _lastRefreshTime: 0,          // 上次刷新时间
   _dataStaleCheckInterval: 30000, // 数据过期检查间隔（30秒）
@@ -125,6 +143,63 @@ Page({
   },
 
   /**
+   * 将不同接口包装层里的考勤列表统一转换为数组。
+   * 后端迁移后可能返回 null、数组、{data: []} 或 {data: {records: []}}。
+   */
+  normalizeAttendanceList(payload) {
+    if (Array.isArray(payload)) return payload;
+    if (!payload || typeof payload !== 'object') return [];
+
+    if (Array.isArray(payload.responseData)) return payload.responseData;
+    if (Array.isArray(payload.records)) return payload.records;
+    if (Array.isArray(payload.list)) return payload.list;
+    if (Array.isArray(payload.items)) return payload.items;
+
+    const data = payload.data;
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === 'object') {
+      if (Array.isArray(data.data)) return data.data;
+      if (Array.isArray(data.records)) return data.records;
+      if (Array.isArray(data.list)) return data.list;
+      if (Array.isArray(data.items)) return data.items;
+    }
+
+    return [];
+  },
+
+  getAttendanceWorkDate(record) {
+    if (!record || typeof record !== 'object') return '';
+    return record.work_date || record.WorkDate || record.date || record.workDate || '';
+  },
+
+  /**
+   * 打卡成功后立即同步首页顶部按钮状态，避免依赖后续接口刷新。
+   * 仅当提交的是今天的记录时才禁用顶部打卡按钮。
+   * @param {object} attendancePayload
+   */
+  applyImmediateTodayAttendance(attendancePayload) {
+    if (!attendancePayload || !attendancePayload.work_date) return;
+
+    const todayStr = this.getDateString(new Date());
+    if (attendancePayload.work_date !== todayStr) return;
+
+    const submitTime = attendancePayload.put_date || attendancePayload.submit_time || new Date().toISOString();
+
+    this.setData({
+      todayAttendance: {
+        id: attendancePayload.id || this.data.todayAttendance?.id || '',
+        work_status: attendancePayload.work_status,
+        submit_time: this.formatPutDateTime(submitTime),
+        work_date: attendancePayload.work_date,
+        comment: attendancePayload.comment || '',
+        name: attendancePayload.name || this.data.currentUser?.real_name || ''
+      },
+      todayCheckedIn: true,
+      needCompleteProfile: false
+    });
+  },
+
+  /**
    * 获取工作状态对应的CSS类名
    * @param {string} workStatus - 工作状态，如"公司上班"
    * @returns {string} 对应的CSS类名，如"company-work"
@@ -148,14 +223,14 @@ Page({
     // 缓存测试模式状态（避免重复读取Storage）
     this._isTestMode = testModeManager.isTestMode();
     
-    // �检查游客模式
+    // 检查游客模式
     const isGuest = mockData.isGuestMode();
     this.setData({ 
       isGuest: isGuest,
       showGuestBanner: isGuest 
     });
     
-    // �启动时间更新定时器
+    // 启动时间更新定时器
     this.updateTime();
     this.timeInterval = setInterval(() => {
       this.updateTime();
@@ -170,10 +245,10 @@ Page({
     wx.showShareMenu({
       withShareTicket: true,
       success: (res) => {
-        console.log('�考勤管理：分享菜单显示成功');
+        console.log('考勤管理：分享菜单显示成功');
       },
       fail: (err) => {
-        console.warn('⚠�考勤管理：分享菜单显示失败，但不影响分享功能');
+        console.warn('⚠考勤管理：分享菜单显示失败，但不影响分享功能');
       }
     });
     
@@ -185,7 +260,7 @@ Page({
     // 注意：checkMissedAttendance() 会在 loadUserInfo() 完成后自动调用
     // 不在这里直接调用，避免竞态条件
     
-    // �检查是否首次启动，如果是则显示公告弹窗
+    // 检查是否首次启动，如果是则显示公告弹窗
     this.checkAndShowFirstLaunchAnnouncement();
     
     // 设置测试模式热加载
@@ -217,17 +292,17 @@ Page({
       const tabBar = this.getTabBar();
       if (tabBar) tabBar.init();
 
-      // ===== 关键修复：每次显示页面时都重新检测测试模式和游客模�=====
+      // ===== 关键修复：每次显示页面时都重新检测测试模式和游客模式 =====
       const oldTestMode = this._isTestMode;
       const newTestMode = testModeManager.isTestMode();
       const testModeChanged = oldTestMode !== newTestMode;
 
-      // �检查游客模式变化
+      // 检查游客模式变化
       const oldGuestMode = this.data.isGuest || false;
       const newGuestMode = mockData.isGuestMode();
       const guestModeChanged = oldGuestMode !== newGuestMode;
 
-      // �更新游客模式状态
+      // 更新游客模式状态
       if (guestModeChanged) {
         console.log(`🔄 考勤管理-游客模式状态变化: ${oldGuestMode} -> ${newGuestMode}`);
         this.setData({ 
@@ -261,13 +336,13 @@ Page({
         loading: false
       });
 
-      // �检查是否需要强制刷新（从编辑页面返回）
-      // 修复：改为调�refreshPageData() 统一处理数据刷新，避免重复加载
+      // 检查是否需要强制刷新（从编辑页面返回）
+      // 修复：改为调refreshPageData() 统一处理数据刷新，避免重复加载
       if (this._needRefreshCalendar) {
         console.log('🔄 检测到需要刷新标记，强制刷新所有数据（包括日历）');
         this._needRefreshCalendar = false; // 重置标记
 
-        // 调�refreshPageData() 统一处理数据刷新
+        // 调refreshPageData() 统一处理数据刷新
         // 这会刷新用户信息、今日考勤、最近记录和日历数据
         this._lastRefreshTime = Date.now(); // 更新刷新时间
         this.refreshPageData();
@@ -324,7 +399,7 @@ Page({
     const day = now.getDate();
     const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
     const weekday = weekdays[now.getDay()];
-    const formattedDate = `${year}年${month}月${day}�· 周${weekday}`;
+    const formattedDate = `${year}年${month}月${day} · 周${weekday}`;
     
     // 根据时间段设置问候语
     const hour = now.getHours();
@@ -363,7 +438,7 @@ Page({
     const appName = miniprogramInfo.getAppName();
     
     return {
-      title: `考勤管�- ${appName}`,
+      title: `考勤管理 - ${appName}`,
       path: '/pages/attendance/index',
       imageUrl: ''
     };
@@ -376,7 +451,7 @@ Page({
     const appName = miniprogramInfo.getAppName();
     
     return {
-      title: `考勤管�- ${appName}`,
+      title: `考勤管理 - ${appName}`,
       query: '',
       imageUrl: ''
     };
@@ -413,9 +488,9 @@ Page({
     // ===== 性能监控：数据刷新开始 =====
     performanceMonitor.mark('attendance_refresh_start');
     
-    // �游客模式：加载mock数据
+    // 游客模式：加载mock数据
     if (mockData.isGuestMode()) {
-      console.log('�刷新页面-游客模式：加载mock数据');
+      console.log('刷新页面-游客模式：加载mock数据');
       this.loadUserInfo();
       this.loadTodayAttendance();
       this.loadRecentAttendance();
@@ -439,6 +514,7 @@ Page({
       // 加载今日考勤状态和最近记录
       this.loadTodayAttendance();
       this.loadRecentAttendance();
+      this.loadSalaryRateConfig(userInfo);
 
       // 更新日历
       const now = new Date();
@@ -454,7 +530,7 @@ Page({
       return;
     }
     
-    // ===== 性能优化：使用用户信息缓�=====
+    // ===== 性能优化：使用用户信息缓存 =====
     // 正常模式：使用缓存获取用户信息
     userInfoCache.get()
       .then((userInfo) => {
@@ -464,6 +540,7 @@ Page({
         // 用户信息加载完成后，立即加载今日考勤状态和最近记录
         this.loadTodayAttendance();
         this.loadRecentAttendance();
+        this.loadSalaryRateConfig(userInfo);
 
         // 更新日历
         const now = new Date();
@@ -491,6 +568,181 @@ Page({
         // 性能监控：刷新完成（失败）
         performanceMonitor.measure('attendance_refresh_failed', 'attendance_refresh_start', PERF_TYPES.PAGE_LOAD);
       });
+  },
+
+  toFiniteNumber(value, fallback = 0) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+  },
+
+  formatCalcHours(value) {
+    const num = Math.round(this.toFiniteNumber(value) * 100) / 100;
+    return Number.isInteger(num) ? String(num) : num.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+  },
+
+  formatCalcCurrency(value) {
+    const num = Math.round(this.toFiniteNumber(value) * 100) / 100;
+    return num.toFixed(2);
+  },
+
+  loadSalaryRateConfig(userInfo = this.data.currentUser) {
+    const defaultConfig = {
+      loaded: true,
+      loading: false,
+      overtimePayPerDay: 250,
+      overtimePayPerHour: 30,
+      workRestMode: 'double_rest'
+    };
+
+    if (mockData.isGuestMode() || this._isTestMode) {
+      this.setData({ salaryRateConfig: defaultConfig });
+      this.updateEditModalOvertimeCalc();
+      return;
+    }
+
+    const userName = userInfo && (userInfo.real_name || userInfo.nickname);
+    if (!userName) {
+      this.setData({
+        salaryRateConfig: Object.assign({}, defaultConfig, {
+          loaded: false,
+          overtimePayPerDay: 0,
+          overtimePayPerHour: 0
+        })
+      });
+      this.updateEditModalOvertimeCalc();
+      return;
+    }
+
+    if (this.data.salaryRateConfig && this.data.salaryRateConfig.loading) {
+      return;
+    }
+
+    this.setData({
+      'salaryRateConfig.loading': true
+    });
+
+    API.attendance.getNetdiskInfo(userName)
+      .then((res) => {
+        const netdiskInfo = res && res.data ? res.data : res;
+        const nextConfig = {
+          loaded: true,
+          loading: false,
+          overtimePayPerDay: this.toFiniteNumber(netdiskInfo && netdiskInfo.overtime_pay_per_day, defaultConfig.overtimePayPerDay),
+          overtimePayPerHour: this.toFiniteNumber(netdiskInfo && netdiskInfo.overtime_pay_per_hour, defaultConfig.overtimePayPerHour),
+          workRestMode: (netdiskInfo && netdiskInfo.work_rest_mode) || defaultConfig.workRestMode
+        };
+        this.setData({ salaryRateConfig: nextConfig });
+        this.updateEditModalOvertimeCalc();
+      })
+      .catch((err) => {
+        console.log('加载工资单价配置失败，日期弹窗使用默认配置:', err);
+        this.setData({ salaryRateConfig: defaultConfig });
+        this.updateEditModalOvertimeCalc();
+      });
+  },
+
+  getDateWeekday(dateText) {
+    const parts = String(dateText || '').split('-').map(item => Number(item));
+    if (parts.length !== 3 || parts.some(item => !Number.isFinite(item))) {
+      return null;
+    }
+    return new Date(parts[0], parts[1] - 1, parts[2]).getDay();
+  },
+
+  resolveOvertimePayRule(dateText, holidayInfo = {}, salaryRateConfig = {}) {
+    const weekday = this.getDateWeekday(dateText);
+    const isSaturday = weekday === 6;
+    const workRestMode = salaryRateConfig.workRestMode || 'double_rest';
+    const isLegalHoliday = !!holidayInfo.is_legal_holiday || holidayInfo.work_type === 'legal_holiday';
+    const isAdjustedWorkday = !!holidayInfo.is_adjusted_workday || holidayInfo.work_type === 'adjusted_workday';
+    const isRestDay = !!holidayInfo.is_rest_day || holidayInfo.work_type === 'rest_day';
+
+    if (isLegalHoliday) {
+      return { multiplier: 3, typeText: '法定休息', multiplierText: '三倍' };
+    }
+
+    if (isAdjustedWorkday) {
+      return { multiplier: 1, typeText: '调休上班', multiplierText: '' };
+    }
+
+    if (isRestDay && !(workRestMode === 'single_rest' && isSaturday)) {
+      return { multiplier: 2, typeText: holidayInfo.work_type_text || '休息日', multiplierText: '双倍' };
+    }
+
+    if (workRestMode === 'single_rest' && isSaturday) {
+      return { multiplier: 1, typeText: '工作日（单休周六）', multiplierText: '' };
+    }
+
+    return { multiplier: 1, typeText: holidayInfo.work_type_text || '工作日', multiplierText: '' };
+  },
+
+  buildDayOvertimeCalc(attendance = {}) {
+    const overtime = attendance.overtime || {};
+    const dingAttendance = attendance.ding_attendance || {};
+    const inputHours = attendance.overtimeHoursInput !== undefined ? this.toFiniteNumber(attendance.overtimeHoursInput, 0) : null;
+    const hours = Math.max(
+      inputHours !== null ? inputHours : this.toFiniteNumber(overtime.effective_hours, this.toFiniteNumber(dingAttendance.overtime_hours, 0)),
+      0
+    );
+    const salaryRateConfig = this.data.salaryRateConfig || {};
+    const fixedRate = this.toFiniteNumber(salaryRateConfig.overtimePayPerHour, 0);
+    const multiplierRate = this.toFiniteNumber(salaryRateConfig.overtimePayPerDay, fixedRate);
+    const rule = this.resolveOvertimePayRule(
+      attendance.work_date || attendance.date,
+      attendance.holiday_info || attendance.holidayInfo || {},
+      salaryRateConfig
+    );
+
+    let baseHours = 0;
+    let extraHours = 0;
+    let amount = 0;
+    let formulaText = '';
+
+    if (rule.multiplier > 1) {
+      baseHours = Math.min(hours, 8);
+      extraHours = Math.max(hours - baseHours, 0);
+      amount = Math.round((baseHours * multiplierRate * rule.multiplier + extraHours * fixedRate) * 100) / 100;
+      formulaText = `${this.formatCalcHours(baseHours)}h x ${rule.multiplierText} x ¥${this.formatCalcCurrency(multiplierRate)} + ${this.formatCalcHours(extraHours)}h x ¥${this.formatCalcCurrency(fixedRate)}`;
+    } else {
+      baseHours = hours;
+      amount = Math.round(hours * fixedRate * 100) / 100;
+      formulaText = `${this.formatCalcHours(hours)}h x ¥${this.formatCalcCurrency(fixedRate)}`;
+    }
+
+    const configReady = salaryRateConfig.loaded && fixedRate > 0 && (rule.multiplier <= 1 || multiplierRate > 0);
+
+    return {
+      show: true,
+      typeText: rule.typeText,
+      multiplierText: rule.multiplierText || '普通',
+      hoursText: this.formatCalcHours(hours),
+      baseHoursText: this.formatCalcHours(baseHours),
+      extraHoursText: this.formatCalcHours(extraHours),
+      amountText: configReady ? this.formatCalcCurrency(amount) : '0.00',
+      fixedRateText: this.formatCalcCurrency(fixedRate),
+      multiplierRateText: this.formatCalcCurrency(multiplierRate),
+      formulaText,
+      warningText: configReady ? '' : '未读取到有效工资单价配置，金额暂按0显示'
+    };
+  },
+
+  updateEditModalOvertimeCalc() {
+    if (!this.data.showEditModal || !this.data.editForm) {
+      return;
+    }
+
+    const form = this.data.editForm;
+    const overtimeCalc = this.buildDayOvertimeCalc({
+      work_date: form.date,
+      holiday_info: form.holidayInfo,
+      overtime: form.overtime,
+      ding_attendance: form.dingAttendance,
+      overtimeHoursInput: form.overtimeHoursInput
+    });
+
+    this.setData({
+      'editForm.overtimeCalc': overtimeCalc
+    });
   },
 
   /**
@@ -534,9 +786,9 @@ Page({
    * 加载用户信息
    */
   loadUserInfo() {
-    // �游客模式：使用mock数据
+    // 游客模式：使用mock数据
     if (mockData.isGuestMode()) {
-      console.log('�考勤用户信息-游客模式：使用mock数据');
+      console.log('考勤用户信息-游客模式：使用mock数据');
       const mockUser = {
         nickname: '体验用户',
         real_name: '张三',
@@ -546,6 +798,7 @@ Page({
         currentUser: mockUser,
         needCompleteProfile: false
       });
+      this.loadSalaryRateConfig(mockUser);
       
       // 加载日历考勤数据
       const now = new Date();
@@ -573,6 +826,7 @@ Page({
         currentUser: userInfo,
         needCompleteProfile: false // 测试模式下不需要完善信息
       });
+      this.loadSalaryRateConfig(userInfo);
       
       // 加载日历考勤数据
       const now = new Date();
@@ -585,7 +839,7 @@ Page({
       return;
     }
     
-    // ===== 性能优化：使用用户信息缓�=====
+    // ===== 性能优化：使用用户信息缓存 =====
     userInfoCache.get()
       .then((userInfo) => {
         console.log('[性能优化] 初始加载用户信息（缓存）:', userInfo);
@@ -597,6 +851,7 @@ Page({
           currentUser: userInfo,
           needCompleteProfile: needCompleteProfile
         });
+        this.loadSalaryRateConfig(userInfo);
         
         // 加载日历考勤数据
         const now = new Date();
@@ -618,15 +873,15 @@ Page({
   },
 
   /**
-   * 加载今日考�- 根据用户真实姓名自动查询
+   * 加载今日考勤：根据用户真实姓名自动查询
    */
   loadTodayAttendance() {
     const today = new Date();
     const dateStr = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
     
-    // �游客模式：使用mock数据
+    // 游客模式：使用mock数据
     if (mockData.isGuestMode()) {
-      console.log('�今日考勤-游客模式：使用mock数据');
+      console.log('今日考勤-游客模式：使用mock数据');
       const mockTodayAttendance = {
         id: 1,
         date: dateStr,
@@ -637,6 +892,7 @@ Page({
       };
       this.setData({
         todayAttendance: mockTodayAttendance,
+        todayCheckedIn: true,
         needCompleteProfile: false
       });
       return;
@@ -657,6 +913,7 @@ Page({
             todayAttendance: Object.assign({}, submittedTodayAttendance, {
               submit_time: this.formatPutDateTime(submittedTodayAttendance.submit_time)
             }),
+            todayCheckedIn: true,
             needCompleteProfile: false
           });
         } else {
@@ -667,18 +924,20 @@ Page({
             this.setData({
               todayAttendance: {
                 id: 'mock_today_default',
-                name: '微信用户d_001', // 与nickname保持一致
+                name: '微信用户d_001',
                 work_status: '公司上班',
-                comment: '公司上�- 小程序提交',
+                comment: '公司上班 - 小程序提交',
                 work_date: dateStr,
                 submit_time: this.formatPutDateTime(new Date().toISOString())
               },
+              todayCheckedIn: true,
               needCompleteProfile: false
             });
           } else {
             console.log('测试模式：显示无今日考勤记录');
             this.setData({
               todayAttendance: null,
+              todayCheckedIn: false,
               needCompleteProfile: false
             });
           }
@@ -689,7 +948,7 @@ Page({
     
     // 先确保获取最新用户信息，再查询今日考勤
     this.ensureLatestUserInfo((userInfo) => {
-      // 如果没有用户信息或没有真实姓名，提示用户完善
+      // 如果没有用户信息或没有真实姓名，提示用户完善信息
       if (!userInfo || !userInfo.real_name) {
         this.setData({
           todayAttendance: null,
@@ -716,7 +975,7 @@ Page({
       null,
       (data) => {
         console.log('今日考勤API返回数据:', data);
-        // 检查数据结构：data 可能�{code, msg, data: {attendance}} 或直接的 {attendance}
+        // 检查数据结构：data 可能{code, msg, data: {attendance}} 或直接的 {attendance}
         let attendanceInfo = null;
         
         if (data && data.data && data.data.attendance) {
@@ -742,6 +1001,7 @@ Page({
           // 找到今日考勤记录
           this.setData({
             todayAttendance: attendanceData,
+            todayCheckedIn: true,
             needCompleteProfile: false
           });
         } else {
@@ -749,6 +1009,7 @@ Page({
           console.log('今日未找到考勤记录');
           this.setData({
             todayAttendance: null,
+            todayCheckedIn: false,
             needCompleteProfile: false
           });
         }
@@ -812,12 +1073,7 @@ Page({
       (data) => {
         console.log('历史考勤数据返回结构:', data);
         
-        // 根据后端实际返回的数据结构处理
-        let historyList = data;
-        if (data && typeof data === 'object' && !Array.isArray(data)) {
-          // 如果返回的是对象，可能有data字段
-          historyList = data.data || data;
-        }
+        const historyList = this.normalizeAttendanceList(data);
         
         // 在历史数据中查找今日的考勤记录
         let todayRecord = null;
@@ -844,12 +1100,14 @@ Page({
           
           this.setData({
             todayAttendance: attendanceData,
+            todayCheckedIn: true,
             needCompleteProfile: false
           });
         } else {
           // 今日未打卡
           this.setData({
             todayAttendance: null,
+            todayCheckedIn: false,
             needCompleteProfile: false
           });
         }
@@ -896,9 +1154,9 @@ Page({
       showNameCompleteHint: false  // 重置姓名完善提示状态
     });
 
-    // �游客模式：使用mock数据
+    // 游客模式：使用mock数据
     if (mockData.isGuestMode()) {
-      console.log('�考勤记录-游客模式：使用mock数据');
+      console.log('考勤记录-游客模式：使用mock数据');
       const today = new Date();
       const mockRecentAttendance = [
         {
@@ -990,9 +1248,9 @@ Page({
    * 确保获取最新的用户信息
    */
   ensureLatestUserInfo(callback) {
-    // �游客模式：不加载数据
+    // 游客模式：不加载数据
     if (mockData.isGuestMode()) {
-      console.log('�用户信息-游客模式：不加载数据');
+      console.log('用户信息-游客模式：不加载数据');
       return;
     }
     
@@ -1013,7 +1271,7 @@ Page({
       return;
     }
     
-    // ===== 性能优化：使用用户信息缓�=====
+    // ===== 性能优化：使用用户信息缓存 =====
     // 优先使用当前组件中的用户信息
     let userInfo = this.data.currentUser;
     
@@ -1059,17 +1317,7 @@ Page({
         performanceMonitor.mark('attendance_data_process_start');
         console.log('考勤历史API返回数据:', data);
         
-        // 处理不同的数据格式：data可能直接是数组，也可能在responseData或data字段中
-        let rawData = [];
-        if (Array.isArray(data)) {
-          rawData = data;
-        } else if (data && Array.isArray(data.responseData)) {
-          rawData = data.responseData;
-        } else if (data && Array.isArray(data.data)) {
-          rawData = data.data;
-        } else if (data && data.data && Array.isArray(data.data.data)) {
-          rawData = data.data.data;
-        }
+        const rawData = this.normalizeAttendanceList(data);
         
         // console.log('提取的原始考勤数据:', rawData);
         
@@ -1082,7 +1330,7 @@ Page({
           const oneWeekAgo = new Date(today);
           oneWeekAgo.setDate(today.getDate() - 7); // 7天前
           
-          // ===== 性能优化：使用字符串比较代替Date对�=====
+          // ===== 性能优化：使用字符串比较代替Date对=====
           // 计算一周前的日期字符串
           const oneWeekAgoStr = this.getDateString(oneWeekAgo);
           const todayStr = this.getDateString(today);
@@ -1093,8 +1341,8 @@ Page({
             return item.work_date >= oneWeekAgoStr && item.work_date <= todayStr;
           });
           
-          // ===== 性能优化：预处理时间格式化和状态类�=====
-          // 使�for 循环代替 map（性能更好）
+          // ===== 性能优化：预处理时间格式化和状态类=====
+          // 使for 循环代替 map（性能更好）
           const processed = [];
           for (let i = 0; i < sortedData.length; i++) {
             const item = sortedData[i];
@@ -1204,7 +1452,7 @@ Page({
     } else {
       wx.showModal({
         title: '确认打卡',
-        content: `确定要提�${status} 的考勤记录吗？`,
+        content: `确定要提${status} 的考勤记录吗？`,
         success: (res) => {
           if (res.confirm) {
             this.submitAttendance(status);
@@ -1265,7 +1513,7 @@ Page({
     const subsidyText = status === '国内出差' ? '100元（固定）' : `${subsidy}元`;
     wx.showModal({
       title: '确认打卡',
-      content: `确定要提�${status} 的考勤记录吗？\n出差基地：${location}\n出差补贴：${subsidyText}`,
+      content: `确定要提${status} 的考勤记录吗？\n出差基地：${location}\n出差补贴：${subsidyText}`,
       success: (res) => {
         if (res.confirm) {
           this.submitAttendance(status, location, subsidy, location);
@@ -1311,7 +1559,7 @@ Page({
         }
       }
 
-      // 构建comment字�- 直接使用工作状态或出差基地，不添加提交来源后缀
+      // 构建 comment 字段：直接使用工作状态或出差基地，不添加提交来源后缀
       let finalComment;
       if ((workStatus === '国内出差' || workStatus === '国外出差') && businessTripLocation) {
         finalComment = businessTripLocation;
@@ -1406,7 +1654,7 @@ Page({
                 this.showNetdiskAuthErrorDialog(data.data.user_name, data.msg);
               } else if (data.msg && data.msg.includes('网盘')) {
                 console.log('触发网盘相关错误处理');
-                // 直接显示弹窗，不先显示错误提示，避免冲� 
+                // 直接显示弹窗，不先显示错误提示，避免冲 
                 this.showNetdiskInfoDialog('', data.msg);
               } else {
                 showError(data.msg || '考勤提交失败');
@@ -1461,7 +1709,7 @@ Page({
       () => API.attendance.getRealName(),
       null,
       (data) => {
-        // 成功获取到真实姓�- 修复数据结构访问
+        // 成功获取到真实姓名 - 修复数据结构访问
         console.log('获取真实姓名API返回数据:', data);
         const realName = data.data ? data.data.real_name : data.real_name;
         console.log('提取到的真实姓名:', realName);
@@ -1556,7 +1804,7 @@ Page({
     const item = e.currentTarget.dataset.item;
     if (!item) return;
 
-    // �work_status 映射为 type
+    // work_status 映射为 type
     const typeMap = {
       '公司上班': 'office',
       '国内出差': 'domestic',
@@ -1580,7 +1828,12 @@ Page({
         time: currentTime, // 使用当前时间
         location: item.business_trip_location || '',
         baseName: item.comment || '',
-        subsidy: item.business_trip_subsidy ? String(item.business_trip_subsidy) : ''
+        subsidy: item.business_trip_subsidy ? String(item.business_trip_subsidy) : '',
+        hasDingAttendance: !!(item.ding_attendance && item.ding_attendance.has_ding_attendance),
+        dingAttendance: item.ding_attendance || null,
+        holidayInfo: item.holiday_info || null,
+        overtime: item.overtime || null,
+        calendarStamp: item.calendar_stamp || ''
       }
     });
   },
@@ -1600,7 +1853,15 @@ Page({
   },
 
   onEditDateChange(e) {
-    this.setData({ 'editForm.date': e.detail.value });
+    const nextDate = e.detail.value;
+    const calendarInfo = (this.data.attendanceMap && this.data.attendanceMap[nextDate]) || {};
+    this.setData({
+      'editForm.date': nextDate,
+      'editForm.holidayInfo': calendarInfo.holiday_info || {},
+      'editForm.calendarStamp': calendarInfo.calendar_stamp || ''
+    }, () => {
+      this.updateEditModalOvertimeCalc();
+    });
   },
 
   onEditTimeChange(e) {
@@ -1619,6 +1880,20 @@ Page({
     this.setData({ 'editForm.subsidy': e.detail.value });
   },
 
+  onEditOvertimeHoursChange(e) {
+    const value = e.detail.value;
+    const normalizedHours = Math.max(this.toFiniteNumber(value, 0), 0);
+    this.setData({
+      'editForm.overtimeHoursInput': value,
+      'editForm.overtimeHoursTouched': true,
+      'editForm.overtime.effective_hours': normalizedHours,
+      'editForm.overtime.rule_text': '手动调整加班小时，钉钉同步不会覆盖',
+      'editForm.dingAttendance.overtime_hours': normalizedHours
+    }, () => {
+      this.updateEditModalOvertimeCalc();
+    });
+  },
+
   onSaveEdit() {
     const form = this.data.editForm;
     if (!form.id) return;
@@ -1633,7 +1908,7 @@ Page({
 
     const workStatus = typeToStatus[form.type] || '公司上班';
     
-    // 根据工作状态生�comment
+    // 根据工作状态生comment
     let comment = '';
     if (workStatus === '国内出差' || workStatus === '国外出差') {
       // 出差类型：comment 是出差地点（基地名）
@@ -1652,6 +1927,10 @@ Page({
       comment: comment,
       business_trip_subsidy: parseFloat(form.subsidy) || 0
     };
+
+    if (form.overtimeHoursTouched) {
+      payload.overtime_hours = Math.max(this.toFiniteNumber(form.overtimeHoursInput, 0), 0);
+    }
 
     apiCall(
       () => API.attendance.update(form.id, payload),
@@ -1707,7 +1986,7 @@ Page({
   },
 
   /**
-   * 确认删�- 带进度弹窗
+   * 确认删除记录 - 带进度弹窗
    */
   onConfirmDelete() {
     const id = this.data.deleteRecordId;
@@ -1732,7 +2011,8 @@ Page({
         setTimeout(() => {
           this.setData({ deleteProgress: 70, deleteCurrentStep: '正在同步到公司公盘...' });
           setTimeout(() => {
-            const allSuccess = steps.db_deleted && steps.excel_cleared && steps.nas_uploaded;
+            const uploadStepOk = steps.nas_uploaded || ((steps.nas_msg || '').includes('已关闭网盘上传'));
+            const allSuccess = steps.db_deleted && steps.excel_cleared && uploadStepOk;
             this.setData({
               isDeleting: false,
               deleteProgress: 100,
@@ -1789,9 +2069,9 @@ Page({
    * 检查用户信息是否完善，完善后再跳转到历史页面
    */
   checkUserInfoBeforeHistory() {
-    // �游客模式：禁止访问历史页面
+    // 游客模式：禁止访问历史页面
     if (mockData.isGuestMode()) {
-      console.log('�考勤历史-游客模式：需要登录');
+      console.log('考勤历史-游客模式：需要登录');
       wx.showToast({
         title: '请先登录',
         icon: 'none',
@@ -1815,7 +2095,7 @@ Page({
       mask: true
     });
 
-    // ===== 性能优化：使用用户信息缓�=====
+    // ===== 性能优化：使用用户信息缓存 =====
     // 使用缓存获取用户信息
     userInfoCache.get()
       .then((userInfo) => {
@@ -1965,9 +2245,9 @@ Page({
    * 检查漏打卡情况
    */
   checkMissedAttendance() {
-    // �优先检查是否为游客模式
+    // 优先检查是否为游客模式
     if (mockData.isGuestMode()) {
-      console.log('�漏打卡检查-游客模式：不显示漏打卡提醒');
+      console.log('漏打卡检查-游客模式：不显示漏打卡提醒');
       this.setData({
         missedDays: [],
         showMissedReminder: false
@@ -2018,7 +2298,7 @@ Page({
       const today = new Date();
       const currentYear = today.getFullYear();
       const currentMonth = today.getMonth() + 1;
-      
+
       // 计算上个月的年月
       const lastMonthDate = new Date(currentYear, currentMonth - 2, 1);
       const lastMonthYear = lastMonthDate.getFullYear();
@@ -2036,15 +2316,7 @@ Page({
             }),
             null,
             (data) => {
-              let historyList = [];
-              if (Array.isArray(data)) {
-                historyList = data;
-              } else if (data && Array.isArray(data.data)) {
-                historyList = data.data;
-              } else if (data && data.data && Array.isArray(data.data.data)) {
-                historyList = data.data.data;
-              }
-              resolve(historyList);
+              resolve(this.normalizeAttendanceList(data));
             },
             (error) => {
               console.log('获取当月考勤失败:', error);
@@ -2062,15 +2334,7 @@ Page({
             }),
             null,
             (data) => {
-              let historyList = [];
-              if (Array.isArray(data)) {
-                historyList = data;
-              } else if (data && Array.isArray(data.data)) {
-                historyList = data.data;
-              } else if (data && data.data && Array.isArray(data.data.data)) {
-                historyList = data.data.data;
-              }
-              resolve(historyList);
+              resolve(this.normalizeAttendanceList(data));
             },
             (error) => {
               console.log('获取上月考勤失败:', error);
@@ -2081,27 +2345,27 @@ Page({
       ]).then(([currentMonthData, lastMonthData]) => {
         console.log('当月考勤数据:', currentMonthData);
         console.log('上月考勤数据:', lastMonthData);
-        
+
         // 合并所有已打卡的日期
         const allHistoryList = [...currentMonthData, ...lastMonthData];
-        
-        // 计算漏打卡的日期（包含上月最后几天）
+
+        // 计算漏打卡的日期（按本月计算，并兼容上月最后几天）
         const missedDays = this.calculateMissedDaysWithLastMonth(allHistoryList);
-        
+
         // 检查是否包含上月的漏打卡
         const hasLastMonthMissed = missedDays.some(date => {
           const dateMonth = parseInt(date.split('-')[1]);
           return dateMonth === lastMonth;
         });
-        
+
         this.setData({
           missedDays: missedDays,
           showMissedReminder: missedDays.length > 0,
           hasLastMonthMissed: hasLastMonthMissed
         });
 
-        // 不在这里更新日历显示，让loadCalendarAttendance完成后统一更新
-        // this.updateCalendarDisplay();
+        // 漏打卡数据更新后，立即同步到考勤日历标记
+        this.updateCalendarDisplay();
       }).catch(error => {
         console.log('漏打卡检查失败:', error);
         this.setData({
@@ -2122,6 +2386,7 @@ Page({
    * @returns {Array} 漏打卡的日期列表
    */
   calculateMissedDaysWithLastMonth(historyList) {
+    const safeHistoryList = Array.isArray(historyList) ? historyList : [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -2136,8 +2401,8 @@ Page({
 
     // 获取已打卡的日期集合
     const attendedDates = new Set();
-    historyList.forEach(record => {
-      const workDate = record.work_date || record.WorkDate;
+    safeHistoryList.forEach(record => {
+      const workDate = this.getAttendanceWorkDate(record);
       if (workDate) {
         attendedDates.add(workDate);
       }
@@ -2181,6 +2446,7 @@ Page({
    * @returns {Array} 漏打卡的日期列表
    */
   calculateMissedDays(historyList) {
+    const safeHistoryList = Array.isArray(historyList) ? historyList : [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -2189,8 +2455,8 @@ Page({
     
     // 获取已打卡的日期集合
     const attendedDates = new Set();
-    historyList.forEach(record => {
-      const workDate = record.work_date || record.WorkDate;
+    safeHistoryList.forEach(record => {
+      const workDate = this.getAttendanceWorkDate(record);
       if (workDate) {
         attendedDates.add(workDate);
       }
@@ -2227,13 +2493,14 @@ Page({
    * 跳转到漏打卡补交页面
    */
   goToMissingCheckin() {
-    if (this.data.missedDays.length === 0) {
+    const missedDays = Array.isArray(this.data.missedDays) ? this.data.missedDays : [];
+    if (missedDays.length === 0) {
       wx.showToast({ title: '暂无漏打卡', icon: 'none' });
       return;
     }
     this._needRefreshCalendar = true;
     wx.navigateTo({
-      url: '/pages/attendance/missing-checkin/index?missedDays=' + encodeURIComponent(JSON.stringify(this.data.missedDays))
+      url: '/pages/attendance/missing-checkin/index?missedDays=' + encodeURIComponent(JSON.stringify(missedDays))
     });
   },
 
@@ -2302,9 +2569,9 @@ Page({
   loadCalendarAttendance(year, month) {
     const userInfo = this.data.currentUser;
     
-    // �优先检查是否为游客模式
+    // 优先检查是否为游客模式
     if (mockData.isGuestMode()) {
-      console.log(`�日历考勤-游客模式：生成${year}年${month}月的mock数据`);
+      console.log(`日历考勤-游客模式：生成${year}年${month}月的mock数据`);
       
       // 生成游客模式的日历数据
       const attendanceMap = {};
@@ -2398,35 +2665,52 @@ Page({
     const realName = userInfo.real_name;
     
     apiCall(
-      () => API.attendance.getHistory({
+      () => API.attendance.getCalendar({
         year: year,
         month: month,
         name: realName
       }),
       null,
       (data) => {
-        console.log('日历考勤数据:', data);
-        
-        const attendanceList = data && data.data ? data.data : [];
+        console.log('考勤月历数据:', data);
+
+        const payload = data && data.data ? data.data : data;
+        const calendarDays = payload && Array.isArray(payload.days) ? payload.days : [];
         const attendanceMap = {};
-        
-        // 构建考勤映射
-        attendanceList.forEach(record => {
-          if (record.work_date) {
-            const icon = this.getStatusIcon(record.work_status);
-            attendanceMap[record.work_date] = {
-              id: record.id,
-              name: record.name || record.real_name || record.employee_name || '', // 缓存姓名
-              work_status: record.work_status,
-              icon: icon,
-              comment: record.comment,
-              business_trip_subsidy: record.business_trip_subsidy
-            };
-          }
+
+        calendarDays.forEach(record => {
+          const workDate = this.getAttendanceWorkDate(record);
+          if (!workDate) return;
+
+          const workStatus = record.work_status || record.WorkStatus || '';
+          const dingAttendance = record.ding_attendance || {};
+          const overtime = record.overtime || {};
+          const icon = this.getStatusIcon(workStatus);
+          const hasAttendance = !!(record.id || workStatus);
+
+          attendanceMap[workDate] = {
+            id: record.id,
+            name: record.name || record.real_name || record.employee_name || realName,
+            work_date: workDate,
+            work_status: workStatus,
+            icon: icon,
+            comment: record.comment,
+            business_trip_subsidy: record.business_trip_subsidy,
+            hasAttendance: hasAttendance,
+            ding_attendance: dingAttendance,
+            holiday_info: record.holiday_info || null,
+            calendar_stamp: record.calendar_stamp || '',
+            calendar_stamp_type: record.calendar_stamp_type || '',
+            overtime: overtime,
+            hasDingAttendance: !!dingAttendance.has_ding_attendance,
+            manualOvertimeOverride: !!(overtime.manual_override || dingAttendance.manual_override || record.manual_override),
+            overtimeHours: Number(overtime.effective_hours || dingAttendance.overtime_hours || 0)
+          };
         });
-        
+
         this.setData({
-          attendanceMap: attendanceMap
+          attendanceMap: attendanceMap,
+          calendarSummary: payload ? payload.summary || null : null
         });
         
         // 更新日历显示
@@ -2471,38 +2755,48 @@ Page({
    * 更新日历显示
    */
   updateCalendarDisplay() {
-    console.log('�更新日历显示，attendanceMap:', this.data.attendanceMap);
-    console.log('missedDays array:', this.data.missedDays);
-    console.log('�更新日历显示，calendarDays数量:', this.data.calendarDays.length);
+    const baseCalendarDays = Array.isArray(this.data.calendarDays) ? this.data.calendarDays : [];
+    const attendanceMap = (this.data.attendanceMap && typeof this.data.attendanceMap === 'object') ? this.data.attendanceMap : {};
+    const missedDays = Array.isArray(this.data.missedDays) ? this.data.missedDays : [];
+
+    console.log('更新日历显示，attendanceMap:', attendanceMap);
+    console.log('missedDays array:', missedDays);
+    console.log('更新日历显示，calendarDays数量:', baseCalendarDays.length);
     
-    const calendarDays = this.data.calendarDays.map(dayInfo => {
-      if (dayInfo.isEmpty) {
+    const calendarDays = baseCalendarDays.map(dayInfo => {
+      if (!dayInfo || dayInfo.isEmpty) {
         return dayInfo;
       }
       
-      const attendance = this.data.attendanceMap[dayInfo.date];
-      const isMissed = this.data.missedDays.includes(dayInfo.date);
+      const attendance = dayInfo.date ? attendanceMap[dayInfo.date] : null;
+      const isMissed = dayInfo.date ? missedDays.includes(dayInfo.date) : false;
       if (isMissed) { console.log('Missed date:', dayInfo.date); }
       
+      const hasAttendance = !!(attendance && attendance.hasAttendance);
       const updatedDay = {
         ...dayInfo,
-        hasAttendance: !!attendance,
-        attendanceIcon: attendance ? attendance.icon : '',
-        workStatus: attendance ? attendance.work_status : '',
-        attendanceType: attendance ? this.getAttendanceType(attendance.work_status) : '',
+        hasAttendance: hasAttendance,
+        attendanceIcon: hasAttendance ? attendance.icon : '',
+        workStatus: hasAttendance ? attendance.work_status : '',
+        attendanceType: hasAttendance ? this.getAttendanceType(attendance.work_status) : '',
+        calendarStamp: attendance ? attendance.calendar_stamp : '',
+        calendarStampType: attendance ? attendance.calendar_stamp_type : '',
+        hasDingAttendance: !!(attendance && attendance.hasDingAttendance),
+        manualOvertimeOverride: !!(attendance && attendance.manualOvertimeOverride),
+        overtimeHours: attendance ? attendance.overtimeHours || 0 : 0,
         isMissed: isMissed
       };
       
       // 调试：输出有考勤记录的日期
       // if (attendance) {
-      //   console.log(`�日�${dayInfo.date} 有考勤记录:`, attendance);
+      //   console.log(`日${dayInfo.date} 有考勤记录:`, attendance);
       // }
       
       return updatedDay;
     });
     
     console.log('Missed days in calendar:', calendarDays.filter(d => !d.isEmpty && d.isMissed));
-    console.log('�更新后的calendarDays:', calendarDays.filter(d => !d.isEmpty && d.hasAttendance));
+    console.log('更新后的calendarDays:', calendarDays.filter(d => !d.isEmpty && d.hasAttendance));
     
     this.setData({
       calendarDays: calendarDays
@@ -2552,7 +2846,7 @@ Page({
     // 检查该日期是否有考勤记录
     const attendance = this.data.attendanceMap[date];
     
-    if (attendance) {
+    if (attendance && attendance.hasAttendance) {
       // 已有考勤记录：打开编辑弹窗
       this.openEditModalForCalendar(date, attendance);
     } else {
@@ -2567,7 +2861,7 @@ Page({
    * @param {object} attendance - 考勤记录对象
    */
   openEditModalForCalendar(date, attendance) {
-    // �work_status 映射为 type
+    // work_status 映射为 type
     const typeMap = {
       '公司上班': 'office',
       '国内出差': 'domestic',
@@ -2591,9 +2885,74 @@ Page({
         time: currentTime, // 使用当前时间
         location: attendance.business_trip_location || '',
         baseName: attendance.comment || '',
-        subsidy: attendance.business_trip_subsidy ? String(attendance.business_trip_subsidy) : ''
+        subsidy: attendance.business_trip_subsidy ? String(attendance.business_trip_subsidy) : '',
+        hasDingAttendance: !!attendance.hasDingAttendance,
+        dingAttendance: attendance.ding_attendance || {},
+        holidayInfo: attendance.holiday_info || {},
+        overtime: attendance.overtime || {},
+        overtimeHoursInput: String(attendance.overtimeHours || (attendance.overtime && attendance.overtime.effective_hours) || (attendance.ding_attendance && attendance.ding_attendance.overtime_hours) || 0),
+        overtimeHoursTouched: false,
+        overtimeCalc: this.buildDayOvertimeCalc(attendance),
+        calendarStamp: attendance.calendar_stamp || ''
       }
     });
+
+    if (!this.data.salaryRateConfig.loaded && !this.data.salaryRateConfig.loading) {
+      this.loadSalaryRateConfig(this.data.currentUser);
+    }
+  },
+
+  onSyncDingtalk() {
+    if (this.data.syncingDingtalk) return;
+    if (mockData.isGuestMode() || this._isTestMode) {
+      showError('当前模式不支持同步');
+      return;
+    }
+
+    const currentUser = this.data.currentUser || wx.getStorageSync('userInfo');
+    if (!currentUser || !currentUser.real_name) {
+      showError('请先完善真实姓名');
+      return;
+    }
+
+    this.setData({ syncingDingtalk: true });
+    wx.showLoading({ title: '同步中...' });
+
+    API.attendance.syncDingtalk({
+      year: this.data.calendarYear,
+      month: this.data.calendarMonth,
+      name: currentUser.real_name,
+      source: 'openapi'
+    })
+      .then(res => {
+        wx.hideLoading();
+        this.setData({ syncingDingtalk: false });
+        if (!res || res.code !== 200) {
+          const hint = res && res.data && res.data.hint ? res.data.hint : (res && res.msg ? res.msg : '同步失败');
+          wx.showModal({
+            title: '同步失败',
+            content: hint,
+            showCancel: false,
+            confirmText: '知道了'
+          });
+          return;
+        }
+
+        showSuccess('同步完成');
+        this.loadCalendarAttendance(this.data.calendarYear, this.data.calendarMonth);
+        this.loadRecentAttendance();
+        this.loadTodayAttendance();
+      })
+      .catch(err => {
+        wx.hideLoading();
+        this.setData({ syncingDingtalk: false });
+        wx.showModal({
+          title: '同步失败',
+          content: err && err.message ? err.message : '请稍后重试',
+          showCancel: false,
+          confirmText: '知道了'
+        });
+      });
   },
 
   /**
@@ -2664,7 +3023,7 @@ Page({
       return;
     }
     
-    // �设置需要刷新标记，返回时会自动刷新
+    // 设置需要刷新标记，返回时会自动刷新
     this._needRefreshCalendar = true;
     
     // 跳转到编辑页面
@@ -2686,6 +3045,10 @@ Page({
    * 打开打卡模态框
    */
   onOpenCheckInModal() {
+    if (this.data.todayCheckedIn) {
+      return;
+    }
+
     // 获取当前日期
     const now = new Date();
     const currentDate = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
@@ -2759,7 +3122,7 @@ Page({
 
     const workStatus = typeToStatus[form.type] || '公司上班';
 
-    // 根据工作状态生�comment
+    // 根据工作状态生comment
     let comment = '';
     if (workStatus === '国内出差' || workStatus === '国外出差') {
       // 出差类型：comment 是出差地点（基地名）
@@ -2806,6 +3169,17 @@ Page({
       null,
       (res) => {
         wx.hideLoading();
+        if (!res || res.code !== 200) {
+          this.setData({
+            showCheckinModal: false,
+            showResultModal: true,
+            resultSuccess: false,
+            resultMsg: res && res.msg ? res.msg : '打卡失败'
+          });
+          return;
+        }
+
+        this.applyImmediateTodayAttendance(payload);
         this.setData({
           showCheckinModal: false,
           showResultModal: true,
@@ -2835,7 +3209,7 @@ Page({
   },
 
   /**
-   * 通知按钮点�- 获取公告并显示弹窗
+   * 通知按钮点- 获取公告并显示弹窗
    */
   onNotificationTap() {
     wx.showLoading({ title: '加载中...' });
@@ -2894,7 +3268,7 @@ Page({
     // 清除首次启动标记
     wx.removeStorageSync('isFirstLaunch');
     
-    console.log('�首次启动小程序，准备显示公告弹窗');
+    console.log('首次启动小程序，准备显示公告弹窗');
     
     // 延迟显示公告弹窗，确保页面加载完成
     setTimeout(() => {
