@@ -9,6 +9,7 @@ const { errorRecoveryManager } = require('./utils/error-recovery');
 const { performanceManager } = require('./utils/performance-manager');
 const { loadingManager } = require('./utils/loading-manager');
 const { miniprogramInfo } = require('./utils/miniprogram-info');
+const { checkForUpdate } = require('./utils/update-manager');
 
 App({
   /**
@@ -32,8 +33,11 @@ App({
       
       // 标记首次启动
       this.markFirstLaunch();
+
+      // 检查当前包是否落后于线上已发布版本。
+      this.initUpdateChecker();
       
-      console.log('�小程序启动完成，性能优化系统已激活');
+      console.log('小程序启动完成，性能优化系统已激活');
     } catch (error) {
       console.error('小程序启动失败:', error);
     }
@@ -45,15 +49,18 @@ App({
   checkLoginStatus: function () {
     const userInfo = wx.getStorageSync('userInfo');
     const openid = wx.getStorageSync('openid');
+
+    // 旧版本的本地测试登录开关不再参与认证或权限判断。
+    wx.removeStorageSync('isTestMode');
     
-    // 如果没有用户信息或openid，设置为游客模式
+    // 未登录用户可预览页面结构，但只显示空状态。
     if (!userInfo || !openid) {
       wx.setStorageSync('isGuestMode', true);
-      console.log('�未登录，已设置为游客模式');
+      console.log('未登录，已设置为游客模式');
     } else {
       // 已登录，确保不是游客模式
       wx.removeStorageSync('isGuestMode');
-      console.log('�已登录，非游客模式');
+      console.log('已登录，非游客模式');
     }
   },
   
@@ -67,7 +74,7 @@ App({
       // 标记为首次启动
       wx.setStorageSync('isFirstLaunch', true);
       wx.setStorageSync('hasLaunchedThisSession', true);
-      console.log('�首次启动小程序，已标记');
+      console.log('首次启动小程序，已标记');
     }
   },
   
@@ -80,7 +87,7 @@ App({
       const accountInfo = miniprogramInfo.getAccountInfo();
       const fullInfo = miniprogramInfo.getFullInfo();
       
-      console.log('�===== 小程序信�=====');
+      console.log('===== 小程序信息 =====');
       console.log(`  名称: ${fullInfo.appName}`);
       console.log(`  AppID: ${fullInfo.appId}`);
       console.log(`  版本: ${fullInfo.version}`);
@@ -92,6 +99,18 @@ App({
       
     } catch (error) {
       console.error('初始化小程序信息失败:', error);
+    }
+  },
+
+  /**
+   * 初始化版本更新检查。
+   */
+  initUpdateChecker: function () {
+    try {
+      this.updateManager = checkForUpdate();
+    } catch (error) {
+      // 更新检查不应影响小程序正常启动。
+      console.warn('初始化版本更新检查失败:', error);
     }
   },
 
@@ -131,15 +150,15 @@ App({
    * 初始化性能优化系统
    */
   initPerformanceSystem: function () {
-    console.log('�初始化性能优化系统...');
+    console.log('初始化性能优化系统...');
     
     // 1. 启动性能监控
     performanceMonitor.startMonitoring();
-    console.log('�性能监控已启动');
+    console.log('性能监控已启动');
     
     // 2. 启用错误自动恢复
     errorRecoveryManager.autoRecoveryEnabled = true;
-    console.log('�错误自动恢复已启用');
+    console.log('错误自动恢复已启用');
     
     // 3. 配置性能阈值
     performanceMonitor.thresholds = {
@@ -149,12 +168,12 @@ App({
       memoryWarningCount: 3,   // 内存警告3次阈值
       errorRate: 0.05         // 5%错误率阈值
     };
-    console.log('�性能阈值已配置');
+    console.log('性能阈值已配置');
     
     // 4. 配置Loading管理器
     loadingManager.config.maxConcurrent = 3;
     loadingManager.config.minShowTime = 500;
-    console.log('�Loading管理器已配置');
+    console.log('Loading管理器已配置');
     
     // 5. 设置定期性能报告
     this.setupPerformanceReporting();
@@ -164,18 +183,17 @@ App({
    * 初始化全局配置
    */
   initGlobalConfig: function () {
-    // 检测是否为开发环境（微信开发者工具）
-    const isDevEnv = wx.getDeviceInfo().platform === 'devtools';
-    
     // 全局数据
     this.globalData = {
       userInfo: null,
       openid: null,
       loginMode: null,
       
-      // 调试日志开关（开发环境自动开启，生产环境关闭）
-      enableApiDebug: isDevEnv,       // API请求/响应/环境检测日志
-      enableSignatureDebug: isDevEnv, // 签名生成详细日志
+      // 调试日志开关固定关闭，避免开发者工具走开发环境逻辑
+      enableApiDebug: false,
+      enableSignatureDebug: false,
+      signatureSecret: 'miniapp-api-sign-key-2025-v1!!',
+      signatureSecretConfigured: true,
       
       // 性能优化配置
       performanceConfig: {
@@ -195,12 +213,13 @@ App({
     };
     
     // 输出环境和调试状态信息
-    console.log('�小程序环境配置:');
-    console.log(`  �运行环境: ${isDevEnv ? '开发环境 (devtools)' : '生产环境'}`);
-    console.log(`  �API调试日志: ${isDevEnv ? '�已开启' : '�已关闭'}`);
-    console.log(`  �签名调试日志: ${isDevEnv ? '�已开启' : '�已关闭'}`);
-    
-    console.log('�全局配置已初始化');
+    console.log('小程序环境配置:');
+    console.log('  运行环境: 生产环境');
+    console.log('  API调试日志: 已关闭');
+    console.log('  签名调试日志: 已关闭');
+    console.log(`  签名密钥状态: ${this.globalData.signatureSecretConfigured ? '已配置真实密钥' : '⚠仍为占位值'}`);
+
+    console.log('全局配置已初始化');
   },
 
   /**
@@ -214,15 +233,10 @@ App({
         
         // 检查性能健康状况
         if (report.healthScore < 70) {
-          console.warn(`⚠�性能健康评分较低: ${report.healthScore}分`);
+          console.warn(`⚠性能健康评分较低: ${report.healthScore}分`);
           this.performMaintenanceCleanup();
         } else if (report.healthScore >= 90) {
-          console.log(`�性能健康状况良好: ${report.healthScore}分`);
-        }
-        
-        // 详细性能日志（仅在开发环境）
-        if (this.isDevelopment()) {
-          console.log('�性能监控报告:', report);
+          console.log(`性能健康状况良好: ${report.healthScore}分`);
         }
         
       } catch (error) {
@@ -230,7 +244,7 @@ App({
       }
     }, 5 * 60 * 1000);
     
-    console.log('�定期性能报告已设�(5分钟间隔)');
+    console.log('定期性能报告已设置(5分钟间隔)');
   },
 
   /**
@@ -238,7 +252,7 @@ App({
    */
   performLightCleanup: function () {
     try {
-      console.log('�执行轻度清理...');
+      console.log('执行轻度清理...');
       
       // 隐藏所有loading
       loadingManager.hideAllLoadings();
@@ -253,7 +267,7 @@ App({
         now - alert.timestamp < 10 * 60 * 1000 // 保留10分钟内的警报
       );
       
-      console.log('�轻度清理完成');
+      console.log('轻度清理完成');
     } catch (error) {
       console.error('轻度清理失败:', error);
     }
@@ -264,7 +278,7 @@ App({
    */
   performMaintenanceCleanup: function () {
     try {
-      console.log('�执行维护性清理...');
+      console.log('执行维护性清理...');
       
       // 强制清理所有资源
       performanceManager.performEmergencyCleanup();
@@ -282,7 +296,7 @@ App({
         }
       }, 1000);
       
-      console.log('�维护性清理完成');
+      console.log('维护性清理完成');
     } catch (error) {
       console.error('维护性清理失败:', error);
     }
@@ -310,22 +324,17 @@ App({
   },
 
   /**
-   * 检查是否为开发环境
+   * 检查是否为开发环境。当前固定生产环境。
    */
   isDevelopment: function () {
-    // 简单的开发环境检测
-    try {
-      return wx.getAppBaseInfo().host.env === 'devtools';
-    } catch (error) {
-      return false;
-    }
+    return false;
   },
 
   /**
    * 优雅关闭应用
    */
   shutdown: function () {
-    console.log('�应用正在关闭...');
+    console.log('应用正在关闭...');
     
     try {
       // 停止性能监控
@@ -337,7 +346,7 @@ App({
       // 清理所有资源
       performanceManager.performEmergencyCleanup();
       
-      console.log('�应用关闭清理完成');
+      console.log('应用关闭清理完成');
     } catch (error) {
       console.error('应用关闭清理失败:', error);
     }
@@ -351,9 +360,7 @@ App({
     openid: null,
     loginMode: null,
     
-    // 调试日志开关（会�initGlobalConfig 中根据环境自动设置）
-    // 开发环境：自动开启
-    // 生产环境：自动关闭
+    // 调试日志开关固定关闭
     enableApiDebug: false,       // API请求/响应/环境检测日志
     enableSignatureDebug: false  // 签名生成详细日志
   }

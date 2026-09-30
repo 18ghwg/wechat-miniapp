@@ -214,8 +214,10 @@ Page({
 
   // 预警严重程度选择
   onSeverityChange: function(e) {
-    const index = e.detail.value;
-    const value = this.data.severityOptions[index].value;
+    const index = e && e.detail ? Number(e.detail.value) : 0;
+    const option = this.data.severityOptions[index];
+    if (!option) return;
+    const value = option.value;
     this.setData({
       severityIndex: index,
       'settings.alert_severity_threshold': value
@@ -224,8 +226,10 @@ Page({
 
   // 极端天气阈值选择
   onExtremeChange: function(e) {
-    const index = e.detail.value;
-    const value = this.data.severityOptions[index].value;
+    const index = e && e.detail ? Number(e.detail.value) : 0;
+    const option = this.data.severityOptions[index];
+    if (!option) return;
+    const value = option.value;
     this.setData({
       extremeIndex: index,
       'settings.extreme_weather_threshold': value
@@ -251,7 +255,7 @@ Page({
   // 地区搜索输入
   onLocationInput: function(e) {
     var that = this;
-    const query = e.detail.value.trim();
+    const query = e && e.detail && e.detail.value ? String(e.detail.value).trim() : '';
     
     this.setData({
       locationSearchInput: query
@@ -315,8 +319,9 @@ Page({
 
   // 选择地区
   onLocationSelect: function(e) {
-    const index = e.currentTarget.dataset.index;
+    const index = e && e.currentTarget && e.currentTarget.dataset ? Number(e.currentTarget.dataset.index) : -1;
     const location = this.data.locationSearchResults[index];
+    if (!location) return;
     
     console.log('选择地区:', location);
     

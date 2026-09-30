@@ -339,7 +339,7 @@ class AvatarGenerator {
   }
 
   /**
-   * 清理资�- 页面卸载时调用
+   * 清理资源 - 页面卸载时调用
    */
   cleanup() {
     try {

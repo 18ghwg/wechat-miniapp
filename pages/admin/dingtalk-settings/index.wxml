@@ -1,0 +1,119 @@
+<view class="dingtalk-settings-page">
+  <view class="page-header">
+    <view class="header-icon-wrapper">
+      <image class="header-icon" src="/assets/icons/clock.png" mode="aspectFit" />
+    </view>
+    <text class="page-title">钉钉考勤设置</text>
+    <text class="page-subtitle">当前账号独立配置</text>
+  </view>
+
+  <view class="cartoon-card loading-state" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <block wx:else>
+    <view class="verification-state {{settings.can_sync ? 'verification-state-success' : 'verification-state-pending'}}">
+      <view class="verification-state-main">
+        <text class="verification-state-title">{{settings.can_sync ? '已验证，可同步' : '尚未通过验证'}}</text>
+        <text class="verification-state-time" wx:if="{{settings.verified_at}}">最近验证 {{settings.verified_at}}</text>
+      </view>
+      <text class="verification-error" wx:if="{{settings.last_error}}">{{settings.last_error}}</text>
+    </view>
+
+    <view class="settings-card">
+      <view class="setting-row switch-row">
+        <view class="setting-meta">
+          <text class="setting-label">启用同步</text>
+          <text class="setting-hint">控制考勤页同步钉钉按钮是否可用</text>
+        </view>
+        <switch checked="{{settings.is_enabled}}" bindchange="onSwitchChange" color="#2563EB" />
+      </view>
+
+      <view class="form-field">
+        <view class="field-label-row"><text class="field-label">CorpId</text><button class="field-doc-copy" data-doc="corpId" bindtap="onOpenOfficialDoc">复制企业信息文档地址</button></view>
+        <input class="field-input" value="{{settings.corp_id}}" data-field="corp_id" bindinput="onInputChange" placeholder="钉钉企业 CorpId" />
+      </view>
+
+      <view class="form-field">
+        <view class="field-label-row"><text class="field-label">AppKey</text><button class="field-doc-copy" data-doc="credentials" bindtap="onOpenOfficialDoc">复制应用凭证文档地址</button></view>
+        <input class="field-input" value="{{settings.app_key}}" data-field="app_key" bindinput="onInputChange" placeholder="钉钉企业内部应用 AppKey" />
+      </view>
+
+      <view class="form-field">
+        <view class="field-label-row"><text class="field-label">AppSecret</text><button class="field-doc-copy" data-doc="credentials" bindtap="onOpenOfficialDoc">复制应用凭证文档地址</button></view>
+        <input class="field-input" password value="{{settings.app_secret}}" data-field="app_secret" bindinput="onInputChange" placeholder="{{settings.has_app_secret ? '已保存，留空表示不修改' : '钉钉企业内部应用 AppSecret'}}" />
+      </view>
+
+      <view class="form-field">
+        <view class="field-label-row"><text class="field-label">本人钉钉用户ID</text><button class="field-doc-copy" data-doc="userId" bindtap="onOpenOfficialDoc">复制用户 ID 文档地址</button></view>
+        <input class="field-input" value="{{settings.ding_user_id}}" data-field="ding_user_id" bindinput="onInputChange" placeholder="当前用户在该企业中的 userid" />
+      </view>
+
+      <view class="form-field">
+        <view class="field-label-row"><text class="field-label">OpenAPI 地址</text><button class="field-doc-copy" data-doc="attendance" bindtap="onOpenOfficialDoc">复制考勤接口文档地址</button></view>
+        <input class="field-input" value="{{settings.api_base}}" data-field="api_base" bindinput="onInputChange" placeholder="https://oapi.dingtalk.com" />
+      </view>
+
+      <view class="form-field">
+        <text class="field-label">超时时间（秒）</text>
+        <input class="field-input" type="number" value="{{settings.timeout_seconds}}" data-field="timeout_seconds" bindinput="onInputChange" placeholder="20" />
+      </view>
+    </view>
+
+    <view class="settings-card docs-card">
+      <view class="section-heading">
+        <text class="section-title">钉钉官方配置文档</text>
+        <button class="section-guide-button" bindtap="openGuide">重新查看配置步骤</button>
+      </view>
+      <view class="doc-link" data-doc="enterprise" bindtap="onOpenOfficialDoc">创建或进入钉钉企业</view>
+      <view class="doc-link" data-doc="org" bindtap="onOpenOfficialDoc">组织级应用开发总览</view>
+      <view class="doc-link" data-doc="app" bindtap="onOpenOfficialDoc">创建企业内部应用</view>
+      <view class="doc-link" data-doc="token" bindtap="onOpenOfficialDoc">获取企业内部应用 access_token</view>
+      <view class="doc-link" data-doc="attendance" bindtap="onOpenOfficialDoc">查询用户考勤打卡记录</view>
+    </view>
+
+    <view class="action-row">
+      <view class="secondary-btn" bindtap="onRefresh">刷新</view>
+      <view class="primary-btn {{saving ? 'btn-disabled' : ''}}" bindtap="onSave">{{saving ? '验证中' : '测试并保存'}}</view>
+    </view>
+  </block>
+
+  <view class="guide-mask" wx:if="{{guideVisible}}" catchtouchmove="preventTouchMove">
+    <view class="guide-modal">
+      <view class="guide-modal-header">
+        <text class="guide-modal-title">钉钉考勤同步配置指南</text>
+        <view class="guide-close" bindtap="closeGuide">×</view>
+      </view>
+      <scroll-view class="guide-scroll" scroll-y="true">
+        <text class="guide-intro">请使用你自己管理的钉钉企业和企业内部应用准备以下信息。系统不会代替你创建企业或应用。</text>
+        <view class="guide-step">
+          <text class="guide-index">1</text><view class="guide-step-body"><text class="guide-step-title">创建或进入钉钉企业</text><text class="guide-step-desc">使用自己的钉钉账号创建企业，或进入已有企业。点击下方按钮复制官方入口地址。</text><button class="guide-doc-copy" data-doc="enterprise" bindtap="onOpenOfficialDoc">复制企业入口地址</button></view>
+        </view>
+        <view class="guide-step">
+          <text class="guide-index">2</text><view class="guide-step-body"><text class="guide-step-title">确认自己是企业管理员</text><text class="guide-step-desc">确认当前账号拥有企业管理权限。应用创建、权限申请和成员信息查询都需要管理员操作。</text><button class="guide-doc-copy" data-doc="org" bindtap="onOpenOfficialDoc">复制开放平台文档地址</button></view>
+        </view>
+        <view class="guide-step">
+          <text class="guide-index">3</text><view class="guide-step-body"><text class="guide-step-title">创建企业内部应用</text><text class="guide-step-desc">进入应用开发或应用管理，创建一个企业内部应用，例如“考勤同步”，然后进入应用详情。</text><button class="guide-doc-copy" data-doc="app" bindtap="onOpenOfficialDoc">复制创建应用教程地址</button></view>
+        </view>
+        <view class="guide-step">
+          <text class="guide-index">4</text><view class="guide-step-body"><text class="guide-step-title">获取 CorpId</text><text class="guide-step-desc">在企业信息或应用所属企业信息中复制 CorpId，回到本页填写。CorpId 用于确定读取哪一家企业的数据。</text><button class="guide-doc-copy" data-doc="corpId" bindtap="onOpenOfficialDoc">复制 CorpId 文档地址</button></view>
+        </view>
+        <view class="guide-step">
+          <text class="guide-index">5</text><view class="guide-step-body"><text class="guide-step-title">获取 AppKey 和 AppSecret</text><text class="guide-step-desc">在应用详情的凭证或开发信息区域复制 AppKey 和 AppSecret。AppSecret 是敏感凭证，不要发给他人。</text><button class="guide-doc-copy" data-doc="credentials" bindtap="onOpenOfficialDoc">复制应用凭证文档地址</button></view>
+        </view>
+        <view class="guide-step">
+          <text class="guide-index">6</text><view class="guide-step-body"><text class="guide-step-title">获取指定成员的钉钉用户 ID</text><text class="guide-step-desc">在企业通讯录中找到需要同步考勤的成员，获取其 userid，填写到“本人钉钉用户ID”。不是手机号、姓名或 unionId。</text><button class="guide-doc-copy" data-doc="userId" bindtap="onOpenOfficialDoc">复制用户 ID 文档地址</button></view>
+        </view>
+        <view class="guide-step">
+          <text class="guide-index">7</text><view class="guide-step-body"><text class="guide-step-title">为应用开通考勤权限</text><text class="guide-step-desc">在应用权限管理中申请读取考勤所需权限，并按钉钉后台提示发布或生效。权限范围必须包含目标成员。</text><button class="guide-doc-copy" data-doc="attendance" bindtap="onOpenOfficialDoc">复制考勤权限文档地址</button></view>
+        </view>
+        <view class="guide-step guide-step-last">
+          <text class="guide-index">8</text><view class="guide-step-body"><text class="guide-step-title">回到这里测试并保存</text><text class="guide-step-desc">填写 CorpId、AppKey、AppSecret 和用户 ID，确认 OpenAPI 地址后点击“测试并保存”。验证成功后才会启用同步。</text><button class="guide-doc-copy" data-doc="attendance" bindtap="onOpenOfficialDoc">复制考勤接口文档地址</button></view>
+        </view>
+        <view class="guide-notice">安全提示：AppSecret 只应填写到本系统，不要粘贴到聊天、工单或截图中。修改权限后请先确认钉钉后台已生效。</view>
+      </scroll-view>
+      <button class="guide-confirm" bindtap="closeGuide">我已了解，开始配置</button>
+    </view>
+  </view>
+</view>

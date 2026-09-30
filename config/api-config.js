@@ -24,21 +24,14 @@ function getUseMock() {
  */
 export const apiConfig = {
   /** 
-   * 后端API配�
+   * 后端API配置
    */
   api: {
     /**
      * 正式环境API地址
      * 生产环境使用此地址
      */
-    // baseUrl: 'http://192.168.0.123:5301',
-    baseUrl: 'https://wechat.blog18.cn',
-    
-    /**
-     * 开发环境API地址
-     * 在微信开发者工具中使用此地址
-     */
-    devBaseUrl: 'http://127.0.0.1:5301',
+    baseUrl: 'https://ccrl.blog18.cn',
     
     /**
      * API路径前缀
@@ -71,4 +64,3 @@ export const apiConfig = {
     return getUseMock();
   }
 };
-

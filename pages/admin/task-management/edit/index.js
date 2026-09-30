@@ -255,8 +255,9 @@ Page({
    * 时区选择变化
    */
   onTimezoneChange(e) {
-    const index = e.detail.value;
+    const index = e && e.detail ? Number(e.detail.value) : -1;
     const timezone = this.data.timezones[index];
+    if (!timezone) return;
     
     console.log(`🌏 时区更新:`, timezone);
     
@@ -271,14 +272,22 @@ Page({
    * 起始时间选择变化
    */
   onStartDateChange(e) {
-    const values = e.detail.value;
+    const values = e && e.detail ? e.detail.value : null;
     const ranges = this.data.datePickerRange;
+    if (!Array.isArray(values) || !Array.isArray(ranges) || ranges.length < 5) {
+      console.warn('起始时间选择失败：picker 数据无效', { values, ranges });
+      return;
+    }
     
-    const year = ranges[0][values[0]];
-    const month = ranges[1][values[1]];
-    const day = ranges[2][values[2]];
-    const hour = ranges[3][values[3]];
-    const minute = ranges[4][values[4]];
+    const year = ranges[0] && ranges[0][values[0]];
+    const month = ranges[1] && ranges[1][values[1]];
+    const day = ranges[2] && ranges[2][values[2]];
+    const hour = ranges[3] && ranges[3][values[3]];
+    const minute = ranges[4] && ranges[4][values[4]];
+    if (!year || !month || !day || !hour || !minute) {
+      console.warn('起始时间选择失败：picker 选项不存在', { values, ranges });
+      return;
+    }
     
     const dateStr = `${year}-${month}-${day} ${hour}:${minute}:00`;
     
@@ -294,14 +303,22 @@ Page({
    * 结束时间选择变化
    */
   onEndDateChange(e) {
-    const values = e.detail.value;
+    const values = e && e.detail ? e.detail.value : null;
     const ranges = this.data.datePickerRange;
+    if (!Array.isArray(values) || !Array.isArray(ranges) || ranges.length < 5) {
+      console.warn('结束时间选择失败：picker 数据无效', { values, ranges });
+      return;
+    }
     
-    const year = ranges[0][values[0]];
-    const month = ranges[1][values[1]];
-    const day = ranges[2][values[2]];
-    const hour = ranges[3][values[3]];
-    const minute = ranges[4][values[4]];
+    const year = ranges[0] && ranges[0][values[0]];
+    const month = ranges[1] && ranges[1][values[1]];
+    const day = ranges[2] && ranges[2][values[2]];
+    const hour = ranges[3] && ranges[3][values[3]];
+    const minute = ranges[4] && ranges[4][values[4]];
+    if (!year || !month || !day || !hour || !minute) {
+      console.warn('结束时间选择失败：picker 选项不存在', { values, ranges });
+      return;
+    }
     
     const dateStr = `${year}-${month}-${day} ${hour}:${minute}:00`;
     
@@ -336,6 +353,7 @@ Page({
     // a-b/c 格式（范围+间隔）
     if (/^\d+-\d+\/\d+$/.test(value)) {
       const match = value.match(/^(\d+)-(\d+)\/(\d+)$/);
+      if (!match) return parse.desc;
       const start = parseInt(match[1]);
       const end = parseInt(match[2]);
       const step = parseInt(match[3]);
@@ -734,6 +752,16 @@ Page({
     const updateData = {
       trigger_type: taskData.trigger_type
     };
+
+    if (taskData.func_name === 'send_daily_work_log_summary') {
+      const targetGroup = (taskData.target_group || '').trim();
+      if (!targetGroup) {
+        this.setData({ saving: false });
+        showError('请填写发送目标群聊');
+        return;
+      }
+      updateData.target_group = targetGroup;
+    }
     
     if (taskData.trigger_type === 'cron') {
       // Cron配置（包含所有字段）

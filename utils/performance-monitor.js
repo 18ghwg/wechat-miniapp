@@ -23,10 +23,10 @@
 // 性能阈值配置（毫秒）
 const THRESHOLDS = {
   pageLoad: 3000,       // 页面加载 < 3s
-  apiCall: 5000,        // API调�< 5s
-  dataProcess: 500,     // 数据处�< 500ms
-  chartRender: 800,     // 图表渲�< 800ms
-  interaction: 100      // 交互响�< 100ms
+  apiCall: 5000,        // API 调用 < 5s
+  dataProcess: 500,     // 数据处理 < 500ms
+  chartRender: 800,     // 图表渲染 < 800ms
+  interaction: 100      // 交互响应 < 100ms
 };
 
 // 性能指标类型
@@ -115,7 +115,7 @@ class PerformanceMonitor {
         if (stats.avg > threshold) {
           const exceed = Math.round(((stats.avg - threshold) / threshold) * 100);
           healthScore -= 10;
-          warnings.push(`${type} 平均耗时超�${exceed}%`);
+          warnings.push(`${type} 平均耗时超出 ${exceed}%`);
         }
       }
     });
@@ -382,7 +382,7 @@ class PerformanceMonitor {
   generateReport() {
     const allStats = this.getAllStats();
     
-    let report = '\n========== 性能监控报�==========\n\n';
+    let report = '\n========== 性能监控报告==========\n\n';
 
     Object.entries(allStats).forEach(([type, stats]) => {
       if (stats.count > 0) {

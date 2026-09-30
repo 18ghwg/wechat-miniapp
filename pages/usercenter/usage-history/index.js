@@ -1,5 +1,12 @@
 const featureUsage = require('../../../utils/feature-usage');
 const { showError, showSuccess } = require('../../../utils/api');
+const { isAdminFeatureKey } = require('../../../utils/mini-program-role');
+
+function filterOrdinaryUserFeatures(features) {
+  return Array.isArray(features)
+    ? features.filter(item => item && !isAdminFeatureKey(item.feature_key))
+    : [];
+}
 
 Page({
   data: {
@@ -53,12 +60,12 @@ Page({
       console.log('📱 所有功能:', allFeatures);
 
       // 提取最近使用的功能
-      const recentFeatures = statistics.recent_features || [];
+      const recentFeatures = filterOrdinaryUserFeatures(statistics.recent_features);
 
       this.setData({
         statistics,
-        frequentFeatures,
-        allFeatures,
+        frequentFeatures: filterOrdinaryUserFeatures(frequentFeatures),
+        allFeatures: filterOrdinaryUserFeatures(allFeatures),
         recentFeatures,
         loading: false
       });
@@ -119,6 +126,11 @@ Page({
     const { featureKey } = e.currentTarget.dataset;
     console.log('🚀 导航到功能:', featureKey);
 
+    if (isAdminFeatureKey(featureKey)) {
+      showError('该功能请在网站后台使用');
+      return;
+    }
+
     // 功能路由映射
     const routeMap = {
       'electric': '/pages/electric/index',
@@ -154,4 +166,3 @@ Page({
     }
   }
 });
-

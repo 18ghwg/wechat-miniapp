@@ -225,6 +225,19 @@
   color: var(--foreground);
 }
 
+.section-title-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  min-width: 0;
+}
+
+.section-subtitle {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
 .chart-card {
   background-color: white;
   padding: 48rpx;
@@ -234,8 +247,47 @@
 
 .chart-canvas {
   width: 100%;
-  height: 100%;
+  height: calc(100% - 72rpx);
 }
+
+.power-chart-card {
+  height: 500rpx;
+}
+
+.power-chart-canvas {
+  height: calc(100% - 78rpx);
+}
+
+.power-empty-card {
+  min-height: 220rpx;
+  padding: 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  background-color: white;
+  box-sizing: border-box;
+}
+
+.power-empty-title {
+  font-size: 28rpx;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+.power-empty-subtitle {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+.power-dot-0 { background-color: #FF9F43; }
+.power-dot-1 { background-color: #B9FBC0; }
+.power-dot-2 { background-color: #FFB3BA; }
+.power-dot-3 { background-color: #E0BBE4; }
+.power-dot-4 { background-color: #98F5E1; }
+.power-dot-5 { background-color: #FFD93D; }
 
 /* Chart Tooltip - 与 Web 端一致的马卡龙风格 */
 .chart-tooltip {
@@ -273,6 +325,38 @@
   font-size: 32rpx;
   font-weight: 900;
   color: #FF9F43;
+}
+
+.chart-legend-list {
+  margin-top: 20rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx 24rpx;
+  align-items: center;
+}
+
+.chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  padding: 8rpx 16rpx;
+  background: #fffaf0;
+  border: 3rpx solid rgba(94, 78, 62, 0.18);
+  border-radius: 999rpx;
+}
+
+.chart-legend-dot {
+  width: 18rpx;
+  height: 18rpx;
+  border-radius: 50%;
+  border: 2rpx solid rgba(94, 78, 62, 0.25);
+  flex-shrink: 0;
+}
+
+.chart-legend-text {
+  font-size: 22rpx;
+  font-weight: 800;
+  color: var(--foreground);
 }
 
 /* ==================== Records Section ==================== */

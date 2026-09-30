@@ -11,7 +11,7 @@ const FEATURE_NAME_MAP = {
   'df-notification': 'DF通知设置',
   'weather-notification': '天气通知',
   'miniprogram-users': '小程序用户',
-  'notification-group': '通知群组',
+  'notification-group': '飞书通知管理',
   'view_system_config': '查看系统配置',
   'login': '登录',
   'query_electric': '查询电费',
@@ -139,11 +139,12 @@ Page({
     }
 
     try {
+      const featureOption = this.data.featureOptions[this.data.featureFilterIndex] || {};
       const params = {
         page: this.data.currentPage,
         page_size: this.data.pageSize,
         keyword: this.data.searchKeyword,
-        feature_key: this.data.featureOptions[this.data.featureFilterIndex].value,
+        feature_key: featureOption.value || '',
         date: this.data.dateFilter
       };
 
@@ -233,8 +234,10 @@ Page({
    * 功能筛选
    */
   onFeatureFilterChange(e) {
+    const index = e && e.detail ? Number(e.detail.value) : 0;
+    const safeIndex = this.data.featureOptions[index] ? index : 0;
     this.setData({ 
-      featureFilterIndex: e.detail.value,
+      featureFilterIndex: safeIndex,
       currentPage: 1 
     });
     this.loadData();

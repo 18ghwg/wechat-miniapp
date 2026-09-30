@@ -34,7 +34,7 @@ Component({
     selectedType: 'any',
     expression: '*',
     expressionValid: true,
-    expressionMessage: '�有效：每个值',
+    expressionMessage: '有效：每个值',
     
     // 各种类型的值
     specificValue: '',
@@ -72,10 +72,18 @@ Component({
         return;
       }
 
-      // a-b �a-b/c 格式（范围）
+      // a-b 或 a-b/c 格式（范围）
       if (expr.includes('-')) {
         const parts = expr.split('/');
-        const range = parts[0].split('-');
+        const range = (parts[0] || '').split('-');
+        if (!range[0] || !range[1]) {
+          this.setData({
+            selectedType: 'specific',
+            specificValue: expr,
+            expression: expr
+          });
+          return;
+        }
         this.setData({
           selectedType: 'range',
           rangeStart: range[0],
@@ -181,38 +189,41 @@ Component({
       
       // 任意值
       if (expression === '*') {
-        return { valid: true, message: '�有效：每个值' };
+        return { valid: true, message: '有效：每个值' };
       }
       
       // */n 格式
       if (/^\*\/\d+$/.test(expression)) {
         const interval = parseInt(expression.substring(2));
         if (interval > 0 && interval <= max) {
-          return { valid: true, message: `�有效：每${interval}个` };
+          return { valid: true, message: `有效：每${interval}个` };
         }
-        return { valid: false, message: '�无效：间隔值超出范围' };
+        return { valid: false, message: '无效：间隔值超出范围' };
       }
       
       // a-b/c 格式
       if (/^\d+-\d+\/\d+$/.test(expression)) {
         const match = expression.match(/^(\d+)-(\d+)\/(\d+)$/);
+        if (!match) {
+          return { valid: false, message: '无效：表达式格式错误' };
+        }
         const start = parseInt(match[1]);
         const end = parseInt(match[2]);
         const step = parseInt(match[3]);
         
         if (start >= min && end <= max && start < end && step > 0) {
-          return { valid: true, message: `�有效：${start}到${end}，每${step}个` };
+          return { valid: true, message: `有效：${start}到${end}，每${step}个` };
         }
-        return { valid: false, message: '�无效：范围或间隔值错误' };
+        return { valid: false, message: '无效：范围或间隔值错误' };
       }
       
       // a-b 格式
       if (/^\d+-\d+$/.test(expression)) {
         const [start, end] = expression.split('-').map(v => parseInt(v));
         if (start >= min && end <= max && start < end) {
-          return { valid: true, message: `�有效：${start}到${end}` };
+          return { valid: true, message: `有效：${start}到${end}` };
         }
-        return { valid: false, message: '�无效：范围值错误' };
+        return { valid: false, message: '无效：范围值错误' };
       }
       
       // a,b,c 格式
@@ -221,18 +232,18 @@ Component({
         const numbers = values.map(v => parseInt(v));
         
         if (numbers.every(n => !isNaN(n) && n >= min && n <= max)) {
-          return { valid: true, message: `�有效：指定值 ${values.join(', ')}` };
+          return { valid: true, message: `有效：指定值 ${values.join(', ')}` };
         }
-        return { valid: false, message: '�无效：列表中有无效值' };
+        return { valid: false, message: '无效：列表中有无效值' };
       }
       
       // 单个数字
       const num = parseInt(expression);
       if (!isNaN(num) && num >= min && num <= max) {
-        return { valid: true, message: `�有效：固定值 ${num}` };
+        return { valid: true, message: `有效：固定值 ${num}` };
       }
       
-      return { valid: false, message: '�无效：格式错误' };
+      return { valid: false, message: '无效：格式错误' };
     },
 
     /**
@@ -296,4 +307,3 @@ Component({
     }
   }
 });
-

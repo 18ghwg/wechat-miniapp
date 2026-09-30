@@ -1,6 +1,6 @@
 <!-- 公告弹窗组件 - 匹配 React NoticeModal 设计 -->
 <view class="notice-modal-overlay" wx:if="{{visible}}" bindtap="onMaskTap">
-  <view class="notice-modal-card" catchtap="">
+  <view class="notice-modal-card" catchtap="onStopPropagation">
     <!-- Header -->
     <view class="notice-header">
       <view class="notice-header-left">

@@ -1,0 +1,188 @@
+/* 环境配置管理页面样式 - Macaron Theme */
+@import '/style/macaron-theme.wxss';
+
+.env-config-container {
+  padding: 0 30rpx 60rpx;
+  background-color: var(--background);
+  min-height: 100vh;
+}
+
+/* 页面标题 */
+.page-header {
+  padding: 40rpx 0 30rpx;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.header-icon-wrapper {
+  width: 100rpx;
+  height: 100rpx;
+  background: var(--color-peach-macaron);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20rpx;
+  border: 4rpx solid var(--foreground);
+  box-shadow: 6rpx 6rpx 0rpx var(--foreground);
+}
+
+.header-icon {
+  width: 56rpx;
+  height: 56rpx;
+}
+
+.page-title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-bottom: 12rpx;
+}
+
+.page-subtitle {
+  font-size: 26rpx;
+  color: var(--muted-foreground);
+}
+
+/* 分组卡片 */
+.group-card {
+  margin-bottom: 24rpx;
+  padding: 30rpx;
+}
+
+.group-title {
+  font-size: 30rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+  margin-bottom: 24rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 3rpx solid var(--border);
+}
+
+/* 配置项 */
+.config-item {
+  padding: 20rpx 0;
+  border-bottom: 2rpx solid var(--border);
+}
+
+.config-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.config-meta {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 8rpx;
+}
+
+.config-label {
+  font-size: 30rpx;
+  font-weight: var(--font-weight-bold);
+  color: var(--foreground);
+}
+
+.config-key-tag {
+  font-size: 22rpx;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  font-family: monospace;
+}
+
+.config-hint {
+  display: block;
+  font-size: 24rpx;
+  color: var(--muted-foreground);
+  margin-bottom: 16rpx;
+  line-height: 1.5;
+}
+
+/* 值展示行 */
+.config-value-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.config-value {
+  flex: 1;
+  font-size: 28rpx;
+  color: var(--foreground);
+  word-break: break-all;
+}
+
+.config-value.empty {
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+.edit-btn {
+  flex-shrink: 0;
+  font-size: 24rpx;
+  padding: 8rpx 24rpx;
+}
+
+/* 编辑行 */
+.edit-row {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16rpx;
+}
+
+/* 刷新按钮 */
+.refresh-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 16rpx;
+}
+
+.refresh-btn {
+  min-width: 240rpx;
+  justify-content: center;
+}
+
+/* 加载状态 */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60rpx 30rpx;
+  margin-top: 40rpx;
+}
+
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 6rpx solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 20rpx;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: var(--muted-foreground);
+}
+
+.btn-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}

@@ -61,12 +61,11 @@ function getAppBaseInfo() {
 }
 
 /**
- * 检查是否在开发者工具中
- * @returns {Boolean} 是否在开发者工具
+ * 检查是否在开发者工具中。当前业务固定按生产环境运行。
+ * @returns {Boolean}
  */
 function isDevtools() {
-  const deviceInfo = getDeviceInfo();
-  return deviceInfo.platform === 'devtools';
+  return false;
 }
 
 /**

@@ -6,7 +6,7 @@ module.exports = {
   collectCoverage: false,
   moduleFileExtensions: ['js', 'json'],
   transform: {},
-  // 忽�node_modules
+  // 忽略 node_modules
   transformIgnorePatterns: [
     'node_modules/(?!(miniprogram-automator)/)'
   ]

@@ -155,7 +155,7 @@ module.exports = {
       <!-- 优先级 -->
       <view class="form-group">
         <text class="form-label">优先级</text>
-        <picker mode="selector" range="{{[0,1,2,3,4,5]}}" value="{{formData.priority}}" bindchange="onPriorityChange">
+        <picker mode="selector" range="{{priorityOptions}}" value="{{formData.priority}}" bindchange="onPriorityChange">
           <view class="picker-macaron">
             <text class="picker-text">{{formData.priority}}</text>
             <text class="picker-arrow">▼</text>
@@ -239,7 +239,7 @@ module.exports = {
       <!-- 优先级 -->
       <view class="form-group">
         <text class="form-label">优先级</text>
-        <picker mode="selector" range="{{[0,1,2,3,4,5]}}" value="{{formData.priority}}" bindchange="onPriorityChange">
+        <picker mode="selector" range="{{priorityOptions}}" value="{{formData.priority}}" bindchange="onPriorityChange">
           <view class="picker-macaron">
             <text class="picker-text">{{formData.priority}}</text>
             <text class="picker-arrow">▼</text>

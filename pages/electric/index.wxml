@@ -3,7 +3,7 @@
   <!-- 游客模式横幅提示 -->
   <guest-banner 
     show="{{isGuest}}"
-    message="体验模式：当前显示演示数据，登录后可查看真实电费"
+    message="预览模式：当前仅显示页面结构，登录后可查询本人电费"
     showLoginBtn="{{true}}"
   />
 
@@ -23,7 +23,8 @@
         <view class="action-btn cartoon-card" bindtap="onViewMoreHistory">
           <image class="action-icon" src="/assets/icons/history.png" mode="aspectFit"/>
         </view>
-        <view class="action-btn cartoon-card" bindtap="goToAccountManage" wx:if="{{isAdmin}}">
+        <!-- 管理员账号入口暂不在用户小程序展示。 -->
+        <view class="action-btn cartoon-card" bindtap="goToAccountManage" wx:if="{{false && isAdmin}}">
           <image class="action-icon" src="/assets/icons/settings.png" mode="aspectFit"/>
         </view>
       </view>
@@ -63,7 +64,7 @@
               <text class="picker-address">{{item.address}}</text>
               <text class="picker-details">{{item.accountNo}} · {{item.ownerName}}</text>
             </view>
-            <text class="picker-balance {{item.balance < 0 ? 'negative' : 'positive'}}">¥{{item.balance}}</text>
+            <text class="picker-balance {{item.balance < 0 ? 'negative' : 'positive'}}">¥{{item.balanceText || item.balance}}</text>
           </view>
         </view>
       </view>
@@ -75,8 +76,27 @@
           <text class="stat-value owner-value">{{selectedAccount.ownerName || '--'}}</text>
         </view>
         <view class="stat-box balance-box {{selectedAccount.balance < 0 ? 'negative' : 'positive'}}">
-          <text class="stat-label">上月电费</text>
-          <text class="stat-value balance-value {{selectedAccount.balance < 0 ? 'negative' : 'positive'}}">¥{{selectedAccount.balance || '0'}}</text>
+          <text class="stat-label">账户余额</text>
+          <text class="stat-value balance-value {{selectedAccount.balance < 0 ? 'negative' : 'positive'}}">¥{{selectedAccount.balanceText || selectedAccount.balance || '0'}}</text>
+        </view>
+      </view>
+
+      <view class="account-metrics-grid" wx:if="{{selectedAccount.id}}">
+        <view class="metric-cell">
+          <text class="metric-label">今日用电</text>
+          <text class="metric-value">{{selectedAccount.dailyUsageText || '--'}}</text>
+        </view>
+        <view class="metric-cell">
+          <text class="metric-label">当月用电</text>
+          <text class="metric-value">{{selectedAccount.monthUsageText || '--'}}</text>
+        </view>
+        <view class="metric-cell">
+          <text class="metric-label">上月电费</text>
+          <text class="metric-value">¥{{selectedAccount.monthChargeText || '0'}}</text>
+        </view>
+        <view class="metric-cell">
+          <text class="metric-label">最新日期</text>
+          <text class="metric-value metric-date">{{selectedAccount.latestDate || '--'}}</text>
         </view>
       </view>
 
@@ -88,6 +108,11 @@
       >
         <image class="query-icon" src="/assets/icons/zap.png" mode="aspectFit"/>
         <text class="query-text">{{queryLoading ? '查询中...' : '立即查电费'}}</text>
+      </view>
+
+      <view class="data-source-banner {{lastQueryWasFallback ? 'fallback' : ''}}" wx:if="{{activeDataSourceLabel}}">
+        <text class="data-source-text">当前结果来源：{{activeDataSourceLabel}}</text>
+        <text class="data-source-tip" wx:if="{{lastQueryWasFallback}}">电网接口异常，已自动切换备用数据</text>
       </view>
     </view>
 
@@ -109,7 +134,7 @@
           </view>
         </view>
       </view>
-      
+
       <view class="meters-grid-row">
         <view class="meter-card cartoon-card {{item._updating ? 'meter-updating' : ''}}" wx:for="{{physicalMeters}}" wx:key="location">
           <!-- 扫描线效果 -->
@@ -247,13 +272,20 @@
           </view>
         </view>
       </view>
+      <view class="chart-legend" wx:if="{{usageChartLegend.length > 0}}">
+        <view class="chart-legend-item" wx:for="{{usageChartLegend}}" wx:key="roomName">
+          <view class="chart-legend-dot" style="background-color: {{item.color}};"></view>
+          <text class="chart-legend-text">{{item.roomName}}</text>
+          <text class="chart-legend-count">{{item.count}}条</text>
+        </view>
+      </view>
     </view>
 
     <!-- Monthly Balance Trend -->
     <view class="chart-section" wx:if="{{showBalanceChart && balanceChartStats}}">
       <view class="section-header-simple">
         <image class="section-icon" src="/assets/icons/dollar.png" mode="aspectFit"/>
-        <text class="section-title-simple">账户余额趋势</text>
+        <text class="section-title-simple">{{activeDataSource === 'physical' ? '月用电量趋势' : '账户余额趋势'}}</text>
       </view>
       <view class="chart-card cartoon-card">
         <canvas 
@@ -276,6 +308,13 @@
           </view>
         </view>
       </view>
+      <view class="chart-legend" wx:if="{{balanceChartLegend.length > 0}}">
+        <view class="chart-legend-item" wx:for="{{balanceChartLegend}}" wx:key="roomName">
+          <view class="chart-legend-dot" style="background-color: {{item.color}};"></view>
+          <text class="chart-legend-text">{{item.roomName}}</text>
+          <text class="chart-legend-count">{{item.count}}条</text>
+        </view>
+      </view>
     </view>
 
     <!-- Recent Query Records -->
@@ -288,6 +327,18 @@
         <view class="view-all-btn" bindtap="onViewMoreHistory">
           <text class="view-all-text">查看全部</text>
           <text class="view-all-arrow">›</text>
+        </view>
+      </view>
+
+      <view class="source-switch-card">
+        <view 
+          class="source-switch-item {{activeDataSource === item.key ? 'active' : ''}}"
+          wx:for="{{sourceTabs}}"
+          wx:key="key"
+          data-source="{{item.key}}"
+          bindtap="onSwitchDataSource"
+        >
+          <text class="source-switch-text">{{item.label}}</text>
         </view>
       </view>
 
@@ -307,7 +358,7 @@
           <!-- Row 1: 户号 + 查询时间 -->
           <view class="record-row-1">
             <view class="record-account">
-              <image class="record-small-icon" src="/assets/icons/home.png" mode="aspectFit"/>
+              <image class="record-small-icon" src="{{item.is_physical ? '/assets/icons/cpu.png' : '/assets/icons/home.png'}}" mode="aspectFit"/>
               <text class="record-account-no">{{item.account_number}}</text>
             </view>
             <text class="record-time">{{item.check_time}}</text>
@@ -322,14 +373,14 @@
           <!-- Row 3: Usage + Balance -->
           <view class="record-row-3">
             <view class="record-usage">
-              <text class="record-label">日用电量</text>
+              <text class="record-label">{{item.usage_label}}</text>
               <view class="record-usage-row">
                 <text class="record-usage-value">{{item.last_daily_usage}}</text>
               </view>
             </view>
             <view class="record-balance">
-              <text class="record-label">账户余额</text>
-              <text class="record-balance-value {{item.balance_num < 0 ? 'negative' : 'positive'}}">¥{{item.balance}}</text>
+              <text class="record-label">{{item.balance_label}}</text>
+              <text class="record-balance-value {{item.balance_num < 0 ? 'negative' : 'positive'}}">{{item.balance_prefix}}{{item.balance}}{{item.balance_unit}}</text>
             </view>
           </view>
           
@@ -343,12 +394,16 @@
           <!-- Row 4: Address + Owner -->
           <view class="record-row-4">
             <view class="record-address">
-              <image class="record-small-icon" src="/assets/icons/home.png" mode="aspectFit"/>
+              <image class="record-small-icon" src="{{item.is_physical ? '/assets/icons/cpu.png' : '/assets/icons/home.png'}}" mode="aspectFit"/>
               <text class="record-small-text">{{item.room_name}}</text>
             </view>
             <view class="record-owner" wx:if="{{item.owner_name}}">
               <image class="record-small-icon" src="/assets/icons/user.png" mode="aspectFit"/>
               <text class="record-small-text">{{item.owner_name}}</text>
+            </view>
+            <view class="record-owner" wx:elif="{{item.meter_sn}}">
+              <image class="record-small-icon" src="/assets/icons/activity.png" mode="aspectFit"/>
+              <text class="record-small-text">{{item.meter_sn}}</text>
             </view>
           </view>
         </view>

@@ -1,5 +1,7 @@
 const { API, apiCall, showError, showSuccess } = require('../../utils/api');
 const { miniprogramInfo } = require('../../utils/miniprogram-info');
+const { normalizeMiniProgramUserInfo } = require('../../utils/mini-program-role');
+const { userInfoCache } = require('../../utils/user-info-cache');
 
 const createEmptyUserInfo = () => ({
   nickname: '',
@@ -32,7 +34,7 @@ const normalizeUserInfo = (info) => {
   merged.avatarUrl = merged.avatarUrl || merged.avatar_url || '';
   merged.avatar_url = merged.avatarUrl;
 
-  return merged;
+  return normalizeMiniProgramUserInfo(merged);
 };
 
 Page({
@@ -40,7 +42,7 @@ Page({
     userInfo: createEmptyUserInfo(),
     hasUserInfo: false,
     loginLoading: false,
-    loginMode: 'account', // 默认账号密码登录模式，匹配 Weixin-main
+    loginMode: 'wechat',
     username: '',
     password: '',
     showPassword: false, // 新增：是否显示密码
@@ -48,7 +50,7 @@ Page({
     showCaptchaModal: false,
     captchaVerified: false,
     captchaToken: '',
-    appName: '无感tool',
+    appName: '出差日历',
     appDesc: '便捷的工作管理小程序',
     appVersion: '1.0.0',
     agreed: false
@@ -84,143 +86,112 @@ Page({
   /**
    * 微信登录
    */
-   onWechatLogin() {
-     // ⭐ 新增：检查协议同意状态
-     if (!this.data.agreed) {
-       wx.showModal({
-         title: '温馨提示',
-         content: '请先阅读并同意《用户协议》和《隐私政策》后再登录',
-         showCancel: false,
-         confirmText: '我知道了'
-       });
-       this.setData({ loginLoading: false });
-       return;
-     }
-
-     this.setData({ loginLoading: true });
-
-     // 在开发环境中，使用测试code并设置管理员权限
-     if (wx.getDeviceInfo().platform === 'devtools') {
-       console.log('开发环境，使用测试code，设置管理员权限');
-       this.doTestLogin();
-       return;
-     }
-
-     // 生产环境，获取真实微信登录code
-     wx.login({
-       success: (res) => {
-         if (res.code) {
-           this.doLogin(res.code);
-         } else {
-           this.setData({ loginLoading: false });
-           showError('获取登录凭证失败');
-         }
-       },
-       fail: () => {
-         this.setData({ loginLoading: false });
-         showError('微信登录失败');
-       }
-     });
-   },
-
-  /**
-   * 微信一键授权登录（恢复旧方式）
-   */
-  getUserProfile() {
-    // ⭐ 新增：检查协议同意状态
+  onWechatLogin() {
     if (!this.data.agreed) {
       wx.showModal({
         title: '温馨提示',
-        content: '请先阅读并同意《用户协议》和《隐私政策》后再登录',
+        content: '请先阅读并同意《用户服务协议》和《隐私政策》后再登录',
+        showCancel: false,
+        confirmText: '我知道了'
+      });
+      this.setData({ loginLoading: false });
+      return;
+    }
+
+    this.setData({ loginLoading: true });
+
+    wx.login({
+      success: (res) => {
+        if (res.code) {
+          this.doLogin(res.code);
+        } else {
+          this.setData({ loginLoading: false });
+          showError('获取登录凭证失败，请重试');
+        }
+      },
+      fail: (error) => {
+        console.error('微信登录失败:', error);
+        this.setData({ loginLoading: false });
+        const errMsg = (error && error.errMsg) || '';
+        if (/需要重新登录|re-?login/i.test(errMsg)) {
+          showError('微信开发者工具登录状态已失效，请重新登录开发者工具后再试');
+          return;
+        }
+        showError('微信登录失败，请重试');
+      }
+    });
+  },
+
+  /**
+   * 在用户点击回调的同步阶段直接发起微信授权，然后继续登录。
+   * 不能先等待 requirePrivacyAuthorize 的异步回调，否则 getUserProfile 会
+   * 脱离 TAP 手势并被微信拒绝。
+   */
+  getUserProfile() {
+    if (this.data.loginLoading) {
+      return;
+    }
+
+    if (!this.data.agreed) {
+      wx.showModal({
+        title: '温馨提示',
+        content: '请先阅读并同意《用户服务协议》和《隐私政策》后再登录',
         showCancel: false,
         confirmText: '我知道了'
       });
       return;
     }
 
+    this.setData({ loginLoading: true });
+
+    const continueWithoutProfile = () => {
+      console.warn('未取得微信用户资料，继续使用 code 登录');
+      this.setData({
+        userInfo: createEmptyUserInfo(),
+        hasUserInfo: false
+      });
+      this.onWechatLogin();
+    };
+
+    if (typeof wx.getUserProfile !== 'function') {
+      console.warn('当前基础库不支持 wx.getUserProfile，将使用基础登录');
+      continueWithoutProfile();
+      return;
+    }
+
+    // 必须在 bindtap 进入后立即调用，不能放到隐私授权回调或 setTimeout 中。
     wx.getUserProfile({
       desc: '获取您的昵称用于身份识别，我们不会收集其他敏感信息',
       success: (res) => {
         console.log('获取用户信息成功:', res.userInfo);
-        let normalizedUserInfo = normalizeUserInfo(res.userInfo);
-        
-        // 处理微信默认昵称，使用openid后五位区分用户
-        if (normalizedUserInfo.nickName === '微信用户' || !normalizedUserInfo.nickName || normalizedUserInfo.nickName.trim() === '') {
-          const openid = wx.getStorageSync('openid');
-          if (openid && openid.length >= 5) {
-            normalizedUserInfo.nickName = `微信用户${openid.slice(-5)}`;
-            normalizedUserInfo.nickname = normalizedUserInfo.nickName;
-          } else {
-            normalizedUserInfo.nickName = '微信用户';
-            normalizedUserInfo.nickname = '微信用户';
-          }
-          console.log('使用区分昵称:', normalizedUserInfo.nickName);
+        const normalizedUserInfo = normalizeUserInfo(res.userInfo);
+
+        // 微信可能返回默认昵称，服务端会根据 openid 生成唯一昵称。
+        if (
+          normalizedUserInfo.nickName === '微信用户' ||
+          !normalizedUserInfo.nickName ||
+          normalizedUserInfo.nickName.trim() === ''
+        ) {
+          normalizedUserInfo.nickName = '微信用户';
+          normalizedUserInfo.nickname = '微信用户';
         }
-        
+
         this.setData({
           userInfo: normalizedUserInfo,
           hasUserInfo: true
         });
-        
-        // 开始登录流程
+
         this.onWechatLogin();
       },
       fail: (error) => {
-        console.log('获取用户信息失败，使用微信登录获取基础信息:', error);
-        
-        // 如果用户拒绝授权，直接进行微信登录
-        // 后端会使用微信ID作为用户名，前端使用生成头像
-        wx.showToast({
-          title: '将使用默认信息登录',
-          icon: 'none',
-          duration: 2000
-        });
-        
-        this.onWechatLogin();
-      }
-    });
-  },
+        const errMsg = (error && error.errMsg) || '';
+        console.warn('微信用户信息授权未完成:', errMsg || error);
 
-  /**
-   * 测试环境登录 - 直接设置管理员权限
-   */
-  doTestLogin() {
-    console.log('测试环境：设置管理员账号');
-    
-    // 模拟管理员用户信息
-    const testAdminUser = {
-      openid: 'test_openid_001',
-      userInfo: {
-        nickname: '测试管理员',
-        avatar_url: 'https://mmbiz.qpic.cn/mmbiz/icTdbqWNOwNRna42FI242Lcia07jQodd2FJGIYQfG0LAJGFxM4FbnQP6yfMxBgJ0F3YRqJCJ1aPAK2dQagdusBZg/0',
-        is_admin: true,
-        is_web_bound: true,
-        permissions: ['electric', 'attendance', 'admin'],
-        bound_username: 'test_admin',
-        register_time: '2025-09-23 20:00:00'
+        // 用户资料不是登录凭证。隐私声明、基础库或调用时机异常时，
+        // 继续使用 wx.login，后端会生成默认用户资料。
+        continueWithoutProfile();
       }
-    };
-    
-    // ⭐ 清除游客模式标识
-    wx.removeStorageSync('isGuestMode');
-    
-    // 直接保存管理员登录信息
-    wx.setStorageSync('openid', testAdminUser.openid);
-    const normalizedUserInfo = normalizeUserInfo(testAdminUser.userInfo);
-    wx.setStorageSync('userInfo', normalizedUserInfo);
-    this.setData({
-      userInfo: normalizedUserInfo,
-      hasUserInfo: true
     });
-    wx.setStorageSync('isTestMode', true);
-    
-    this.setData({ loginLoading: false });
-    showSuccess('测试模式登录成功(管理员)');
-    
-    // 延迟跳转，让用户看到成功提示
-    setTimeout(() => {
-      this.redirectToHome();
-    }, 1000);
   },
 
   /**
@@ -238,6 +209,8 @@ Page({
       () => API.auth.login(code, userInfo),
       '登录中...',
       (data) => {
+        this.setData({ loginLoading: false });
+
         // ⭐ 清除游客模式标识
         wx.removeStorageSync('isGuestMode');
         
@@ -264,16 +237,23 @@ Page({
           useGeneratedAvatar: safeUserInfo.useGeneratedAvatar
         });
         
-        wx.setStorageSync('userInfo', safeUserInfo);
+        userInfoCache.update(safeUserInfo);
         // ⭐ 清除游客模式标识
         wx.removeStorageSync('isGuestMode');
         this.setData({
           userInfo: safeUserInfo,
           hasUserInfo: true
         });
-        
+
+        const isNewUser = data.data && data.data.is_new_user === true;
+        const requiresAccountBinding = data.data && data.data.requires_account_binding === true;
+        if (isNewUser && requiresAccountBinding) {
+          this.promptExistingAccountBinding();
+          return;
+        }
+
         showSuccess('登录成功');
-        
+
         // 延迟跳转，让用户看到成功提示
         setTimeout(() => {
           this.redirectToHome();
@@ -284,6 +264,27 @@ Page({
         showError(error.message || '登录失败');
       }
     );
+  },
+
+  promptExistingAccountBinding() {
+    wx.showModal({
+      title: '注册成功',
+      content: '微信账号已创建。如已有网站账号，可立即绑定并同步原账号权限。',
+      confirmText: '绑定账号',
+      cancelText: '暂不绑定',
+      success: (res) => {
+        if (res.confirm) {
+          wx.reLaunch({
+            url: '/pages/user/bind/index?source=new-user'
+          });
+          return;
+        }
+        this.redirectToHome();
+      },
+      fail: () => {
+        this.redirectToHome();
+      }
+    });
   },
 
   /**
@@ -445,7 +446,7 @@ Page({
           // 保存登录信息
           wx.setStorageSync('openid', data.data.openid);
           const safeUserInfo = normalizeUserInfo(data.data && data.data.userInfo);
-          wx.setStorageSync('userInfo', safeUserInfo);
+          userInfoCache.update(safeUserInfo);
           this.setData({
             userInfo: safeUserInfo,
             hasUserInfo: true
@@ -519,18 +520,17 @@ Page({
   },
 
   /**
-   * ⭐ 新增：跳过登录，以游客模式进入
-   * 符合微信规范：用户可以先浏览体验，再决定是否登录
+   * 跳过登录，以空状态预览页面
    */
   skipLogin() {
-    console.log('用户选择暂不登录，以游客模式进入');
+    console.log('用户选择暂不登录，进入空状态预览');
     
     // 设置游客模式标识
     wx.setStorageSync('isGuestMode', true);
     
     // 显示提示
     wx.showToast({
-      title: '体验模式：部分功能受限',
+      title: '预览模式：数据操作需登录',
       icon: 'none',
       duration: 2000
     });
@@ -556,7 +556,8 @@ Page({
    * 记住账号状态变化
    */
   onRememberChange(e) {
-    const rememberMe = e.detail.value.includes('remember');
+    const value = e.detail.value;
+    const rememberMe = Array.isArray(value) && value.includes('remember');
     this.setData({ rememberMe });
     
     if (rememberMe && this.data.username) {

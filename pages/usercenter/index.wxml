@@ -33,7 +33,7 @@
     <!-- 徽章行 - macaron 风格胶囊 -->
     <!-- 需求 4.3: 转换角色徽章、Web绑定徽章、实名徽章为 macaron 风格胶囊 -->
     <view class="badges-row">
-      <view class="badge badge-role">{{userInfo.is_admin ? '管理员' : '普通用户'}}</view>
+      <view class="badge badge-role">普通用户</view>
       <view class="badge badge-web" wx:if="{{userInfo.is_web_bound}}">Web已绑定</view>
       <view class="badge badge-verified" wx:if="{{userInfo.real_name}}">实名·{{userInfo.real_name}}</view>
     </view>
@@ -68,7 +68,8 @@
 
   <!-- 管理功能菜单组 - cartoon-card 列表 -->
   <!-- 需求 4.5: 将管理功能菜单组转换为 cartoon-card 列表 -->
-  <view class="menu-group" wx:if="{{isAdmin}}">
+  <!-- 小程序统一使用普通用户视图，管理员功能只保留在网站后台。 -->
+  <view class="menu-group" wx:if="{{false && isAdmin}}">
     <view class="menu-group-header">
       <image class="group-icon" src="/assets/icons/settings.png" mode="aspectFit"/>
       <text class="group-title">管理功能</text>

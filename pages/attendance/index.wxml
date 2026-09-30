@@ -3,7 +3,7 @@
   <!-- ⭐ 游客模式横幅提示 -->
   <guest-banner 
     show="{{isGuest}}"
-    message="体验模式：当前显示演示数据，登录后可查看真实考勤"
+    message="预览模式：当前仅显示页面结构，登录后可查看本人考勤"
     showLoginBtn="{{true}}"
   />
 
@@ -22,6 +22,19 @@
         <image class="notif-icon" src="/assets/icons/bell.png" mode="aspectFit"/>
         <view class="notification-badge" wx:if="{{hasNotification}}"></view>
       </view>
+    </view>
+
+    <view class="rule-setup-banner {{cardAnimationClass}}" wx:if="{{ruleSetup.needsSetup}}">
+      <view class="rule-setup-main">
+        <view class="rule-setup-icon-box">
+          <image class="rule-setup-icon" src="/assets/icons/alert-circle.png" mode="aspectFit"/>
+        </view>
+        <view class="rule-setup-copy">
+          <text class="rule-setup-title">{{ruleSetup.title}}</text>
+          <text class="rule-setup-desc">{{ruleSetup.description}}</text>
+        </view>
+      </view>
+      <button class="rule-setup-action" bindtap="goToAttendanceRuleSetup">{{ruleSetup.actionText}}</button>
     </view>
 
     <!-- Hero Clock-in Card (Orange Style) - 完全匹配设计 -->
@@ -70,7 +83,7 @@
           <image class="section-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
           <text class="section-title">考勤日历</text>
         </view>
-        <view class="sync-ding-btn {{syncingDingtalk ? 'sync-ding-btn-disabled' : ''}}" bindtap="onSyncDingtalk">
+        <view wx:if="{{canSyncDingtalk}}" class="sync-ding-btn {{syncingDingtalk ? 'sync-ding-btn-disabled' : ''}}" bindtap="onSyncDingtalk">
           <image class="sync-ding-icon" src="/assets/icons/clock.png" mode="aspectFit"/>
           <text>{{syncingDingtalk ? '同步中' : '同步钉钉'}}</text>
         </view>
@@ -178,6 +191,17 @@
       </view>
     </view>
 
+    <view class="entry-shortcut" bindtap="goToAttendanceEntries">
+      <view class="entry-shortcut-main">
+        <view class="entry-shortcut-icon"><image src="/assets/icons/clock.png" mode="aspectFit" /></view>
+        <view class="entry-shortcut-copy">
+          <text class="entry-shortcut-title">加班与补贴记录</text>
+          <text class="entry-shortcut-desc">登记独立加班场次和每日工资项目</text>
+        </view>
+      </view>
+      <text class="entry-shortcut-arrow">›</text>
+    </view>
+
     <!-- Records Section - 匹配设计 -->
     <view class="records-section">
       <view class="records-header">
@@ -247,7 +271,7 @@
       <view class="empty-state" wx:else>
         <image class="empty-icon" src="/assets/icons/clipboard.png" mode="aspectFit"/>
         <text class="empty-text">暂无考勤记录</text>
-        <text class="empty-desc">点击上方按钮开始打卡</text>
+        <text class="empty-desc">{{isGuest ? '登录后可查看和管理本人考勤' : '点击上方按钮开始打卡'}}</text>
       </view>
     </view>
 
@@ -293,44 +317,106 @@
       </view>
     </view>
 
-    <!-- 日期 + 时间 -->
-    <view class="edit-row">
-      <view class="edit-field">
-        <text class="edit-label">日期</text>
-        <view class="edit-input-wrap">
-          <image class="edit-input-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
-          <picker mode="date" value="{{editForm.date}}" bindchange="onEditDateChange">
-            <text class="edit-picker-text">{{editForm.date || '选择日期'}}</text>
+    <!-- 上下班时间快捷计算 -->
+    <view class="edit-section">
+      <view class="time-calc-header">
+        <text class="edit-label time-calc-title">上下班时间</text>
+        <text class="time-calc-result" wx:if="{{editForm.timeCalc && editForm.timeCalc.show}}">{{editForm.timeCalc.effectiveHoursText}}h</text>
+      </view>
+      <view class="work-time-grid datetime-grid">
+        <view class="work-time-field">
+          <text class="work-time-label">上班</text>
+          <picker
+            mode="multiSelector"
+            range="{{editForm.checkInDateTimeRange}}"
+            value="{{editForm.checkInDateTimeValue}}"
+            bindchange="onEditCheckInDateTimeChange"
+            bindcolumnchange="onEditCheckInDateTimeColumnChange"
+          >
+            <view class="work-time-picker datetime-picker">
+              <image class="edit-input-icon" src="/assets/icons/clock.png" mode="aspectFit"/>
+              <text class="edit-picker-text">{{editForm.checkInDateTimeText || '选择上班日期时间'}}</text>
+            </view>
           </picker>
+          <view class="quick-time-row compact">
+            <view
+              class="quick-time-chip {{editForm.checkInTime === item.value ? 'quick-time-chip-active' : ''}}"
+              wx:for="{{quickCheckInTimes}}"
+              wx:key="value"
+              bindtap="onQuickCheckInTimeTap"
+              data-value="{{item.value}}"
+            >
+              <text>{{item.label}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="work-time-field">
+          <text class="work-time-label">下班</text>
+          <picker
+            mode="multiSelector"
+            range="{{editForm.checkOutDateTimeRange}}"
+            value="{{editForm.checkOutDateTimeValue}}"
+            bindchange="onEditCheckOutDateTimeChange"
+            bindcolumnchange="onEditCheckOutDateTimeColumnChange"
+          >
+            <view class="work-time-picker datetime-picker">
+              <image class="edit-input-icon" src="/assets/icons/clock.png" mode="aspectFit"/>
+              <text class="edit-picker-text">{{editForm.checkOutDateTimeText || '选择下班日期时间'}}</text>
+            </view>
+          </picker>
+          <view class="quick-time-row compact day-offset-row">
+            <view
+              class="quick-time-chip day-offset-chip {{editForm.checkOutDayOffset === item.value ? 'quick-time-chip-active' : ''}}"
+              wx:for="{{checkOutDayOffsetOptions}}"
+              wx:key="value"
+              bindtap="onCheckOutDayOffsetTap"
+              data-value="{{item.value}}"
+            >
+              <text>{{item.label}}</text>
+            </view>
+          </view>
+          <view class="quick-time-row compact">
+            <view
+              class="quick-time-chip {{editForm.checkOutTime === item.value ? 'quick-time-chip-active' : ''}}"
+              wx:for="{{quickCheckOutTimes}}"
+              wx:key="value"
+              bindtap="onQuickCheckOutTimeTap"
+              data-value="{{item.value}}"
+            >
+              <text>{{item.label}}</text>
+            </view>
+          </view>
         </view>
       </view>
-      <view class="edit-field">
-        <text class="edit-label">时间</text>
-        <view class="edit-input-wrap">
-          <image class="edit-input-icon" src="/assets/icons/clock.png" mode="aspectFit"/>
-          <text class="edit-picker-text edit-time-readonly">{{editForm.time || '00:00'}}</text>
-        </view>
+      <view class="time-calc-lines" wx:if="{{editForm.timeCalc && editForm.timeCalc.show}}">
+        <text class="time-calc-line">{{editForm.timeCalc.modeText}} · 在岗 {{editForm.timeCalc.intervalHoursText}}h · 原始 {{editForm.timeCalc.rawHoursText}}h</text>
+        <text class="time-calc-line">扣除 {{editForm.timeCalc.deductionHoursText}}h · 有效 {{editForm.timeCalc.effectiveHoursText}}h</text>
       </view>
     </view>
 
     <!-- 钉钉同步信息 -->
     <view class="ding-info-panel" wx:if="{{editForm.hasDingAttendance || editForm.calendarStamp}}">
       <view class="ding-info-header">
-        <image class="ding-info-icon" src="/assets/icons/clock.png" mode="aspectFit"/>
-        <text class="ding-info-title">钉钉考勤</text>
+        <view class="ding-info-title-wrap">
+          <image class="ding-info-icon" src="/assets/icons/clock.png" mode="aspectFit"/>
+          <text class="ding-info-title">钉钉考勤</text>
+        </view>
+        <view class="ding-time-sync-btn" wx:if="{{editForm.hasDingAttendance}}" bindtap="onSyncEditDingTimeTap">
+          <text>同步时间</text>
+        </view>
       </view>
       <view class="ding-info-grid">
         <view class="ding-info-item" wx:if="{{editForm.calendarStamp}}">
           <text class="ding-info-label">日历标记</text>
           <text class="ding-info-value">{{editForm.calendarStamp}} {{editForm.holidayInfo.work_type_text || ''}}</text>
         </view>
-        <view class="ding-info-item" wx:if="{{editForm.dingAttendance.check_in_time_text}}">
+        <view class="ding-info-item ding-info-item-wide" wx:if="{{editForm.dingAttendance.check_in_datetime_text || editForm.dingAttendance.check_in_time_text}}">
           <text class="ding-info-label">上班</text>
-          <text class="ding-info-value">{{editForm.dingAttendance.check_in_time_text}}</text>
+          <text class="ding-info-value">{{editForm.dingAttendance.check_in_datetime_text || editForm.dingAttendance.check_in_time_text}}</text>
         </view>
-        <view class="ding-info-item" wx:if="{{editForm.dingAttendance.check_out_time_text}}">
+        <view class="ding-info-item ding-info-item-wide" wx:if="{{editForm.dingAttendance.check_out_datetime_text || editForm.dingAttendance.check_out_time_text}}">
           <text class="ding-info-label">下班</text>
-          <text class="ding-info-value">{{editForm.dingAttendance.check_out_time_text}}</text>
+          <text class="ding-info-value">{{editForm.dingAttendance.check_out_datetime_text || editForm.dingAttendance.check_out_time_text}}</text>
         </view>
         <view class="ding-info-item" wx:if="{{editForm.overtime.effective_hours > 0}}">
           <text class="ding-info-label">有效加班</text>

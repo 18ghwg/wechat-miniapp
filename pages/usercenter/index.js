@@ -6,6 +6,54 @@ const featureUsage = require('../../utils/feature-usage');
 const { userInfoCache } = require('../../utils/user-info-cache');
 const { miniprogramInfo } = require('../../utils/miniprogram-info');
 const { isDevtools } = require('../../utils/system-info');
+const { isAdminFeatureKey } = require('../../utils/mini-program-role');
+const { enableShareMenu } = require('../../utils/share');
+
+const DEFAULT_ACCOUNT_MENU_ITEMS = [
+  { iconFile: 'link', label: 'Web账号管理', bgColor: '#E3F2FD', borderColor: 'rgba(94, 78, 62, 0.3)', action: 'bindWeb' },
+  { iconFile: 'person', label: '个人信息', bgColor: '#B9FBC0', borderColor: 'rgba(94, 78, 62, 0.3)', action: 'updateInfo' },
+  { iconFile: 'clock', label: '钉钉考勤设置', bgColor: '#DBEAFE', borderColor: 'rgba(94, 78, 62, 0.3)', action: 'dingtalkConfig' },
+  { iconFile: 'dollar', label: '报销管理', bgColor: '#FFD6A5', borderColor: 'rgba(94, 78, 62, 0.3)', action: 'expense' },
+  { iconFile: 'edit', label: '工作日志', bgColor: '#E0F7FA', borderColor: 'rgba(94, 78, 62, 0.3)', action: 'workLog' },
+  { iconFile: 'clipboard', label: '考勤与工资规则', bgColor: '#DDF7E8', borderColor: 'rgba(94, 78, 62, 0.3)', action: 'attendanceRules' },
+  { iconFile: 'clock', label: '加班与补贴记录', bgColor: '#DBEAFE', borderColor: 'rgba(94, 78, 62, 0.3)', action: 'attendanceEntries' },
+  { iconFile: 'megaphone', label: '意见反馈', bgColor: '#FCE4EC', borderColor: 'rgba(94, 78, 62, 0.3)', action: 'feedback' },
+  { iconFile: 'log-out', label: '退出登录', bgColor: '#FFF8F0', borderColor: '#FF8C00', action: 'logout', danger: false },
+  { iconFile: 'warning', label: '账号注销', bgColor: '#FEE', borderColor: '#F44', action: 'deleteAccount', danger: true }
+];
+
+function buildAccountMenuItems(menuConfig) {
+  const configuredItems = menuConfig && Array.isArray(menuConfig.items) ? menuConfig.items : [];
+  const defaultsByKey = DEFAULT_ACCOUNT_MENU_ITEMS.reduce((result, item) => {
+    result[item.action] = item;
+    return result;
+  }, {});
+  const seen = {};
+  const orderedItems = configuredItems.reduce((result, configured) => {
+    if (!configured || typeof configured.key !== 'string' || seen[configured.key]) return result;
+    const item = defaultsByKey[configured.key];
+    if (!item) return result;
+    seen[configured.key] = true;
+    const label = typeof configured.label === 'string' ? configured.label.trim() : '';
+    result.push(Object.assign({}, item, {
+      label: label || item.label,
+      enabled: configured.enabled !== false
+    }));
+    return result;
+  }, []);
+
+  DEFAULT_ACCOUNT_MENU_ITEMS.forEach((item) => {
+    if (!seen[item.action]) orderedItems.push(Object.assign({}, item));
+  });
+
+  return orderedItems
+    .filter(item => item.enabled !== false)
+    .map((item) => {
+      const result = Object.assign({}, item);
+      delete result.enabled;
+      return result;
+    });
+}
 
 const getDefaultData = () => ({
   pageAnimationClass: '',
@@ -41,31 +89,26 @@ const getDefaultData = () => ({
   frequentFeatures: [], // 用户常用功能列表
   featureStatsInfo: '', // 功能统计说明
   
-  // �游客模式相关
+  // 游客模式相关
   isGuest: false, // 是否为游客模式
   showGuestBanner: false, // 是否显示游客模式横幅
   
-  // �测试账号相关
+  // 测试账号相关
   isTestAccount: false, // 是否为测试账号（用于隐藏全局测试模式开关）
   
-  // �管理员菜单项
+  // 管理员菜单项
   adminMenuItems: [
     { iconFile: 'users', label: '小程序账号管理', bgColor: '#E3F2FD', borderColor: 'rgba(94, 78, 62, 0.3)', path: '/pages/admin/miniprogram-users/index' },
     { iconFile: 'megaphone', label: '公告管理', bgColor: '#FCE4EC', borderColor: 'rgba(94, 78, 62, 0.3)', path: '/pages/announcement/manage' },
-    { iconFile: 'bell', label: '通知群管理', bgColor: '#FFD93D', borderColor: 'rgba(94, 78, 62, 0.3)', path: '/pages/admin/notification-group/index' },
+    { iconFile: 'feishu', label: '飞书通知管理', bgColor: '#FFD93D', borderColor: 'rgba(94, 78, 62, 0.3)', path: '/pages/admin/notification-group/index' },
     { iconFile: 'zap', label: '电费通知设置', bgColor: '#FFEBCC', borderColor: 'rgba(94, 78, 62, 0.3)', path: '/pages/admin/df-notification-settings/index' },
-    { iconFile: 'cloud-sun', label: '天气设置', bgColor: '#B9FBC0', borderColor: 'rgba(94, 78, 62, 0.3)', path: '/pages/admin/weather-settings/index' },
     { iconFile: 'clock', label: '定时任务管理', bgColor: '#E0BBE4', borderColor: 'rgba(94, 78, 62, 0.3)', path: '/pages/admin/task-management/list/index' },
-    { iconFile: 'bar-chart', label: '使用记录管理', bgColor: '#98F5E1', borderColor: 'rgba(94, 78, 62, 0.3)', path: '/pages/admin/usage-records/index' }
+    { iconFile: 'bar-chart', label: '使用记录管理', bgColor: '#98F5E1', borderColor: 'rgba(94, 78, 62, 0.3)', path: '/pages/admin/usage-records/index' },
+    { iconFile: 'settings', label: '环境配置管理', bgColor: '#FFF3CD', borderColor: 'rgba(94, 78, 62, 0.3)', path: '/pages/admin/env-config/index' }
   ],
   
-  // �账号管理菜单项
-  accountMenuItems: [
-    { iconFile: 'link', label: 'Web账号管理', bgColor: '#E3F2FD', borderColor: 'rgba(94, 78, 62, 0.3)', action: 'bindWeb' },
-    { iconFile: 'person', label: '个人信息', bgColor: '#B9FBC0', borderColor: 'rgba(94, 78, 62, 0.3)', action: 'updateInfo' },
-    { iconFile: 'log-out', label: '退出登录', bgColor: '#FFF8F0', borderColor: '#FF8C00', action: 'logout', danger: false },
-    { iconFile: 'warning', label: '账号注销', bgColor: '#FEE', borderColor: '#F44', action: 'deleteAccount', danger: true }
-  ]
+  // 账号管理菜单项
+  accountMenuItems: buildAccountMenuItems()
 });
 
 Page({
@@ -74,10 +117,10 @@ Page({
   onLoad() {
     console.log('usercenter 页面加载');
     
-    // �检查游客模式
+    // 检查游客模式
     const isGuest = mockData.isGuestMode();
     
-    // �检查是否为测试账号
+    // 检查是否为测试账号
     const openid = wx.getStorageSync('openid');
     const isTestAccount = openid && openid.includes('test');
     
@@ -95,16 +138,7 @@ Page({
     });
     console.log('usercenter 头像生成器初始化完成');
     
-    // 显示分享菜单（包含朋友圈分享）
-    wx.showShareMenu({
-      withShareTicket: true,
-      success: (res) => {
-        console.log('�用户中心：分享菜单显示成功');
-      },
-      fail: (err) => {
-        console.warn('⚠�用户中心：分享菜单显示失败，但不影响分享功能');
-      }
-    });
+    enableShareMenu('用户中心');
 
     // 异步初始化全局测试模式状态
     this.loadGlobalTestModeStatus();
@@ -127,8 +161,7 @@ Page({
     
     return {
       title: `个人中心 - ${appName}`,
-      path: '/pages/usercenter/index',
-      imageUrl: ''
+      path: '/pages/usercenter/index'
     };
   },
   
@@ -140,8 +173,7 @@ Page({
     
     return {
       title: `个人中心 - ${appName}`,
-      query: '',
-      imageUrl: ''
+      query: ''
     };
   },
 
@@ -163,9 +195,9 @@ Page({
    * - days: 统计最近30天的活跃功能
    */
   loadFrequentFeatures() {
-    // �游客模式不加载常用功能
+    // 游客模式不加载常用功能
     if (mockData.isGuestMode()) {
-      console.log('�用户中心-游客模式：不加载常用功能');
+      console.log('用户中心-游客模式：不加载常用功能');
       this.setData({
         frequentFeatures: [],
         featureStatsInfo: ''
@@ -177,28 +209,36 @@ Page({
     const minUsageCount = 3;  // 至少使用3次才显示
     const days = 30;  // 统计最近30天
     
-    // feature_key �PNG 文件名映射（替代后端返回的 emoji）
+    // feature_key PNG 文件名映射（替代后端返回的 emoji）
     const featureIconMap = {
       'electric': 'zap',
       'attendance': 'clipboard',
       'home': 'home',
-      'weather': 'cloud-sun',
-      'notification-group': 'bell',
+      'notification-group': 'feishu',
       'df-notification': 'zap',
-      'weather-settings': 'cloud-sun',
       'user-management': 'users',
       'announcement': 'megaphone',
       'task-management': 'clock',
       'bar-chart': 'bar-chart',
+      'work-log': 'edit',
+      'expense': 'dollar',
+    };
+
+    // 本地功能名称覆盖（替代后端返回的 feature_name）
+    const featureNameOverrides = {
+      'notification-group': '飞书通知管理',
     };
 
     featureUsage.getFrequentFeatures(limit, minUsageCount, days)
       .then(features => {
-        console.log(`[UserCenter] 加载常用功能: ${features.length}�(阈值: ${minUsageCount}次, 范围: ${days}天)`);
-        // 注�iconFile 字段
-        const featuresWithIcon = features.map(f => Object.assign({}, f, {
-          iconFile: featureIconMap[f.feature_key] || 'home'
-        }));
+        console.log(`[UserCenter] 加载常用功能: ${features.length} 个(阈值: ${minUsageCount}次, 范围: ${days}天)`);
+        // 注入 iconFile 字段，并应用本地名称覆盖
+        const featuresWithIcon = features
+          .filter(f => f.feature_key !== 'weather' && !isAdminFeatureKey(f.feature_key))
+          .map(f => Object.assign({}, f, {
+            iconFile: featureIconMap[f.feature_key] || 'home',
+            feature_name: featureNameOverrides[f.feature_key] || f.feature_name
+          }));
         this.setData({
           frequentFeatures: featuresWithIcon,
           featureStatsInfo: `最近${days}天内使用超过${minUsageCount}次的功能`
@@ -215,8 +255,8 @@ Page({
   },
   
   /**
-   * 根据功能key导航到对应页面
-   * 区�TabBar 页面和普通页面，使用不同的跳转方式
+   * 根据功能 key 导航到对应页面
+   * 区分 TabBar 页面和普通页面，使用不同的跳转方式
    */
   navigateToFeature(e) {
     const { featureKey, featureName } = e.currentTarget.dataset;
@@ -226,16 +266,16 @@ Page({
       'electric': '/pages/electric/index',
       'attendance': '/pages/attendance/index',
       'home': '/pages/home/home',
-      'weather': '/pages/admin/weather-settings/index',
       'notification-group': '/pages/admin/notification-group/index',
       'df-notification': '/pages/admin/df-notification-settings/index',
-      'weather-settings': '/pages/admin/weather-settings/index',
       'user-management': '/pages/admin/miniprogram-users/index',
       'announcement': '/pages/announcement/manage',
-      'task-management': '/pages/admin/task-management/list/index'
+      'task-management': '/pages/admin/task-management/list/index',
+      'work-log': '/pages/work-log/index',
+      'expense': '/pages/expense/index'
     };
     
-    // TabBar 页面列表（需要使�switchTab 跳转）
+    // TabBar 页面列表（需要使用 switchTab 跳转）
     const tabBarPages = [
       '/pages/home/home',
       '/pages/electric/index',
@@ -252,7 +292,7 @@ Page({
       const isTabBarPage = tabBarPages.includes(route);
       
       if (isTabBarPage) {
-        // TabBar 页面使�switchTab
+        // TabBar 页面使用 switchTab
         wx.switchTab({
           url: route,
           success: () => {
@@ -267,7 +307,7 @@ Page({
           }
         });
       } else {
-        // 普通页面使�navigateTo
+        // 普通页面使用 navigateTo
         wx.navigateTo({
           url: route,
           success: () => {
@@ -447,7 +487,7 @@ Page({
       
       const cacheKey = `${userInfo.id || 'default'}_${sourceText}`;
       
-      // 使�Canvas 2D 接口绘制头像
+      // 使Canvas 2D 接口绘制头像
       const canvasId = 'avatarCanvas';
       const query = wx.createSelectorQuery().in(this);
       query.select(`#${canvasId}`)
@@ -500,11 +540,11 @@ Page({
             ctx.textBaseline = 'middle';
             ctx.fillText(firstChar, canvasSize / 2, canvasSize / 2);
             
-            // Canvas 2D 不需要调�draw()，直接生成图片
+            // Canvas 2D 不需要调draw()，直接生成图片
             setTimeout(() => {
               // 生成图片
               wx.canvasToTempFilePath({
-                canvas: canvas,  // Canvas 2D 使�canvas 对象而不�canvasId
+                canvas: canvas,  // Canvas 2D 使canvas 对象而不canvasId
                 destWidth: canvasSize,
                 destHeight: canvasSize,
                 quality: 0.8,
@@ -524,7 +564,7 @@ Page({
                       // 缓存Base64头像数据
                       avatarGenerator.cacheAvatar(cacheKey, base64Data);
                       
-                      // 更新数�- 强制刷新页面显示
+            // 更新数据，强制刷新页面显示
                       this.setData({ 
                         generatedAvatarUrl: base64Data,
                         // 强制清空外链头像，确保使用生成的头像
@@ -573,14 +613,14 @@ Page({
   // 获取用户信息
   async fetchUserInfo() {
     try {
-      // �游客模式：不加载用户信息，显示未登录状态
+      // 游客模式：不加载用户信息，显示未登录状态
       if (mockData.isGuestMode()) {
-        console.log('�用户中心-游客模式：显示未登录状态');
+        console.log('用户中心-游客模式：显示未登录状态');
         return;
       }
       
       // 检查是否为测试模式
-      const isTestMode = wx.getStorageSync('isTestMode');
+      const isTestMode = testModeManager.isTestMode();
       
       let userInfo;
       if (isTestMode) {
@@ -600,9 +640,9 @@ Page({
       
       console.log('usercenter fetchUserInfo - 获取用户信息:', userInfo);
 
-      // �保存到本地存储，供其他页面访问
+      // 保存到本地存储，供其他页面访问
       wx.setStorageSync('userInfo', userInfo);
-      console.log('�用户信息已保存到Storage');
+      console.log('用户信息已保存到Storage');
 
       // 计算权限标签和管理员状态
       const isAdmin = this.isAdminUser(userInfo);
@@ -668,12 +708,12 @@ Page({
   // 获取系统配置
   async fetchSystemConfig() {
     try {
-      // �优先检查游客模式
+      // 优先检查游客模式
       if (mockData.isGuestMode()) {
-        console.log('�用户中心-游客模式：使用简化配置');
+        console.log('用户中心-游客模式：使用简化配置');
         const miniProgramInfo = this.getMiniProgramVersionInfo();
         const guestConfig = {
-          name: '微信管理工具',
+          name: '出差日历',
           version: miniProgramInfo.displayVersion + '-体验',
           functions: [
             { name: '电费查询', enabled: true, description: '支持多账户电费查询和图表分析' },
@@ -687,15 +727,15 @@ Page({
       }
       
       // 检查是否为测试模式
-      const isTestMode = wx.getStorageSync('isTestMode');
+      const isTestMode = testModeManager.isTestMode();
       
       // 获取小程序版本信息
       const miniProgramInfo = this.getMiniProgramVersionInfo();
       
       // 基础配置
       const baseConfig = {
-        name: '微信管理工具',
-        description: '专业的管理工具平台，提供电费查询、考勤管理等功能',
+        name: '出差日历',
+        description: '用于管理本人考勤、出差记录和工资概览',
         updateDate: '2025-09-28',
         developer: {
           team: '管理工具团队',
@@ -741,9 +781,9 @@ Page({
         this.setData({ systemConfig: initialConfig });
         console.log('用户中心：初始配置设置完成', initialConfig);
         
-        // �游客模式不调用后端配置API
+        // 游客模式不调用后端配置API
         if (mockData.isGuestMode()) {
-          console.log('�用户中心-游客模式：不获取后端配置，使用初始配置');
+          console.log('用户中心-游客模式：不获取后端配置，使用初始配置');
           return;
         }
         
@@ -764,7 +804,7 @@ Page({
             
             console.log('后端系统配置:', backendConfig);
             
-            // 合并配置：微信版本信�+ 后端配置
+            // 合并配置：微信版本信息 + 后端配置
             const mergedConfig = Object.assign({}, initialConfig, {
               // 后端配置补充
               app_name: backendConfig.app_name || initialConfig.name,
@@ -783,7 +823,10 @@ Page({
               miniProgramVersion: true
             });
             
-            this.setData({ systemConfig: mergedConfig });
+            this.setData({
+              systemConfig: mergedConfig,
+              accountMenuItems: buildAccountMenuItems(backendConfig.user_center_menu)
+            });
             console.log('用户中心：合并配置完成', mergedConfig);
           },
           (error) => {
@@ -798,7 +841,7 @@ Page({
       // 异常情况：使用兜底配置
       const miniProgramInfo = this.getMiniProgramVersionInfo();
       const fallbackConfig = {
-        name: '微信管理工具',
+        name: '出差日历',
         version: miniProgramInfo.displayVersion,
         functions: [
           { name: '电费查询', enabled: true },
@@ -811,6 +854,12 @@ Page({
       this.setData({ systemConfig: fallbackConfig });
       console.log('用户中心：异常情况下使用兜底配置', fallbackConfig);
     }
+  },
+
+  applyUserCenterMenuConfig(menuConfig) {
+    const accountMenuItems = buildAccountMenuItems(menuConfig);
+    this.setData({ accountMenuItems });
+    return accountMenuItems;
   },
 
   // 快速功能按钮
@@ -827,20 +876,20 @@ Page({
   },
 
   viewLogs() {
-    console.log('�进入使用记录页面');
+    console.log('进入使用记录页面');
     wx.navigateTo({
       url: '/pages/usercenter/usage-history/index'
     });
   },
 
-  // 微信通知群管理
+  // 飞书通知设置
   goToNotificationGroupManagement() {
     if (!this.data.isAdmin) {
       showError('权限不足，需要管理员权限');
       return;
     }
     
-    console.log('进入微信通知群管理');
+    console.log('进入飞书通知设置');
     wx.navigateTo({
       url: '/pages/admin/notification-group/index'
     });
@@ -848,53 +897,26 @@ Page({
 
   // 导航到电费通知设置页面
   goToDFNotificationSettings() {
-    console.log('�电费通知设置跳转检查:');
+    console.log('电费通知设置跳转检查:');
     console.log('- isAdmin:', this.data.isAdmin);
     console.log('- userInfo:', this.data.userInfo);
     
     if (!this.data.isAdmin) {
-      console.log('�权限检查失败');
+      console.log('权限检查失败');
       showError('权限不足，需要管理员权限');
       return;
     }
     
-    console.log('�权限检查通过，开始跳转');
-    console.log('�跳转到: /pages/admin/df-notification-settings/index');
+    console.log('权限检查通过，开始跳转');
+    console.log('跳转到: /pages/admin/df-notification-settings/index');
     
     wx.navigateTo({
       url: '/pages/admin/df-notification-settings/index',
       success: () => {
-        console.log('�页面跳转成功');
+        console.log('页面跳转成功');
       },
       fail: (err) => {
-        console.error('�页面跳转失败:', err);
-        showError(`页面跳转失败: ${err.errMsg || '未知错误'}`);
-      }
-    });
-  },
-
-  // 导航到天气设置页面（统一入口）
-  goToWeatherSettings() {
-    console.log('�天气设置跳转检查:');
-    console.log('- isAdmin:', this.data.isAdmin);
-    console.log('- userInfo:', this.data.userInfo);
-    
-    if (!this.data.isAdmin) {
-      console.log('�权限检查失败');
-      showError('权限不足，需要管理员权限');
-      return;
-    }
-    
-    console.log('�权限检查通过，开始跳转');
-    console.log('�跳转到: /pages/admin/weather-settings/index');
-    
-    wx.navigateTo({
-      url: '/pages/admin/weather-settings/index',
-      success: () => {
-        console.log('�页面跳转成功');
-      },
-      fail: (err) => {
-        console.error('�页面跳转失败:', err);
+        console.error('页面跳转失败:', err);
         showError(`页面跳转失败: ${err.errMsg || '未知错误'}`);
       }
     });
@@ -902,26 +924,26 @@ Page({
 
   // 导航到定时任务管理页面
   goToTaskManagement() {
-    console.log('�定时任务管理跳转检查:');
+    console.log('定时任务管理跳转检查:');
     console.log('- isAdmin:', this.data.isAdmin);
     console.log('- userInfo:', this.data.userInfo);
     
     if (!this.data.isAdmin) {
-      console.log('�权限检查失败');
+      console.log('权限检查失败');
       showError('权限不足，需要管理员权限');
       return;
     }
     
-    console.log('�权限检查通过，开始跳转');
-    console.log('�跳转到: /pages/admin/task-management/list/index');
+    console.log('权限检查通过，开始跳转');
+    console.log('跳转到: /pages/admin/task-management/list/index');
     
     wx.navigateTo({
       url: '/pages/admin/task-management/list/index',
       success: () => {
-        console.log('�页面跳转成功');
+        console.log('页面跳转成功');
       },
       fail: (err) => {
-        console.error('�页面跳转失败:', err);
+        console.error('页面跳转失败:', err);
         showError(`页面跳转失败: ${err.errMsg || '未知错误'}`);
       }
     });
@@ -929,25 +951,25 @@ Page({
 
   // 使用记录管理
   goToUsageRecordsManagement() {
-    console.log('�使用记录管理跳转检查:');
+    console.log('使用记录管理跳转检查:');
     console.log('- isAdmin:', this.data.isAdmin);
     
     if (!this.data.isAdmin) {
-      console.log('�权限检查失败');
+      console.log('权限检查失败');
       showError('权限不足，需要管理员权限');
       return;
     }
     
-    console.log('�权限检查通过，开始跳转');
-    console.log('�跳转到: /pages/admin/usage-records/index');
+    console.log('权限检查通过，开始跳转');
+    console.log('跳转到: /pages/admin/usage-records/index');
     
     wx.navigateTo({
       url: '/pages/admin/usage-records/index',
       success: () => {
-        console.log('�页面跳转成功');
+        console.log('页面跳转成功');
       },
       fail: (err) => {
-        console.error('�页面跳转失败:', err);
+        console.error('页面跳转失败:', err);
         showError(`页面跳转失败: ${err.errMsg || '未知错误'}`);
       }
     });
@@ -975,7 +997,7 @@ Page({
 
   unbindWebAccount() {
     // 检查是否为测试模式
-    const isTestMode = wx.getStorageSync('isTestMode');
+    const isTestMode = testModeManager.isTestMode();
     
     if (isTestMode) {
       // 测试模式：直接模拟解绑
@@ -1054,7 +1076,7 @@ Page({
   // 更新真实姓名
   updateRealName(realName) {
     // 检查是否为测试模式
-    const isTestMode = wx.getStorageSync('isTestMode');
+    const isTestMode = testModeManager.isTestMode();
     
     if (isTestMode) {
       // 测试模式：直接更新本地数据
@@ -1113,7 +1135,7 @@ Page({
         confirmText: '确定'
       });
     } else {
-      const permissionText = permissions.map(p => `�${p.name}: ${p.is_granted ? '已开通' : '未开通'}`).join('\n');
+      const permissionText = permissions.map(p => `${p.name}: ${p.is_granted ? '已开通' : '未开通'}`).join('\n');
       wx.showModal({
         title: '我的权限',
         content: permissionText,
@@ -1144,14 +1166,14 @@ Page({
   clearCache() {
     wx.showModal({
       title: '清理缓存',
-      content: '确定要清理本地缓存吗？\n\n将清理以下内容：\n�本地存储数据\n�用户信息缓存\n�页面缓存数据\n\n（登录状态将保留）',
+      content: '确定要清理本地缓存吗？\n\n将清理以下内容：\n本地存储数据\n用户信息缓存\n页面缓存数据\n\n（登录状态将保留）',
       success: (res) => {
         if (res.confirm) {
           // 清理本地存储和内存缓存
           try {
             console.log('[清理缓存] 开始清理缓存...');
             
-            // ===== 性能优化：清理内存中的缓�=====
+            // ===== 性能优化：清理内存中的缓存 =====
             // 1. 清理用户信息缓存
             console.log('[清理缓存] 清理用户信息缓存');
             userInfoCache.clear();
@@ -1161,20 +1183,20 @@ Page({
             const keys = wx.getStorageInfoSync().keys;
             let clearedCount = 0;
             keys.forEach(key => {
-              // 保留关键信息：openid（登录）�isTestMode（测试模式状态）
-              if (key !== 'openid' && key !== 'isTestMode') {
+              // 保留 openid 登录态；测试模式仅由服务端控制。
+              if (key !== 'openid') {
                 wx.removeStorageSync(key);
                 clearedCount++;
               }
             });
             
-            console.log(`[清理缓存] 清理完成，共清�${clearedCount} 项缓存`);
+            console.log(`[清理缓存] 清理完成，共清理 ${clearedCount} 项缓存`);
             showSuccess('缓存清理完成，正在刷新...');
             
-            // �清理后直接刷新页面，重新加载所有数据
+            // 清理后直接刷新页面，重新加载所有数据
             console.log('[清理缓存] 刷新页面，重新加载数据');
             setTimeout(() => {
-              // 使�reLaunch 重新加载页面，这样会完全重置页面状态
+              // 使用 reLaunch 重新加载页面，这样会完全重置页面状态
               wx.reLaunch({
                 url: '/pages/usercenter/index'
               });
@@ -1231,7 +1253,7 @@ Page({
   about() {
     wx.showModal({
       title: '关于我们',
-      content: `微信管理工具 v${this.data.versionNo}\n\n专业的管理工具平台\n提供电费查询、考勤管理等功能\n\n© 2025 管理工具团队`,
+      content: `出差日历 v${this.data.versionNo}\n\n管理本人考勤、出差记录和工资概览`,
       showCancel: false,
       confirmText: '确定'
     });
@@ -1343,6 +1365,9 @@ Page({
       
       // 延迟执行退出登录操作
       setTimeout(() => {
+        // 清除进程内用户缓存，避免下一个账号复用旧用户信息
+        userInfoCache.clear();
+
         // 清理登录相关的本地存储数据
         wx.removeStorageSync('openid');
         wx.removeStorageSync('userInfo');
@@ -1366,8 +1391,8 @@ Page({
   // 账号注销处理
   handleDeleteAccount() {
     wx.showModal({
-      title: '⚠�账号注销确认',
-      content: '注销账号将永久删除您的所有数据，包括：\n�个人信息和设置\n�历史操作记录\n�已绑定的Web账号关联\n\n此操作不可撤销，请谨慎操作！',
+      title: '⚠账号注销确认',
+      content: '注销账号将永久删除您的所有数据，包括：\n个人信息和设置\n历史操作记录\n已绑定的Web账号关联\n\n此操作不可撤销，请谨慎操作！',
       confirmText: '确认注销',
       cancelText: '取消',
       confirmColor: '#ff4757',
@@ -1382,7 +1407,7 @@ Page({
   // 二次确认
   showSecondConfirmation() {
     wx.showModal({
-      title: '�最终确认',
+      title: '最终确认',
       content: '您确定要注销账号吗？\n\n注销后将立即清除所有数据并退出登录，且无法恢复！',
       confirmText: '我确定要注销',
       cancelText: '我再想想',
@@ -1398,7 +1423,7 @@ Page({
   // 执行账号注销
   performDeleteAccount() {
     // 检查是否为测试模式
-    const isTestMode = wx.getStorageSync('isTestMode');
+    const isTestMode = testModeManager.isTestMode();
     
     if (isTestMode) {
       // 测试模式：直接模拟注销
@@ -1437,6 +1462,8 @@ Page({
   // 清理所有数据并退出登录
   clearAllDataAndLogout() {
     try {
+      userInfoCache.clear();
+
       // 清理所有本地存储数据
       wx.clearStorageSync();
       
@@ -1887,14 +1914,64 @@ Page({
     console.log(`[UserCenter] 执行账号操作: ${action}`);
     
     switch (action) {
+      case 'feedback':
+        this.feedback();
+        break;
       case 'bindWeb':
         // Web账号管理
         this.handleBindStatus();
         break;
         
       case 'updateInfo':
-        // 个人信�- 弹出姓名编辑框
+        // 个人信息：弹出姓名编辑框
         this.handleNameCompletion();
+        break;
+
+      case 'attendanceRules':
+        wx.navigateTo({
+          url: '/pages/attendance/rules/index',
+          fail: () => wx.showToast({ title: '页面跳转失败', icon: 'none' })
+        });
+        break;
+
+      case 'attendanceEntries':
+        wx.navigateTo({
+          url: '/pages/attendance/entries/index',
+          fail: () => wx.showToast({ title: '页面跳转失败', icon: 'none' })
+        });
+        break;
+
+      case 'dingtalkConfig':
+        wx.navigateTo({
+          url: '/pages/admin/dingtalk-settings/index',
+          fail: () => {
+            wx.showToast({ title: '页面跳转失败', icon: 'none' });
+          }
+        });
+        break;
+
+      case 'workLog':
+        wx.navigateTo({
+          url: '/pages/work-log/index',
+          fail: () => {
+            wx.showToast({
+              title: '页面跳转失败',
+              icon: 'none'
+            });
+          }
+        });
+        break;
+
+      case 'expense':
+        wx.navigateTo({
+          url: '/pages/expense/index',
+          fail: () => {
+            wx.showToast({
+              title: '页面跳转失败',
+              icon: 'none'
+            });
+          }
+        });
         break;
         
       case 'logout':

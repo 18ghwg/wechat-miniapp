@@ -7,8 +7,8 @@ class MiniprogramInfo {
   constructor() {
     this._accountInfo = null;  // 小程序账号信息（来自微信API）
     this._systemConfig = null; // 系统配置信息（来自后端）
-    this._appName = '无感tool';  // 默认名称
-    this._appDescription = '您的智能管理助手';  // 默认描述
+    this._appName = '出差日历';  // 默认名称
+    this._appDescription = '便捷的出差与考勤管理';  // 默认描述
   }
 
   /**
@@ -19,7 +19,7 @@ class MiniprogramInfo {
     if (!this._accountInfo) {
       try {
         this._accountInfo = wx.getAccountInfoSync();
-        console.log('�小程序账号信息:', this._accountInfo);
+        console.log('小程序账号信息:', this._accountInfo);
       } catch (error) {
         console.error('获取小程序账号信息失败:', error);
         this._accountInfo = {
@@ -62,11 +62,11 @@ class MiniprogramInfo {
   }
 
   /**
-   * 判断是否为开发环境
+   * 判断是否为开发环境。当前业务固定按生产环境运行。
    * @returns {Boolean}
    */
   isDevelopment() {
-    return this.getEnvVersion() === 'develop';
+    return false;
   }
 
   /**
@@ -85,7 +85,7 @@ class MiniprogramInfo {
         this._appDescription = config.app_description;
       }
       
-      console.log('�系统配置已更新:', {
+      console.log('系统配置已更新:', {
         appName: this._appName,
         appDescription: this._appDescription
       });
@@ -151,4 +151,3 @@ module.exports = {
   miniprogramInfo,
   MiniprogramInfo
 };
-

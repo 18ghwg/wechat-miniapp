@@ -88,22 +88,13 @@ class TestModeManager {
 
   /**
    * 检查是否为测试模式
-   * 包含两种情况：
-   * 1. 全局测试模式开关（管理员手动控制，用于审核）
-   * 2. 开发工具微信一键登录（登录时自动设置的测试模式）
+   * 只信任后端全局测试模式开关。
+   * 本地存储不得开启测试模式或管理员权限。
    */
   isTestMode() {
-    // 1. 检查全局测试模式开关（从服务器获取）
     const globalTestMode = this.isGlobalTestMode();
     if (globalTestMode) {
       console.log('🧪 测试模式激活：全局开关已启用');
-      return true;
-    }
-    
-    // 2. 检查微信一键登录测试模式（开发工具中微信登录时自动设置）
-    const wechatTestMode = wx.getStorageSync('isTestMode') === true;
-    if (wechatTestMode) {
-      console.log('🧪 测试模式激活：微信一键登录测试账号');
       return true;
     }
     
@@ -111,22 +102,10 @@ class TestModeManager {
   }
 
   /**
-   * 检测是否为开发环境（仅用于信息展示，不影响测试模式判断）
+   * 固定按生产环境显示
    */
   isDevelopmentEnvironment() {
-    try {
-      // 获取小程序账号信息
-      const accountInfo = wx.getAccountInfoSync();
-      const envVersion = (accountInfo && accountInfo.miniProgram ? accountInfo.miniProgram.envVersion : undefined) || '';
-      
-      // 开发版、体验版都视为开发环境
-      const isDevelopment = envVersion === 'develop' || envVersion === 'trial';
-      
-      return isDevelopment;
-    } catch (error) {
-      console.warn('❌ 获取环境信息失败，默认为非开发环境:', error);
-      return false;
-    }
+    return false;
   }
 
 
@@ -135,21 +114,18 @@ class TestModeManager {
    */
   getTestModeStatus() {
     const globalTestMode = this.isGlobalTestMode();
-    const wechatTestMode = wx.getStorageSync('isTestMode') === true;
     const developmentMode = this.isDevelopmentEnvironment();
     const isTestMode = this.isTestMode();
     
     let source = 'none';
     if (globalTestMode) {
       source = 'global_switch';
-    } else if (wechatTestMode) {
-      source = 'wechat_dev_login';
     }
     
     return {
       isTestMode,
       globalTestMode,
-      wechatTestMode,
+      wechatTestMode: false,
       developmentMode,
       source
     };
@@ -463,7 +439,11 @@ class TestModeManager {
       name: '测试管理员',
       sony_username: 'test_netdisk_user',
       sony_password: 'test_password_123',
-      is_auto_create_salary: true
+      is_auto_create_salary: true,
+      is_upload_to_netdisk: true,
+      base_salary: 7000,
+      overtime_pay_per_day: 250,
+      meal_allowance_per_trip_day: 20
     };
   }
 
@@ -922,6 +902,42 @@ class TestModeManager {
         created_time: '2025-09-18 08:00:00',
         updated_by: '测试管理员',
         updated_time: '2025-09-29 11:15:00'
+      },
+      {
+        id: 5,
+        task_id: 'daily_work_log_summary',
+        task_name: '每日工作日志汇总发送',
+        task_description: '每天汇总小程序工作日志，并发送到配置的微信群聊。',
+        func_name: 'send_daily_work_log_summary',
+        target_group: '测试群聊',
+        is_enabled: true,
+        trigger_type: 'cron',
+        cron_hour: '20',
+        cron_minute: '0',
+        cron_second: '0',
+        cron_year: '*',
+        cron_month: '*',
+        cron_day: '*',
+        cron_week: '*',
+        cron_day_of_week: '*',
+        start_date: null,
+        end_date: null,
+        timezone: 'Asia/Shanghai',
+        jitter: 0,
+        interval_weeks: 0,
+        interval_days: 0,
+        interval_hours: 0,
+        interval_minutes: 0,
+        interval_seconds: 0,
+        run_date: null,
+        misfire_grace_time: 600,
+        max_instances: 1,
+        coalesce: true,
+        replace_existing: true,
+        created_by: '系统',
+        created_time: '2026-05-14 08:00:00',
+        updated_by: '系统',
+        updated_time: '2026-05-14 08:00:00'
       },
       {
         id: 4,

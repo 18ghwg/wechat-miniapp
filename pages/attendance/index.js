@@ -6,6 +6,8 @@ const { userInfoCache } = require('../../utils/user-info-cache');
 const { performanceMonitor, PERF_TYPES } = require('../../utils/performance-monitor');
 const { miniprogramInfo } = require('../../utils/miniprogram-info');
 const { isDevtools } = require('../../utils/system-info');
+const { calculateOvertimeFromTimes } = require('./time-overtime');
+const { enableShareMenu } = require('../../utils/share');
 
 Page({
   data: {
@@ -43,10 +45,19 @@ Page({
       workRestMode: 'double_rest'
     },
     syncingDingtalk: false,
+    canSyncDingtalk: false,
     showCalendar: true, // 是否显示日历
     // 游客模式相关
     isGuest: false, // 是否为游客模式
     showGuestBanner: false, // 是否显示游客模式横幅
+    ruleSetup: {
+      loading: false,
+      needsSetup: false,
+      state: '',
+      title: '',
+      description: '',
+      actionText: ''
+    },
     // 时间显示相关
     currentTime: '00:00:00',
     formattedDate: '',
@@ -70,8 +81,35 @@ Page({
       overtimeCalc: null,
       overtimeHoursInput: '',
       overtimeHoursTouched: false,
+      checkInDate: '',
+      checkInTime: '',
+      checkOutDate: '',
+      checkOutTime: '',
+      checkOutDayOffset: 0,
+      checkInDateTimeRange: [],
+      checkInDateTimeValue: [],
+      checkInDateTimeText: '',
+      checkOutDateTimeRange: [],
+      checkOutDateTimeValue: [],
+      checkOutDateTimeText: '',
+      timeCalc: null,
       calendarStamp: ''
     },
+    quickCheckInTimes: [
+      { value: '08:30', label: '08:30' },
+      { value: '09:00', label: '09:00' },
+      { value: '09:30', label: '09:30' }
+    ],
+    quickCheckOutTimes: [
+      { value: '18:00', label: '18:00' },
+      { value: '19:00', label: '19:00' },
+      { value: '20:00', label: '20:00' },
+      { value: '21:00', label: '21:00' }
+    ],
+    checkOutDayOffsetOptions: [
+      { value: 0, label: '当日' },
+      { value: 1, label: '次日' }
+    ],
     // 保存结果弹窗相关
     showResultModal: false,
     resultSuccess: true,
@@ -241,16 +279,7 @@ Page({
       featureUsage.recordFeatureUsage('attendance', '考勤管理', '📋');
     }, 0);
     
-    // 显示分享菜单（包含朋友圈分享）
-    wx.showShareMenu({
-      withShareTicket: true,
-      success: (res) => {
-        console.log('考勤管理：分享菜单显示成功');
-      },
-      fail: (err) => {
-        console.warn('⚠考勤管理：分享菜单显示失败，但不影响分享功能');
-      }
-    });
+    enableShareMenu('考勤管理');
     
     this.updateCurrentDate();
     this.initCalendar(); // 初始化日历
@@ -301,6 +330,8 @@ Page({
       const oldGuestMode = this.data.isGuest || false;
       const newGuestMode = mockData.isGuestMode();
       const guestModeChanged = oldGuestMode !== newGuestMode;
+      this.loadDingtalkSyncAvailability(newGuestMode || newTestMode);
+      this.loadAttendanceRuleSetup(newGuestMode || newTestMode);
 
       // 更新游客模式状态
       if (guestModeChanged) {
@@ -439,8 +470,7 @@ Page({
     
     return {
       title: `考勤管理 - ${appName}`,
-      path: '/pages/attendance/index',
-      imageUrl: ''
+      path: '/pages/attendance/index'
     };
   },
   
@@ -452,8 +482,7 @@ Page({
     
     return {
       title: `考勤管理 - ${appName}`,
-      query: '',
-      imageUrl: ''
+      query: ''
     };
   },
 
@@ -488,12 +517,14 @@ Page({
     // ===== 性能监控：数据刷新开始 =====
     performanceMonitor.mark('attendance_refresh_start');
     
-    // 游客模式：加载mock数据
+    // 未登录预览只显示空状态。
     if (mockData.isGuestMode()) {
-      console.log('刷新页面-游客模式：加载mock数据');
+      console.log('刷新页面-未登录预览：保持空状态');
       this.loadUserInfo();
       this.loadTodayAttendance();
       this.loadRecentAttendance();
+      this.loadCalendarAttendance(this.data.calendarYear, this.data.calendarMonth);
+      wx.stopPullDownRefresh();
       return;
     }
     
@@ -580,6 +611,309 @@ Page({
     return Number.isInteger(num) ? String(num) : num.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
   },
 
+  loadAttendanceRuleSetup(skipCheck = false) {
+    const attendanceAPI = API && API.attendance;
+    if (skipCheck || !attendanceAPI || typeof attendanceAPI.getRuleDocument !== 'function') {
+      this.setData({
+        ruleSetup: {
+          loading: false,
+          needsSetup: false,
+          state: '',
+          title: '',
+          description: '',
+          actionText: ''
+        }
+      });
+      return Promise.resolve();
+    }
+
+    this.setData({ 'ruleSetup.loading': true });
+    return attendanceAPI.getRuleDocument().then(res => {
+      if (!res || res.code !== 200) throw new Error((res && res.msg) || '读取考勤规则失败');
+      const meta = (res.data && res.data.meta) || {};
+      const state = meta.setup_state || (meta.status === 'legacy_v1' ? 'unconfigured' : '');
+      const needsSetup = meta.needs_setup === true || state === 'unconfigured' || state === 'draft_unpublished';
+      const isDraft = state === 'draft_unpublished';
+      this.setData({
+        ruleSetup: {
+          loading: false,
+          needsSetup,
+          state,
+          title: isDraft ? '考勤规则还没有发布' : '先完成考勤规则配置',
+          description: isDraft
+            ? '你已经保存了规则草稿，但当前考勤和工资计算还不会使用它。请检查后发布。'
+            : '选择一个适合你的考勤方案，系统会生成班次和每周安排，再由你确认发布。',
+          actionText: isDraft ? '继续配置并发布' : '选择考勤方案'
+        }
+      });
+    }).catch(() => {
+      this.setData({ 'ruleSetup.loading': false, 'ruleSetup.needsSetup': false });
+    });
+  },
+
+  goToAttendanceRuleSetup() {
+    wx.navigateTo({ url: '/pages/attendance/rules/index?setup=1' });
+  },
+
+  normalizeTimeText(value) {
+    if (!value) return '';
+    const text = String(value);
+    const timeMatch = text.match(/(\d{1,2}):(\d{2})/);
+    if (!timeMatch) return '';
+
+    const hours = Number(timeMatch[1]);
+    const minutes = Number(timeMatch[2]);
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return '';
+
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  },
+
+  normalizeDateText(value) {
+    if (!value) return '';
+    const text = String(value);
+    const dateMatch = text.match(/(\d{4})-(\d{2})-(\d{2})/);
+    return dateMatch ? `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}` : '';
+  },
+
+  padDateTimePart(value) {
+    return String(value).padStart(2, '0');
+  },
+
+  buildNumberOptions(start, end) {
+    const result = [];
+    for (let value = start; value <= end; value += 1) {
+      result.push(this.padDateTimePart(value));
+    }
+    return result;
+  },
+
+  getDateTimePickerYears(selectedYear) {
+    const currentYear = new Date().getFullYear();
+    const safeSelectedYear = Number(selectedYear) || currentYear;
+    const startYear = Math.min(currentYear - 5, safeSelectedYear - 2);
+    const endYear = Math.max(currentYear + 5, safeSelectedYear + 2);
+    const years = [];
+
+    for (let year = startYear; year <= endYear; year += 1) {
+      years.push(String(year));
+    }
+
+    return years;
+  },
+
+  getDaysInMonth(year, month) {
+    return new Date(Number(year), Number(month), 0).getDate();
+  },
+
+  getDateTimeParts(dateText, timeText, fallbackTime = '09:00') {
+    const now = new Date();
+    const normalizedDate = this.normalizeDateText(dateText) || this.getDateString(now);
+    const normalizedTime = this.normalizeTimeText(timeText) || fallbackTime;
+    const dateParts = normalizedDate.split('-').map(item => Number(item));
+    const timeParts = normalizedTime.split(':').map(item => Number(item));
+
+    return {
+      year: dateParts[0],
+      month: dateParts[1],
+      day: dateParts[2],
+      hour: timeParts[0],
+      minute: timeParts[1]
+    };
+  },
+
+  buildDateTimePickerState(dateText, timeText, fallbackTime = '09:00') {
+    const parts = this.getDateTimeParts(dateText, timeText, fallbackTime);
+    const years = this.getDateTimePickerYears(parts.year);
+    const months = this.buildNumberOptions(1, 12);
+    const days = this.buildNumberOptions(1, this.getDaysInMonth(parts.year, parts.month));
+    const hours = this.buildNumberOptions(0, 23);
+    const minutes = this.buildNumberOptions(0, 59);
+    const range = [years, months, days, hours, minutes];
+    const clampedDay = Math.min(parts.day, days.length);
+    const date = `${parts.year}-${this.padDateTimePart(parts.month)}-${this.padDateTimePart(clampedDay)}`;
+    const time = `${this.padDateTimePart(parts.hour)}:${this.padDateTimePart(parts.minute)}`;
+
+    return {
+      range,
+      value: [
+        Math.max(years.indexOf(String(parts.year)), 0),
+        Math.max(months.indexOf(this.padDateTimePart(parts.month)), 0),
+        Math.max(days.indexOf(this.padDateTimePart(clampedDay)), 0),
+        Math.max(hours.indexOf(this.padDateTimePart(parts.hour)), 0),
+        Math.max(minutes.indexOf(this.padDateTimePart(parts.minute)), 0)
+      ],
+      date,
+      time,
+      text: `${date} ${time}`
+    };
+  },
+
+  resolveDateTimePickerValue(range = [], value = []) {
+    const safeRange = Array.isArray(range) ? range : [];
+    const safeValue = Array.isArray(value) ? value : [];
+    const year = safeRange[0] && safeRange[0][safeValue[0]] ? Number(safeRange[0][safeValue[0]]) : new Date().getFullYear();
+    const month = safeRange[1] && safeRange[1][safeValue[1]] ? Number(safeRange[1][safeValue[1]]) : 1;
+    const maxDay = this.getDaysInMonth(year, month);
+    const selectedDay = safeRange[2] && safeRange[2][safeValue[2]] ? Number(safeRange[2][safeValue[2]]) : 1;
+    const day = Math.min(selectedDay, maxDay);
+    const hour = safeRange[3] && safeRange[3][safeValue[3]] ? Number(safeRange[3][safeValue[3]]) : 0;
+    const minute = safeRange[4] && safeRange[4][safeValue[4]] ? Number(safeRange[4][safeValue[4]]) : 0;
+    const date = `${year}-${this.padDateTimePart(month)}-${this.padDateTimePart(day)}`;
+    const time = `${this.padDateTimePart(hour)}:${this.padDateTimePart(minute)}`;
+
+    return { date, time };
+  },
+
+  buildDateTimePickerColumnState(range, value, column, columnValue) {
+    const nextValue = Array.isArray(value) ? value.slice() : [0, 0, 0, 0, 0];
+    nextValue[column] = columnValue;
+    const selected = this.resolveDateTimePickerValue(range, nextValue);
+    return this.buildDateTimePickerState(selected.date, selected.time);
+  },
+
+  buildEditFormDateTimeState(form = {}) {
+    const checkInState = this.buildDateTimePickerState(form.checkInDate || form.date, form.checkInTime, '09:00');
+    const checkOutState = this.buildDateTimePickerState(form.checkOutDate || form.date, form.checkOutTime, '18:00');
+
+    return {
+      checkInDateTimeRange: checkInState.range,
+      checkInDateTimeValue: checkInState.value,
+      checkInDateTimeText: checkInState.text,
+      checkOutDateTimeRange: checkOutState.range,
+      checkOutDateTimeValue: checkOutState.value,
+      checkOutDateTimeText: checkOutState.text
+    };
+  },
+
+  buildEditFormDateTimeStatePatch(form = {}) {
+    const state = this.buildEditFormDateTimeState(form);
+    return {
+      'editForm.checkInDateTimeRange': state.checkInDateTimeRange,
+      'editForm.checkInDateTimeValue': state.checkInDateTimeValue,
+      'editForm.checkInDateTimeText': state.checkInDateTimeText,
+      'editForm.checkOutDateTimeRange': state.checkOutDateTimeRange,
+      'editForm.checkOutDateTimeValue': state.checkOutDateTimeValue,
+      'editForm.checkOutDateTimeText': state.checkOutDateTimeText
+    };
+  },
+
+  formatDateTimeMinuteText(value, fallbackDate = '', fallbackTime = '') {
+    const date = this.normalizeDateText(value) || this.normalizeDateText(fallbackDate);
+    const time = this.normalizeTimeText(value) || this.normalizeTimeText(fallbackTime);
+
+    if (date && time) return `${date} ${time}`;
+    return time || date || '';
+  },
+
+  normalizeDingAttendanceDisplay(dingAttendance = {}, workDate = '') {
+    const result = Object.assign({}, dingAttendance || {});
+    result.check_in_datetime_text = this.formatDateTimeMinuteText(
+      result.check_in_time,
+      workDate,
+      result.check_in_time_text
+    );
+    result.check_out_datetime_text = this.formatDateTimeMinuteText(
+      result.check_out_time,
+      workDate,
+      result.check_out_time_text
+    );
+    return result;
+  },
+
+  addDaysToDateText(dateText, dayOffset = 0) {
+    const normalizedDate = this.normalizeDateText(dateText);
+    if (!normalizedDate) return '';
+
+    const parts = normalizedDate.split('-').map(item => Number(item));
+    const date = new Date(parts[0], parts[1] - 1, parts[2]);
+    date.setDate(date.getDate() + Number(dayOffset || 0));
+    return this.getDateString(date);
+  },
+
+  getCheckOutDayOffset(workDate, checkOutDate) {
+    const baseDate = this.normalizeDateText(workDate);
+    const targetDate = this.normalizeDateText(checkOutDate);
+    if (!baseDate || !targetDate || targetDate <= baseDate) return 0;
+    return 1;
+  },
+
+  buildCheckOutDateByOffset(workDate, offset) {
+    return this.addDaysToDateText(workDate, Number(offset || 0)) || workDate || '';
+  },
+
+  getAttendanceCheckTimeRange(attendance = {}) {
+    const dingAttendance = attendance.ding_attendance || attendance.dingAttendance || {};
+    const checkInSource = attendance.check_in_time ||
+      attendance.checkInTime ||
+      dingAttendance.check_in_time ||
+      dingAttendance.check_in_time_text;
+    const checkOutSource = attendance.check_out_time ||
+      attendance.checkOutTime ||
+      dingAttendance.check_out_time ||
+      dingAttendance.check_out_time_text;
+
+    return {
+      checkInDate: this.normalizeDateText(checkInSource),
+      checkInTime: this.normalizeTimeText(checkInSource),
+      checkOutDate: this.normalizeDateText(checkOutSource),
+      checkOutTime: this.normalizeTimeText(checkOutSource)
+    };
+  },
+
+  hasDingCheckTime(dingAttendance = {}) {
+    return !!(
+      dingAttendance &&
+      (
+        dingAttendance.check_in_time ||
+        dingAttendance.check_in_time_text ||
+        dingAttendance.check_out_time ||
+        dingAttendance.check_out_time_text ||
+        dingAttendance.has_ding_attendance
+      )
+    );
+  },
+
+  buildEditFormDingTimePatch(dingAttendance = {}, workDate = '') {
+    const timeRange = this.getAttendanceCheckTimeRange({ ding_attendance: dingAttendance });
+    const checkInDate = timeRange.checkInDate || workDate;
+    const checkOutDate = timeRange.checkOutDate || workDate;
+    const nextForm = Object.assign({}, this.data.editForm || {}, {
+      checkInDate,
+      checkInTime: timeRange.checkInTime || (this.data.editForm && this.data.editForm.checkInTime),
+      checkOutDate,
+      checkOutTime: timeRange.checkOutTime || (this.data.editForm && this.data.editForm.checkOutTime)
+    });
+    const patch = this.buildEditFormDateTimeStatePatch(nextForm);
+
+    if (checkInDate) patch['editForm.checkInDate'] = checkInDate;
+    if (timeRange.checkInTime) patch['editForm.checkInTime'] = timeRange.checkInTime;
+    if (checkOutDate) patch['editForm.checkOutDate'] = checkOutDate;
+    if (timeRange.checkOutTime) patch['editForm.checkOutTime'] = timeRange.checkOutTime;
+    patch['editForm.checkOutDayOffset'] = this.getCheckOutDayOffset(workDate, checkOutDate);
+
+    return patch;
+  },
+
+  syncEditWorkDate(nextDate) {
+    const calendarInfo = (this.data.attendanceMap && this.data.attendanceMap[nextDate]) || {};
+    const checkOutDayOffset = Number(this.data.editForm.checkOutDayOffset || 0);
+    const nextForm = Object.assign({}, this.data.editForm || {}, {
+      date: nextDate,
+      checkInDate: nextDate,
+      checkOutDate: this.buildCheckOutDateByOffset(nextDate, checkOutDayOffset)
+    });
+
+    this.setData(Object.assign({
+      'editForm.date': nextDate,
+      'editForm.holidayInfo': calendarInfo.holiday_info || {},
+      'editForm.calendarStamp': calendarInfo.calendar_stamp || '',
+      'editForm.checkInDate': nextDate,
+      'editForm.checkOutDate': nextForm.checkOutDate
+    }, this.buildEditFormDateTimeStatePatch(nextForm)), () => {
+      this.updateEditModalTimeCalc();
+    });
+  },
+
   formatCalcCurrency(value) {
     const num = Math.round(this.toFiniteNumber(value) * 100) / 100;
     return num.toFixed(2);
@@ -594,7 +928,19 @@ Page({
       workRestMode: 'double_rest'
     };
 
-    if (mockData.isGuestMode() || this._isTestMode) {
+    if (mockData.isGuestMode()) {
+      this.setData({
+        salaryRateConfig: Object.assign({}, defaultConfig, {
+          loaded: false,
+          overtimePayPerDay: 0,
+          overtimePayPerHour: 0
+        })
+      });
+      this.updateEditModalOvertimeCalc();
+      return;
+    }
+
+    if (this._isTestMode) {
       this.setData({ salaryRateConfig: defaultConfig });
       this.updateEditModalOvertimeCalc();
       return;
@@ -726,6 +1072,43 @@ Page({
     };
   },
 
+  buildTimeOvertimeCalc(form = {}) {
+    const salaryRateConfig = this.data.salaryRateConfig || {};
+    const result = calculateOvertimeFromTimes({
+      dateText: form.date,
+      checkInDate: form.checkInDate || form.date,
+      checkInTime: form.checkInTime,
+      checkOutDate: form.checkOutDate || form.date,
+      checkOutTime: form.checkOutTime,
+      holidayInfo: form.holidayInfo || {},
+      workRestMode: salaryRateConfig.workRestMode || 'double_rest'
+    });
+
+    if (!result.valid) {
+      return {
+        show: false,
+        intervalHoursText: '0',
+        rawHoursText: '0',
+        deductionHoursText: '0',
+        effectiveHoursText: '0',
+        modeText: ''
+      };
+    }
+
+    return {
+      show: true,
+      intervalHours: result.intervalHours,
+      rawHours: result.rawHours,
+      deductionHours: result.deductionHours,
+      effectiveHours: result.effectiveHours,
+      intervalHoursText: this.formatCalcHours(result.intervalHours),
+      rawHoursText: this.formatCalcHours(result.rawHours),
+      deductionHoursText: this.formatCalcHours(result.deductionHours),
+      effectiveHoursText: this.formatCalcHours(result.effectiveHours),
+      modeText: result.mode === 'rest' ? '休息日' : '工作日'
+    };
+  },
+
   updateEditModalOvertimeCalc() {
     if (!this.data.showEditModal || !this.data.editForm) {
       return;
@@ -742,6 +1125,30 @@ Page({
 
     this.setData({
       'editForm.overtimeCalc': overtimeCalc
+    });
+  },
+
+  updateEditModalTimeCalc(options = {}) {
+    if (!this.data.showEditModal || !this.data.editForm) {
+      return;
+    }
+
+    const timeCalc = this.buildTimeOvertimeCalc(this.data.editForm);
+    const nextData = {
+      'editForm.timeCalc': timeCalc
+    };
+
+    if (timeCalc.show && options.applyToHours !== false) {
+      const effectiveHoursText = this.formatCalcHours(timeCalc.effectiveHours);
+      nextData['editForm.overtimeHoursInput'] = effectiveHoursText;
+      nextData['editForm.overtimeHoursTouched'] = true;
+      nextData['editForm.overtime.effective_hours'] = timeCalc.effectiveHours;
+      nextData['editForm.overtime.rule_text'] = '按上下班时间计算，手动覆盖加班小时';
+      nextData['editForm.dingAttendance.overtime_hours'] = timeCalc.effectiveHours;
+    }
+
+    this.setData(nextData, () => {
+      this.updateEditModalOvertimeCalc();
     });
   },
 
@@ -777,6 +1184,11 @@ Page({
   },
 
   onPullDownRefresh() {
+    if (mockData.showGuestModeTip('attendance')) {
+      wx.stopPullDownRefresh();
+      return;
+    }
+
     // 下拉刷新时，重新检查用户信息并刷新所有数据
     console.log('下拉刷新：重新加载所有数据');
     this.refreshPageData();
@@ -786,28 +1198,14 @@ Page({
    * 加载用户信息
    */
   loadUserInfo() {
-    // 游客模式：使用mock数据
+    // 未登录预览：不构造用户身份或业务数据。
     if (mockData.isGuestMode()) {
-      console.log('考勤用户信息-游客模式：使用mock数据');
-      const mockUser = {
-        nickname: '体验用户',
-        real_name: '张三',
-        openid: 'mock_openid'
-      };
-      this.setData({ 
-        currentUser: mockUser,
+      console.log('考勤用户信息-未登录预览：保持为空');
+      this.setData({
+        currentUser: null,
         needCompleteProfile: false
       });
-      this.loadSalaryRateConfig(mockUser);
-      
-      // 加载日历考勤数据
-      const now = new Date();
-      this.loadCalendarAttendance(now.getFullYear(), now.getMonth() + 1);
-
-      // 在日历数据加载后检查漏打卡（延迟执行以确保日历数据已加载）
-      setTimeout(() => {
-        this.checkMissedAttendance();
-      }, 500);
+      this.loadSalaryRateConfig(null);
       return;
     }
     
@@ -879,20 +1277,11 @@ Page({
     const today = new Date();
     const dateStr = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
     
-    // 游客模式：使用mock数据
+    // 未登录预览：今日记录为空。
     if (mockData.isGuestMode()) {
-      console.log('今日考勤-游客模式：使用mock数据');
-      const mockTodayAttendance = {
-        id: 1,
-        date: dateStr,
-        work_status: '公司上班',
-        submit_time: '09:00',
-        location: '北京市朝阳区',
-        remark: '正常出勤'
-      };
       this.setData({
-        todayAttendance: mockTodayAttendance,
-        todayCheckedIn: true,
+        todayAttendance: null,
+        todayCheckedIn: false,
         needCompleteProfile: false
       });
       return;
@@ -1154,36 +1543,13 @@ Page({
       showNameCompleteHint: false  // 重置姓名完善提示状态
     });
 
-    // 游客模式：使用mock数据
+    // 未登录预览：最近记录为空。
     if (mockData.isGuestMode()) {
-      console.log('考勤记录-游客模式：使用mock数据');
-      const today = new Date();
-      const mockRecentAttendance = [
-        {
-          id: 1,
-          work_status: '公司上班',
-          work_date: `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`,
-          put_date_time: '09:00',
-          status_class: 'company-work'
-        },
-        {
-          id: 2,
-          work_status: '公司上班',
-          work_date: `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${(today.getDate() - 1).toString().padStart(2, '0')}`,
-          put_date_time: '09:15',
-          status_class: 'company-work'
-        },
-        {
-          id: 3,
-          work_status: '休息',
-          work_date: `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${(today.getDate() - 2).toString().padStart(2, '0')}`,
-          put_date_time: '00:00',
-          status_class: 'rest'
-        }
-      ];
-      this.setData({ 
-        recentAttendance: mockRecentAttendance,
-        loading: false 
+      console.log('考勤记录-未登录预览：保持为空');
+      this.setData({
+        recentAttendance: [],
+        loading: false,
+        showNameCompleteHint: false
       });
       wx.stopPullDownRefresh();
       return;
@@ -1419,6 +1785,10 @@ Page({
    * 快速打卡
    */
   onQuickPunch(e) {
+    if (mockData.showGuestModeTip('submit')) {
+      return;
+    }
+
     const { status } = e.currentTarget.dataset;
     
     // 检查用户是否登录
@@ -1526,6 +1896,10 @@ Page({
    * 提交考勤
    */
   submitAttendance(workStatus, comment = '', customSubsidy = null, businessTripLocation = '') {
+    if (mockData.showGuestModeTip('submit')) {
+      return;
+    }
+
     // 先获取真实姓名
     this.getRealNameForAttendance((realName) => {
       const today = new Date();
@@ -1801,6 +2175,10 @@ Page({
    * 编辑打卡记录 - 打开内联编辑弹窗
    */
   onEditRecord(e) {
+    if (mockData.showGuestModeTip('attendance')) {
+      return;
+    }
+
     const item = e.currentTarget.dataset.item;
     if (!item) return;
 
@@ -1814,27 +2192,56 @@ Page({
       '加班': 'office'
     };
 
-    // 获取当前时间（HH:MM格式）
-    const now = new Date();
-    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const workDate = item.work_date || '';
+    const dingAttendance = this.normalizeDingAttendanceDisplay(item.ding_attendance || {}, workDate);
+    const timeRange = this.getAttendanceCheckTimeRange(Object.assign({}, item, { ding_attendance: dingAttendance }));
+    const overtime = item.overtime || {};
+    const overtimeHoursInput = String(
+      item.overtimeHours ||
+      overtime.effective_hours ||
+      dingAttendance.overtime_hours ||
+      0
+    );
+    const checkInDate = timeRange.checkInDate || workDate;
+    const checkOutDate = timeRange.checkOutDate || workDate;
+    const checkOutDayOffset = this.getCheckOutDayOffset(workDate, checkOutDate);
+    const editForm = {
+      id: item.id,
+      name: item.name || item.real_name || item.employee_name || this.data.currentUser?.real_name || '',
+      type: typeMap[item.work_status] || 'office',
+      date: workDate,
+      time: this.normalizeTimeText(item.put_date_time || item.submit_time) || '00:00',
+      location: item.business_trip_location || '',
+      baseName: item.comment || '',
+      subsidy: item.business_trip_subsidy ? String(item.business_trip_subsidy) : '',
+      hasDingAttendance: this.hasDingCheckTime(dingAttendance),
+      dingAttendance,
+      holidayInfo: item.holiday_info || {},
+      overtime,
+      overtimeHoursInput,
+      overtimeHoursTouched: false,
+      checkInDate,
+      checkInTime: timeRange.checkInTime || '09:00',
+      checkOutDate,
+      checkOutTime: timeRange.checkOutTime || '18:00',
+      checkOutDayOffset,
+      timeCalc: null,
+      overtimeCalc: null,
+      calendarStamp: item.calendar_stamp || ''
+    };
+    Object.assign(editForm, this.buildEditFormDateTimeState(editForm));
+    editForm.timeCalc = this.buildTimeOvertimeCalc(editForm);
+    editForm.overtimeCalc = this.buildDayOvertimeCalc({
+      work_date: editForm.date,
+      holiday_info: editForm.holidayInfo,
+      overtime: editForm.overtime,
+      ding_attendance: editForm.dingAttendance,
+      overtimeHoursInput: editForm.overtimeHoursInput
+    });
 
     this.setData({
       showEditModal: true,
-      editForm: {
-        id: item.id,
-        name: item.name || item.real_name || item.employee_name || '',
-        type: typeMap[item.work_status] || 'office',
-        date: item.work_date || '',
-        time: currentTime, // 使用当前时间
-        location: item.business_trip_location || '',
-        baseName: item.comment || '',
-        subsidy: item.business_trip_subsidy ? String(item.business_trip_subsidy) : '',
-        hasDingAttendance: !!(item.ding_attendance && item.ding_attendance.has_ding_attendance),
-        dingAttendance: item.ding_attendance || null,
-        holidayInfo: item.holiday_info || null,
-        overtime: item.overtime || null,
-        calendarStamp: item.calendar_stamp || ''
-      }
+      editForm
     });
   },
 
@@ -1853,19 +2260,195 @@ Page({
   },
 
   onEditDateChange(e) {
-    const nextDate = e.detail.value;
-    const calendarInfo = (this.data.attendanceMap && this.data.attendanceMap[nextDate]) || {};
-    this.setData({
-      'editForm.date': nextDate,
-      'editForm.holidayInfo': calendarInfo.holiday_info || {},
-      'editForm.calendarStamp': calendarInfo.calendar_stamp || ''
-    }, () => {
-      this.updateEditModalOvertimeCalc();
-    });
+    this.syncEditWorkDate(e.detail.value);
   },
 
   onEditTimeChange(e) {
     this.setData({ 'editForm.time': e.detail.value });
+  },
+
+  onEditCheckInTimeChange(e) {
+    const nextForm = Object.assign({}, this.data.editForm || {}, {
+      checkInTime: e.detail.value
+    });
+    this.setData(Object.assign({
+      'editForm.checkInTime': e.detail.value
+    }, this.buildEditFormDateTimeStatePatch(nextForm)), () => {
+      this.updateEditModalTimeCalc();
+    });
+  },
+
+  onEditCheckInDateChange(e) {
+    this.syncEditWorkDate(e.detail.value);
+  },
+
+  onEditCheckOutTimeChange(e) {
+    const nextForm = Object.assign({}, this.data.editForm || {}, {
+      checkOutTime: e.detail.value
+    });
+    this.setData(Object.assign({
+      'editForm.checkOutTime': e.detail.value
+    }, this.buildEditFormDateTimeStatePatch(nextForm)), () => {
+      this.updateEditModalTimeCalc();
+    });
+  },
+
+  onEditCheckOutDateChange(e) {
+    const nextDate = e.detail.value;
+    const nextForm = Object.assign({}, this.data.editForm || {}, {
+      checkOutDate: nextDate,
+      checkOutDayOffset: this.getCheckOutDayOffset(this.data.editForm.date, nextDate)
+    });
+    this.setData(Object.assign({
+      'editForm.checkOutDate': nextDate,
+      'editForm.checkOutDayOffset': nextForm.checkOutDayOffset
+    }, this.buildEditFormDateTimeStatePatch(nextForm)), () => {
+      this.updateEditModalTimeCalc();
+    });
+  },
+
+  onCheckOutDayOffsetTap(e) {
+    const offset = Number(e.currentTarget.dataset.value || 0);
+    const workDate = this.data.editForm.date;
+    const nextForm = Object.assign({}, this.data.editForm || {}, {
+      checkOutDayOffset: offset,
+      checkOutDate: this.buildCheckOutDateByOffset(workDate, offset)
+    });
+    this.setData(Object.assign({
+      'editForm.checkOutDayOffset': offset,
+      'editForm.checkOutDate': nextForm.checkOutDate
+    }, this.buildEditFormDateTimeStatePatch(nextForm)), () => {
+      this.updateEditModalTimeCalc();
+    });
+  },
+
+  onQuickCheckInTimeTap(e) {
+    const value = e.currentTarget.dataset.value;
+    if (!value) return;
+
+    const nextForm = Object.assign({}, this.data.editForm || {}, {
+      checkInTime: value
+    });
+    this.setData(Object.assign({
+      'editForm.checkInTime': value
+    }, this.buildEditFormDateTimeStatePatch(nextForm)), () => {
+      this.updateEditModalTimeCalc();
+    });
+  },
+
+  onQuickCheckOutTimeTap(e) {
+    const value = e.currentTarget.dataset.value;
+    if (!value) return;
+
+    const nextForm = Object.assign({}, this.data.editForm || {}, {
+      checkOutTime: value
+    });
+    this.setData(Object.assign({
+      'editForm.checkOutTime': value
+    }, this.buildEditFormDateTimeStatePatch(nextForm)), () => {
+      this.updateEditModalTimeCalc();
+    });
+  },
+
+  onEditCheckInDateTimeColumnChange(e) {
+    const form = this.data.editForm || {};
+    const state = this.buildDateTimePickerColumnState(
+      form.checkInDateTimeRange,
+      form.checkInDateTimeValue,
+      e.detail.column,
+      e.detail.value
+    );
+
+    this.setData({
+      'editForm.checkInDateTimeRange': state.range,
+      'editForm.checkInDateTimeValue': state.value
+    });
+  },
+
+  onEditCheckOutDateTimeColumnChange(e) {
+    const form = this.data.editForm || {};
+    const state = this.buildDateTimePickerColumnState(
+      form.checkOutDateTimeRange,
+      form.checkOutDateTimeValue,
+      e.detail.column,
+      e.detail.value
+    );
+
+    this.setData({
+      'editForm.checkOutDateTimeRange': state.range,
+      'editForm.checkOutDateTimeValue': state.value
+    });
+  },
+
+  onEditCheckInDateTimeChange(e) {
+    const form = this.data.editForm || {};
+    const selected = this.resolveDateTimePickerValue(form.checkInDateTimeRange, e.detail.value);
+    const isDateChanged = selected.date !== form.checkInDate;
+    const nextForm = Object.assign({}, form, {
+      checkInDate: selected.date,
+      checkInTime: selected.time
+    });
+    const nextData = {
+      'editForm.checkInDate': selected.date,
+      'editForm.checkInTime': selected.time
+    };
+
+    if (isDateChanged) {
+      const calendarInfo = (this.data.attendanceMap && this.data.attendanceMap[selected.date]) || {};
+      nextForm.date = selected.date;
+      nextForm.holidayInfo = calendarInfo.holiday_info || {};
+      nextForm.calendarStamp = calendarInfo.calendar_stamp || '';
+      nextForm.checkOutDate = this.buildCheckOutDateByOffset(selected.date, form.checkOutDayOffset);
+      nextData['editForm.date'] = nextForm.date;
+      nextData['editForm.holidayInfo'] = nextForm.holidayInfo;
+      nextData['editForm.calendarStamp'] = nextForm.calendarStamp;
+      nextData['editForm.checkOutDate'] = nextForm.checkOutDate;
+    }
+
+    this.setData(Object.assign(nextData, this.buildEditFormDateTimeStatePatch(nextForm)), () => {
+      this.updateEditModalTimeCalc();
+    });
+  },
+
+  onEditCheckOutDateTimeChange(e) {
+    const form = this.data.editForm || {};
+    const selected = this.resolveDateTimePickerValue(form.checkOutDateTimeRange, e.detail.value);
+    const nextForm = Object.assign({}, form, {
+      checkOutDate: selected.date,
+      checkOutTime: selected.time,
+      checkOutDayOffset: this.getCheckOutDayOffset(form.date, selected.date)
+    });
+
+    this.setData(Object.assign({
+      'editForm.checkOutDate': nextForm.checkOutDate,
+      'editForm.checkOutTime': nextForm.checkOutTime,
+      'editForm.checkOutDayOffset': nextForm.checkOutDayOffset
+    }, this.buildEditFormDateTimeStatePatch(nextForm)), () => {
+      this.updateEditModalTimeCalc();
+    });
+  },
+
+  onSyncEditDingTimeTap() {
+    const form = this.data.editForm || {};
+    const dingAttendance = form.dingAttendance || {};
+    const hasDingTime = this.hasDingCheckTime(dingAttendance);
+    if (!hasDingTime) {
+      showError('暂无钉钉打卡时间');
+      return;
+    }
+
+    const patch = this.buildEditFormDingTimePatch(dingAttendance, form.date);
+    if (!patch['editForm.checkInTime'] && !patch['editForm.checkOutTime']) {
+      showError('暂无可同步的钉钉时间');
+      return;
+    }
+
+    this.setData(Object.assign({
+      'editForm.hasDingAttendance': true
+    }, patch), () => {
+      this.updateEditModalTimeCalc();
+      showSuccess('已同步钉钉时间');
+    });
   },
 
   onEditLocationChange(e) {
@@ -1923,6 +2506,8 @@ Page({
       work_status: workStatus,
       work_date: form.date,
       put_date: form.date && form.time ? `${form.date} ${form.time}:00` : undefined,
+      check_in_time: form.checkInDate && form.checkInTime ? `${form.checkInDate} ${form.checkInTime}:00` : undefined,
+      check_out_time: form.checkOutDate && form.checkOutTime ? `${form.checkOutDate} ${form.checkOutTime}:00` : undefined,
       business_trip_location: form.baseName || '',
       comment: comment,
       business_trip_subsidy: parseFloat(form.subsidy) || 0
@@ -1970,6 +2555,10 @@ Page({
    * 删除打卡记录 - 打开确认弹窗
    */
   onDeleteRecord(e) {
+    if (mockData.showGuestModeTip('attendance')) {
+      return;
+    }
+
     const id = e.currentTarget.dataset.id;
     if (!id) return;
     this.setData({
@@ -2069,14 +2658,7 @@ Page({
    * 检查用户信息是否完善，完善后再跳转到历史页面
    */
   checkUserInfoBeforeHistory() {
-    // 游客模式：禁止访问历史页面
-    if (mockData.isGuestMode()) {
-      console.log('考勤历史-游客模式：需要登录');
-      wx.showToast({
-        title: '请先登录',
-        icon: 'none',
-        duration: 2000
-      });
+    if (mockData.showGuestModeTip('attendance')) {
       return;
     }
     
@@ -2493,6 +3075,10 @@ Page({
    * 跳转到漏打卡补交页面
    */
   goToMissingCheckin() {
+    if (mockData.showGuestModeTip('attendance')) {
+      return;
+    }
+
     const missedDays = Array.isArray(this.data.missedDays) ? this.data.missedDays : [];
     if (missedDays.length === 0) {
       wx.showToast({ title: '暂无漏打卡', icon: 'none' });
@@ -2569,52 +3155,9 @@ Page({
   loadCalendarAttendance(year, month) {
     const userInfo = this.data.currentUser;
     
-    // 优先检查是否为游客模式
+    // 未登录预览：日历结构保留，考勤映射为空。
     if (mockData.isGuestMode()) {
-      console.log(`日历考勤-游客模式：生成${year}年${month}月的mock数据`);
-      
-      // 生成游客模式的日历数据
-      const attendanceMap = {};
-      const today = new Date();
-      const currentYear = today.getFullYear();
-      const currentMonth = today.getMonth() + 1;
-      
-      // 只为当前月份生成数据
-      if (year === currentYear && month === currentMonth) {
-        const currentDay = today.getDate();
-        // 生成本月已过去的工作日考勤记录
-        for (let day = 1; day <= currentDay; day++) {
-          const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const dayOfWeek = new Date(year, month - 1, day).getDay();
-          
-          // 周末显示休息，工作日显示出勤
-          if (dayOfWeek === 0 || dayOfWeek === 6) {
-            attendanceMap[dateStr] = {
-              id: `guest_${dateStr}`, // 缓存记录ID
-              work_status: '休息',
-              icon: '🏠',
-              comment: '休息',
-              business_trip_subsidy: 0
-            };
-          } else {
-            attendanceMap[dateStr] = {
-              id: `guest_${dateStr}`, // 缓存记录ID
-              work_status: '公司上班',
-              icon: '🏢',
-              comment: '正常出勤',
-              business_trip_subsidy: 0
-            };
-          }
-        }
-      }
-      
-      console.log('游客模式：日历考勤映射', attendanceMap);
-      
-      this.setData({
-        attendanceMap: attendanceMap
-      });
-      
-      // 更新日历显示
+      this.setData({ attendanceMap: {} });
       this.updateCalendarDisplay();
       return;
     }
@@ -2837,6 +3380,10 @@ Page({
    * 点击日历日期
    */
   onCalendarDayTap(e) {
+    if (mockData.showGuestModeTip('attendance')) {
+      return;
+    }
+
     const { date, isMissed } = e.currentTarget.dataset;
     
     if (!date) {
@@ -2871,30 +3418,56 @@ Page({
       '加班': 'office'
     };
 
-    // 获取当前时间（HH:MM格式）
-    const now = new Date();
-    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const workDate = attendance.work_date || date;
+    const dingAttendance = this.normalizeDingAttendanceDisplay(attendance.ding_attendance || {}, workDate);
+    const timeRange = this.getAttendanceCheckTimeRange(Object.assign({}, attendance, { ding_attendance: dingAttendance }));
+    const overtime = attendance.overtime || {};
+    const overtimeHoursInput = String(
+      attendance.overtimeHours ||
+      overtime.effective_hours ||
+      dingAttendance.overtime_hours ||
+      0
+    );
+    const checkInDate = timeRange.checkInDate || workDate;
+    const checkOutDate = timeRange.checkOutDate || workDate;
+    const checkOutDayOffset = this.getCheckOutDayOffset(workDate, checkOutDate);
+    const editForm = {
+      id: attendance.id || attendance.record_id,
+      name: attendance.name || attendance.real_name || attendance.employee_name || this.data.currentUser?.real_name || '',
+      type: typeMap[attendance.work_status] || 'office',
+      date: workDate,
+      time: this.normalizeTimeText(attendance.put_date_time || attendance.submit_time) || '00:00',
+      location: attendance.business_trip_location || '',
+      baseName: attendance.comment || '',
+      subsidy: attendance.business_trip_subsidy ? String(attendance.business_trip_subsidy) : '',
+      hasDingAttendance: !!attendance.hasDingAttendance || this.hasDingCheckTime(dingAttendance),
+      dingAttendance,
+      holidayInfo: attendance.holiday_info || {},
+      overtime,
+      overtimeHoursInput,
+      overtimeHoursTouched: false,
+      checkInDate,
+      checkInTime: timeRange.checkInTime || '09:00',
+      checkOutDate,
+      checkOutTime: timeRange.checkOutTime || '18:00',
+      checkOutDayOffset,
+      timeCalc: null,
+      overtimeCalc: null,
+      calendarStamp: attendance.calendar_stamp || ''
+    };
+    Object.assign(editForm, this.buildEditFormDateTimeState(editForm));
+    editForm.timeCalc = this.buildTimeOvertimeCalc(editForm);
+    editForm.overtimeCalc = this.buildDayOvertimeCalc({
+      work_date: editForm.date,
+      holiday_info: editForm.holidayInfo,
+      overtime: editForm.overtime,
+      ding_attendance: editForm.dingAttendance,
+      overtimeHoursInput: editForm.overtimeHoursInput
+    });
 
     this.setData({
       showEditModal: true,
-      editForm: {
-        id: attendance.id || attendance.record_id,
-        name: attendance.name || attendance.real_name || attendance.employee_name || this.data.currentUser?.real_name || '',
-        type: typeMap[attendance.work_status] || 'office',
-        date: attendance.work_date || date,
-        time: currentTime, // 使用当前时间
-        location: attendance.business_trip_location || '',
-        baseName: attendance.comment || '',
-        subsidy: attendance.business_trip_subsidy ? String(attendance.business_trip_subsidy) : '',
-        hasDingAttendance: !!attendance.hasDingAttendance,
-        dingAttendance: attendance.ding_attendance || {},
-        holidayInfo: attendance.holiday_info || {},
-        overtime: attendance.overtime || {},
-        overtimeHoursInput: String(attendance.overtimeHours || (attendance.overtime && attendance.overtime.effective_hours) || (attendance.ding_attendance && attendance.ding_attendance.overtime_hours) || 0),
-        overtimeHoursTouched: false,
-        overtimeCalc: this.buildDayOvertimeCalc(attendance),
-        calendarStamp: attendance.calendar_stamp || ''
-      }
+      editForm
     });
 
     if (!this.data.salaryRateConfig.loaded && !this.data.salaryRateConfig.loading) {
@@ -2904,10 +3477,24 @@ Page({
 
   onSyncDingtalk() {
     if (this.data.syncingDingtalk) return;
-    if (mockData.isGuestMode() || this._isTestMode) {
+    if (mockData.showGuestModeTip('attendance')) {
+      return;
+    }
+    if (this._isTestMode) {
       showError('当前模式不支持同步');
       return;
     }
+	if (!this.data.canSyncDingtalk) {
+		wx.showModal({
+			title: '请先完成钉钉配置',
+			content: '需要验证本人钉钉企业和用户身份后才能同步',
+			confirmText: '去配置',
+			success: res => {
+				if (res.confirm) wx.navigateTo({ url: '/pages/admin/dingtalk-settings/index' });
+			}
+		});
+		return;
+	}
 
     const currentUser = this.data.currentUser || wx.getStorageSync('userInfo');
     if (!currentUser || !currentUser.real_name) {
@@ -2922,7 +3509,9 @@ Page({
       year: this.data.calendarYear,
       month: this.data.calendarMonth,
       name: currentUser.real_name,
-      source: 'openapi'
+      source: 'openapi',
+      include_calendar: true,
+      include_details: false
     })
       .then(res => {
         wx.hideLoading();
@@ -2939,7 +3528,48 @@ Page({
         }
 
         showSuccess('同步完成');
-        this.loadCalendarAttendance(this.data.calendarYear, this.data.calendarMonth);
+        const syncData = res && res.data ? res.data : null;
+        let hydratedFromResponse = false;
+        if (syncData && syncData.calendar && Array.isArray(syncData.calendar.days)) {
+          const attendanceMap = {};
+          syncData.calendar.days.forEach(record => {
+            const workDate = this.getAttendanceWorkDate(record);
+            if (!workDate) return;
+
+            const workStatus = record.work_status || record.WorkStatus || '';
+            const dingAttendance = record.ding_attendance || {};
+            const overtime = record.overtime || {};
+
+            attendanceMap[workDate] = {
+              id: record.id,
+              name: record.name || record.real_name || record.employee_name || currentUser.real_name,
+              work_date: workDate,
+              work_status: workStatus,
+              icon: this.getStatusIcon(workStatus),
+              comment: record.comment,
+              business_trip_subsidy: record.business_trip_subsidy,
+              hasAttendance: !!(record.id || workStatus),
+              ding_attendance: dingAttendance,
+              holiday_info: record.holiday_info || null,
+              calendar_stamp: record.calendar_stamp || '',
+              calendar_stamp_type: record.calendar_stamp_type || '',
+              overtime: overtime,
+              hasDingAttendance: !!dingAttendance.has_ding_attendance,
+              manualOvertimeOverride: !!(overtime.manual_override || dingAttendance.manual_override || record.manual_override),
+              overtimeHours: Number(overtime.effective_hours || dingAttendance.overtime_hours || 0)
+            };
+          });
+
+          this.setData({
+            attendanceMap,
+            calendarSummary: syncData.calendar.summary || null
+          });
+          this.updateCalendarDisplay();
+          hydratedFromResponse = true;
+        }
+        if (!hydratedFromResponse) {
+          this.loadCalendarAttendance(this.data.calendarYear, this.data.calendarMonth);
+        }
         this.loadRecentAttendance();
         this.loadTodayAttendance();
       })
@@ -2952,6 +3582,26 @@ Page({
           showCancel: false,
           confirmText: '知道了'
         });
+      });
+  },
+
+  goToAttendanceEntries() {
+    if (mockData.showGuestModeTip('attendance')) return;
+    wx.navigateTo({ url: '/pages/attendance/entries/index' });
+  },
+
+  loadDingtalkSyncAvailability(disabledMode) {
+    if (disabledMode || !wx.getStorageSync('openid')) {
+      this.setData({ canSyncDingtalk: false });
+      return;
+    }
+    API.attendance.getDingtalkSettings()
+      .then(res => {
+        const settings = res && res.data ? res.data : {};
+        this.setData({ canSyncDingtalk: settings.can_sync === true });
+      })
+      .catch(() => {
+        this.setData({ canSyncDingtalk: false });
       });
   },
 
@@ -3045,6 +3695,10 @@ Page({
    * 打开打卡模态框
    */
   onOpenCheckInModal() {
+    if (mockData.showGuestModeTip('submit')) {
+      return;
+    }
+
     if (this.data.todayCheckedIn) {
       return;
     }
@@ -3098,6 +3752,10 @@ Page({
    * 确认打卡
    */
   onConfirmCheckin() {
+    if (mockData.showGuestModeTip('submit')) {
+      return;
+    }
+
     const form = this.data.checkinForm;
     const currentUser = this.data.currentUser;
 

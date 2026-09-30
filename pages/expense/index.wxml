@@ -1,0 +1,177 @@
+<view class="expense-page">
+  <view class="expense-header">
+    <view class="header-back-btn" bindtap="goBack">
+      <text class="header-back-mark">‹</text>
+    </view>
+    <text class="header-title">报销管理</text>
+    <view class="header-add-btn" bindtap="openCreateModal">+</view>
+  </view>
+
+  <view class="expense-content">
+    <view class="month-row">
+      <picker mode="selector" range="{{monthOptions}}" range-key="label" value="{{monthIndex}}" bindchange="onMonthChange">
+        <view class="month-chip">{{monthOptions[monthIndex].label}}</view>
+      </picker>
+      <view class="refresh-btn {{refreshing ? 'refreshing' : ''}}" bindtap="refreshEntries">{{refreshing ? '刷新中' : '刷新'}}</view>
+    </view>
+
+    <view class="summary-card">
+      <view class="summary-card-top">
+        <text class="summary-title">本月报销概览</text>
+        <text class="summary-month">{{monthOptions[monthIndex].label}}</text>
+      </view>
+      <view class="summary-amount-row">
+        <text class="summary-currency">¥</text>
+        <text class="summary-amount">{{totalAmount}}</text>
+      </view>
+      <view class="summary-meta-row">
+        <view class="summary-meta-item">
+          <text class="summary-meta-label">条目数</text>
+          <text class="summary-meta-value">{{entries.length}}</text>
+        </view>
+        <view class="summary-divider"></view>
+        <view class="summary-meta-item">
+          <text class="summary-meta-label">审批中</text>
+          <text class="summary-meta-value">{{pendingCount}}</text>
+        </view>
+      </view>
+      <view class="summary-action-row">
+        <view class="summary-primary-btn" bindtap="exportSheet">
+          {{exporting ? '导出中...' : '生成报销表'}}
+        </view>
+        <view class="summary-secondary-btn" bindtap="openCreateModal">新增</view>
+      </view>
+    </view>
+
+    <view class="summary-card" wx:if="{{categoryStats.length > 0}}">
+      <view class="summary-card-top">
+        <text class="summary-title">分类统计</text>
+        <text class="summary-month" wx:if="{{topCategory}}">最高占比：{{topCategory.category}}</text>
+      </view>
+      <view class="category-highlight" wx:if="{{topCategory}}">
+        <text class="category-highlight-label">本月报销金额最多的分类</text>
+        <text class="category-highlight-name">{{topCategory.category}}</text>
+        <text class="category-highlight-amount">¥{{topCategory.amountDisplay}}</text>
+      </view>
+      <view class="category-stats-list">
+        <view class="category-stat-item" wx:for="{{categoryStats}}" wx:key="category">
+          <view class="category-stat-left">
+            <text class="category-stat-name">{{item.category}}</text>
+            <text class="category-stat-count">{{item.count}} 条</text>
+          </view>
+          <text class="category-stat-amount">¥{{item.amountDisplay}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section-title-row">
+      <text class="section-title">报销明细</text>
+    </view>
+
+    <view class="empty-state" wx:if="{{!loading && entries.length === 0}}">
+      <text class="empty-text">该月份暂无报销记录</text>
+    </view>
+
+    <view class="entry-list" wx:else>
+      <view class="entry-card" wx:for="{{entries}}" wx:key="id">
+        <view class="entry-main">
+          <view class="entry-info">
+            <view class="entry-top-row">
+              <text class="entry-desc">{{item.description}}</text>
+              <text class="entry-amount">¥{{item.amountDisplay}}</text>
+            </view>
+            <view class="entry-tags">
+              <text class="entry-tag">{{item.category}}</text>
+              <text class="entry-date">{{item.date}}</text>
+              <text class="entry-invoice" wx:if="{{item.invoiceNumber}}">#{{item.invoiceNumber}}</text>
+            </view>
+            <view class="entry-route" wx:if="{{item.startPoint || item.endPoint}}">
+              <view class="route-item" wx:if="{{item.startPoint}}">
+                <text class="route-label">起点</text>
+                <text class="route-value">{{item.startPoint}}</text>
+              </view>
+              <view class="route-divider" wx:if="{{item.startPoint && item.endPoint}}"></view>
+              <view class="route-item" wx:if="{{item.endPoint}}">
+                <text class="route-label">终点</text>
+                <text class="route-value">{{item.endPoint}}</text>
+              </view>
+            </view>
+            <view class="entry-bottom-row actions-only">
+              <view class="entry-actions">
+                <text class="entry-action edit-action" bindtap="openEditModal" data-entry="{{item}}">编辑</text>
+                <text class="entry-action delete-action" bindtap="deleteEntry" data-id="{{item.id}}">删除</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="modal-mask" wx:if="{{showModal}}" bindtap="closeModal">
+    <view class="modal-card" catchtap="stopPropagation">
+      <view class="modal-header">
+        <text class="modal-title">{{editing ? '编辑报销条目' : '添加报销记录'}}</text>
+        <view class="modal-close" bindtap="closeModal">✕</view>
+      </view>
+
+      <view class="modal-body">
+        <view class="form-group">
+          <text class="form-label">报销金额 (¥)</text>
+          <input class="form-input" type="digit" value="{{formData.amount}}" data-field="amount" bindinput="onInputChange" placeholder="0.00" placeholder-class="field-placeholder" />
+        </view>
+
+        <view class="form-row">
+          <view class="form-group half">
+            <text class="form-label">报销日期</text>
+            <picker mode="date" value="{{formData.date}}" bindchange="onDateChange">
+              <view class="form-picker">{{formData.date}}</view>
+            </picker>
+          </view>
+          <view class="form-group half">
+            <text class="form-label">费用类型</text>
+            <input class="form-input" value="{{formData.category}}" data-field="category" bindinput="onInputChange" placeholder="例如：交通" placeholder-class="field-placeholder" />
+          </view>
+        </view>
+
+        <view class="form-group">
+          <text class="form-label">费用说明</text>
+          <textarea class="form-textarea" value="{{formData.description}}" data-field="description" bindinput="onInputChange" placeholder="例如：打车费、办公用品" placeholder-class="field-placeholder" />
+        </view>
+
+        <view class="form-group">
+          <text class="form-label">发票号码</text>
+          <input class="form-input" value="{{formData.invoiceNumber}}" data-field="invoiceNumber" bindinput="onInputChange" placeholder="选填" placeholder-class="field-placeholder" />
+        </view>
+
+        <view class="form-group">
+          <view class="form-label-row">
+            <text class="form-label">所属项目名称</text>
+            <text class="project-loading" wx:if="{{loadingProjectOptions}}">读取中</text>
+          </view>
+          <input class="form-input" value="{{formData.projectName}}" data-field="projectName" bindinput="onInputChange" placeholder="选填，用于导出报销表" placeholder-class="field-placeholder" />
+          <view class="project-options" wx:if="{{projectOptions.length > 0}}">
+            <view class="project-option" wx:for="{{projectOptions}}" wx:key="*this" data-project="{{item}}" bindtap="selectProjectOption">{{item}}</view>
+          </view>
+          <text class="project-empty" wx:elif="{{!loadingProjectOptions}}">该月暂无可选项目，可手动填写</text>
+        </view>
+
+        <view class="form-row">
+          <view class="form-group half">
+            <text class="form-label">起点</text>
+            <input class="form-input" value="{{formData.startPoint}}" data-field="startPoint" bindinput="onInputChange" placeholder="选填" placeholder-class="field-placeholder" />
+          </view>
+          <view class="form-group half">
+            <text class="form-label">终点</text>
+            <input class="form-input" value="{{formData.endPoint}}" data-field="endPoint" bindinput="onInputChange" placeholder="选填" placeholder-class="field-placeholder" />
+          </view>
+        </view>
+      </view>
+
+      <view class="modal-footer">
+        <view class="footer-btn secondary-btn" bindtap="closeModal">取消</view>
+        <view class="footer-btn primary-btn" bindtap="saveEntry">{{editing ? '保存修改' : '确认添加'}}</view>
+      </view>
+    </view>
+  </view>
+</view>

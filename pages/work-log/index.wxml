@@ -1,0 +1,242 @@
+<view class="work-log-page">
+  <view class="work-log-header" style="padding-top: {{statusBarHeight}}px;">
+    <button class="header-icon-btn" bindtap="goBack" aria-label="返回">
+      <text class="header-back-mark">‹</text>
+    </button>
+    <text class="header-title">工作日志</text>
+    <view class="header-spacer"></view>
+  </view>
+
+  <view class="work-log-content">
+    <view class="summary-band">
+      <view class="summary-main">
+        <view class="hero-icon-shell">
+          <view class="hero-log-icon logbook-icon">
+            <view class="hero-log-line line-one"></view>
+            <view class="hero-log-line line-two"></view>
+            <view class="hero-log-line line-three"></view>
+          </view>
+        </view>
+        <view class="summary-copy">
+          <text class="summary-title">今日工作日志</text>
+          <text class="summary-date">{{currentDate}}</text>
+        </view>
+      </view>
+      <view class="summary-count">
+        <view class="counter-dots">
+          <view class="counter-dot dot-one"></view>
+          <view class="counter-dot dot-two"></view>
+          <view class="counter-dot dot-three"></view>
+        </view>
+        <text class="count-num">{{logs.length}}</text>
+        <text class="count-label">条记录</text>
+      </view>
+    </view>
+
+    <view class="editor-section">
+      <view class="attendance-area-row">
+        <view class="label-with-icon">
+          <view class="area-pin-icon area-icon">
+            <view class="area-pin-head"></view>
+            <view class="area-pin-base"></view>
+          </view>
+          <text class="attendance-area-label">今日区域</text>
+        </view>
+        <text class="attendance-area-value">
+          {{attendanceLoading ? '读取中...' : (attendanceArea || '今日未打卡')}}
+        </text>
+      </view>
+
+      <view class="editor-body">
+        <view class="type-switch">
+          <view
+            wx:for="{{typeOptions}}"
+            wx:key="value"
+            class="type-option type-{{item.value}} {{logType === item.value ? 'active' : ''}}"
+            data-value="{{item.value}}"
+            bindtap="onTypeSelect"
+          >
+            <view class="type-icon type-icon-{{item.value}}">
+              <view class="type-mark mark-one"></view>
+              <view class="type-mark mark-two"></view>
+            </view>
+            <text>{{item.label}}</text>
+          </view>
+        </view>
+
+        <view class="plan-editor" wx:if="{{logType === 'plan'}}">
+          <input
+            class="plan-target-input"
+            value="{{planTarget}}"
+            bindinput="onPlanTargetInput"
+            maxlength="500"
+            placeholder="输入计划目标或要解决的问题"
+            placeholder-class="field-placeholder"
+          />
+          <textarea
+            class="plan-result-textarea"
+            value="{{planResult}}"
+            bindinput="onPlanResultInput"
+            maxlength="2000"
+            placeholder="完成计划时填写成果或问题总结"
+            placeholder-class="field-placeholder"
+            auto-height
+          ></textarea>
+          <button
+            wx:if="{{editingPlanId}}"
+            class="complete-plan-btn"
+            bindtap="onCompleteEditingPlan"
+            disabled="{{submitting}}"
+          >
+            标记完成
+          </button>
+        </view>
+
+        <textarea
+          wx:else
+          class="log-textarea"
+          value="{{content}}"
+          bindinput="onContentInput"
+          maxlength="2000"
+          placeholder="随时记录今天完成的事、遇到的问题，或明天/后续计划..."
+          placeholder-class="field-placeholder"
+          auto-height
+        ></textarea>
+
+        <view class="editor-footer">
+          <text class="char-count">{{logType === 'plan' ? ((planTarget.length || 0) + '/500') : ((content.length || 0) + '/2000')}}</text>
+          <view class="editor-actions">
+            <button class="cancel-btn" wx:if="{{editingId || editingPlanId}}" bindtap="onCancelEdit">取消</button>
+            <button class="primary-btn" bindtap="onSubmit" disabled="{{submitting}}">
+              <view class="add-btn-icon">
+                <view class="add-line horizontal"></view>
+                <view class="add-line vertical"></view>
+              </view>
+              <text>{{submitting ? '处理中...' : (logType === 'plan' ? (editingPlanId ? '保存计划' : '添加计划') : (editingId ? '保存记录' : '添加记录'))}}</text>
+            </button>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="action-row">
+      <button class="ghost-btn icon-btn" bindtap="refreshAll" disabled="{{loading}}">
+        <view class="refresh-icon">
+          <view class="refresh-arrow-head"></view>
+        </view>
+        <text>刷新</text>
+      </button>
+      <!-- 管理员汇总发送入口暂不在用户小程序展示。 -->
+      <button wx:if="{{false && canSendSummary}}" class="send-btn" bindtap="onSendSummary" disabled="{{sending}}">
+        <view class="send-icon">
+          <view class="send-wing"></view>
+        </view>
+        <text>{{sending ? '发送中...' : '发送今日汇总'}}</text>
+      </button>
+    </view>
+
+    <view class="preview-section" wx:if="{{false && canSendSummary && summary}}">
+      <view class="preview-header" bindtap="toggleSummary">
+        <view class="section-heading-title">
+          <view class="preview-icon">
+            <view class="preview-ring"></view>
+            <view class="preview-dot"></view>
+          </view>
+          <text class="section-title">20:00 汇总预览</text>
+        </view>
+        <view class="preview-meta-row">
+          <text class="section-meta">{{summary.count || 0}} 条</text>
+          <text class="collapse-mark">{{showSummary ? '▲' : '▼'}}</text>
+        </view>
+      </view>
+      <view class="summary-preview-wrap" wx:if="{{showSummary}}">
+        <text class="summary-preview">{{summary.message}}</text>
+      </view>
+    </view>
+
+    <view class="plan-section">
+      <view class="section-heading">
+        <view class="section-heading-title">
+          <view class="plan-list-icon">
+            <view class="plan-list-check"></view>
+          </view>
+          <text class="section-title">计划列表</text>
+        </view>
+        <text class="section-meta plan-meta">{{plans.length || 0}} 项</text>
+      </view>
+
+      <view class="empty-state" wx:if="{{!loading && plans.length === 0}}">
+        <view class="empty-plan-icon">
+          <view class="empty-calendar-line top"></view>
+          <view class="empty-calendar-line middle"></view>
+        </view>
+        <text class="empty-title">暂无计划，点击上方添加吧~</text>
+      </view>
+
+      <view
+        wx:for="{{plans}}"
+        wx:key="id"
+        class="plan-item {{item.status === 'completed' ? 'completed' : 'pending'}}"
+      >
+        <view class="plan-main-row">
+          <view
+            class="plan-check {{item.status === 'completed' ? 'checked' : ''}}"
+            data-item="{{item}}"
+            bindtap="onTogglePlan"
+          >
+            <text wx:if="{{item.status === 'completed'}}">✓</text>
+          </view>
+          <view class="plan-main">
+            <text class="plan-target">{{item.target}}</text>
+            <text class="plan-state">{{item.status === 'completed' ? '已完成' : '待完成'}}</text>
+            <text class="plan-result" wx:if="{{item.result_summary}}">{{item.result_summary}}</text>
+          </view>
+        </view>
+        <view class="log-actions">
+          <text class="edit-link" data-item="{{item}}" bindtap="onEditPlan">编辑</text>
+          <text class="delete-link" data-id="{{item.id}}" bindtap="onDeletePlan">删除</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="log-section">
+      <view class="section-heading log-heading">
+        <view class="section-heading-title">
+          <view class="note-list-icon">
+            <view class="note-list-line line-one"></view>
+            <view class="note-list-line line-two"></view>
+          </view>
+          <text class="section-title">零碎记录</text>
+        </view>
+      </view>
+
+      <view class="empty-state" wx:if="{{!loading && logs.length === 0}}">
+        <view class="empty-record-icon">
+          <view class="empty-record-fold"></view>
+          <view class="empty-record-line one"></view>
+          <view class="empty-record-line two"></view>
+        </view>
+        <text class="empty-title">还没有记录，快来添加吧~</text>
+      </view>
+
+      <view
+        wx:for="{{logs}}"
+        wx:key="id"
+        class="log-item {{item.log_type || 'work'}}"
+      >
+        <view class="log-item-header">
+          <view class="log-type-badge {{item.log_type === 'plan' ? 'badge-plan' : item.log_type === 'blocker' ? 'badge-blocker' : item.log_type === 'other' ? 'badge-other' : 'badge-work'}}">
+            <view class="badge-dot"></view>
+            <text>{{item.log_type === 'plan' ? '计划' : item.log_type === 'blocker' ? '阻塞' : item.log_type === 'other' ? '其他' : '工作'}}</text>
+          </view>
+          <text class="log-time">{{item.created_at}}</text>
+        </view>
+        <text class="log-content">{{item.content}}</text>
+        <view class="log-actions">
+          <text class="edit-link" data-item="{{item}}" bindtap="onEdit">编辑</text>
+          <text class="delete-link" data-id="{{item.id}}" bindtap="onDelete">删除</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

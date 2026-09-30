@@ -110,7 +110,7 @@
 
 <!-- 进度弹窗 -->
 <view class="progress-overlay" wx:if="{{isSubmitting}}">
-  <view class="progress-card" catchtap="">
+  <view class="progress-card" catchtap="onStopPropagation">
     <text class="progress-title">正在提交申请</text>
     <text class="progress-desc">正在处理：{{currentProcessingDate}}</text>
     <view class="progress-bar-wrap">
@@ -125,7 +125,7 @@
 
 <!-- 结果弹窗 -->
 <view class="result-overlay" wx:if="{{showResult}}" bindtap="onCloseResult">
-  <view class="result-card" catchtap="">
+  <view class="result-card" catchtap="onStopPropagation">
     <view class="result-close" catchtap="onCloseResult">
       <image class="result-close-icon" src="/assets/icons/close.png" mode="aspectFit"/>
     </view>

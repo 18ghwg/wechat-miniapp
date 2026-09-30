@@ -22,6 +22,18 @@
         <text class="form-label">任务描述</text>
         <textarea class="form-textarea-macaron disabled" value="{{taskData.task_description}}" disabled maxlength="500" />
       </view>
+
+      <view class="form-item" wx:if="{{taskData.func_name === 'send_daily_work_log_summary'}}">
+        <text class="form-label">发送目标群聊</text>
+        <input
+          class="form-input-macaron"
+          value="{{taskData.target_group}}"
+          bindinput="onInputChange"
+          data-field="target_group"
+          placeholder="输入微信群聊名称"
+        />
+        <text class="form-hint">工作日志汇总将发送到这个微信群聊</text>
+      </view>
     </view>
     
     <!-- 触发类型选择 -->

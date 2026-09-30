@@ -20,10 +20,10 @@ function recordFeatureUsage(featureKey, featureName, featureIcon = '') {
     const testMode = testModeManager.isGlobalTestMode();
     const isGuest = mockData.isGuestMode();
     
-    // �检查是否为测试账号（openid包含test）
+    // 检查是否为测试账号（openid 包含 test）
     const isTestAccount = openid && openid.includes('test');
     
-    // �未登录、测试账号、测试模式或体验模式下都不记录
+    // 未登录、测试账号、测试模式或体验模式下都不记录
     if (!openid || testMode || isGuest || isTestAccount) {
       const reason = !openid ? '未登录' : 
                      (isGuest ? '体验模式' : 
@@ -71,10 +71,10 @@ function getFrequentFeatures(limit = 6, minUsageCount = 3, days = 30) {
     const testMode = testModeManager.isGlobalTestMode();
     const isGuest = mockData.isGuestMode();
     
-    // �检查是否为测试账号
+    // 检查是否为测试账号
     const isTestAccount = openid && openid.includes('test');
     
-    // �未登录、测试账号、测试模式或体验模式下都不获取
+    // 未登录、测试账号、测试模式或体验模式下都不获取
     if (!openid || testMode || isGuest || isTestAccount) {
       const reason = !openid ? '未登录' : 
                      (isGuest ? '体验模式' : 
@@ -94,7 +94,7 @@ function getFrequentFeatures(limit = 6, minUsageCount = 3, days = 30) {
     request('/feature-usage/frequent', 'GET', params)
       .then(res => {
         if (res.code === 200) {
-          console.log(`[Feature Usage] 获取�${res.data.length} 个常用功能`);
+          console.log(`[Feature Usage] 获取到 ${res.data.length} 个常用功能`);
           resolve(res.data || []);
         } else {
           console.warn(`[Feature Usage] 获取常用功能失败: ${res.message}`);
@@ -118,10 +118,10 @@ function getAvailableFeatures() {
     const testMode = testModeManager.isGlobalTestMode();
     const isGuest = mockData.isGuestMode();
     
-    // �检查是否为测试账号
+    // 检查是否为测试账号
     const isTestAccount = openid && openid.includes('test');
     
-    // �未登录、测试账号、测试模式或体验模式下都不获取
+    // 未登录、测试账号、测试模式或体验模式下都不获取
     if (!openid || testMode || isGuest || isTestAccount) {
       const reason = !openid ? '未登录' : 
                      (isGuest ? '体验模式' : 
@@ -138,7 +138,7 @@ function getAvailableFeatures() {
     request('/feature-usage/available', 'GET', params)
       .then(res => {
         if (res.code === 200) {
-          console.log(`[Feature Usage] 获取�${res.data.length} 个可用功能`);
+          console.log(`[Feature Usage] 获取到 ${res.data.length} 个可用功能`);
           resolve(res.data || []);
         } else {
           console.warn(`[Feature Usage] 获取可用功能失败: ${res.message}`);
@@ -162,10 +162,10 @@ function getUserUsageStatistics() {
     const testMode = testModeManager.isGlobalTestMode();
     const isGuest = mockData.isGuestMode();
     
-    // �检查是否为测试账号
+    // 检查是否为测试账号
     const isTestAccount = openid && openid.includes('test');
     
-    // �未登录、测试账号、测试模式或体验模式下都不获取
+    // 未登录、测试账号、测试模式或体验模式下都不获取
     if (!openid || testMode || isGuest || isTestAccount) {
       const reason = !openid ? '未登录' : 
                      (isGuest ? '体验模式' : 

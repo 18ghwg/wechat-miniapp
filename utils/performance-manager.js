@@ -40,9 +40,9 @@ class PerformanceManager {
    */
   setupMemoryWarningListener() {
     try {
-      // 检�API 是否存在（wept 环境不支持）
+      // 检查 API 是否存在（wept 环境不支持）
       if (typeof wx.onMemoryWarning !== 'function') {
-        console.warn('当前环境不支�wx.onMemoryWarning (wept 环境)');
+        console.warn('当前环境不支持 wx.onMemoryWarning（wept 环境）');
         return;
       }
       
@@ -104,29 +104,25 @@ class PerformanceManager {
       const testModeStatus = testModeManager.getTestModeStatus();
       const testModeInfo = this.formatTestModeInfo(testModeStatus);
       
-      // 获取运行环境
-      const isDevEnv = wx.getDeviceInfo().platform === 'devtools';
-      const envInfo = isDevEnv ? '�开发环境' : '�生产环境';
+      const envInfo = '生产环境';
       
       // 获取页面信息
       const pageInfo = this.getPageInfo(pagePath);
       
-      console.log(`�页面路由: ${pagePath} | ${pageInfo} | 用户: ${userLevel} | ${testModeInfo} | ${envInfo}`);
+      console.log(`页面路由: ${pagePath} | ${pageInfo} | 用户: ${userLevel} | ${testModeInfo} | ${envInfo}`);
     } catch (error) {
-      console.warn('�获取用户状态失败:', error);
+      console.warn('获取用户状态失败:', error);
       // 降级处理：至少打印基本信息
       try {
         const userInfo = wx.getStorageSync('userInfo');
         const openid = wx.getStorageSync('openid');
         const userLevel = this.getUserLevel(userInfo, openid);
         const pageInfo = this.getPageInfo(pagePath);
-        const isDevEnv = wx.getDeviceInfo().platform === 'devtools';
-        const envInfo = isDevEnv ? '�开发环境' : '�生产环境';
-        console.log(`�页面路由: ${pagePath} | ${pageInfo} | 用户: ${userLevel} | 测试模式: ⚠�检测失�| ${envInfo}`);
+        const envInfo = '生产环境';
+        console.log(`页面路由: ${pagePath} | ${pageInfo} | 用户: ${userLevel} | 测试模式: ⚠检测失败 | ${envInfo}`);
       } catch (fallbackError) {
-        const isDevEnv = wx.getDeviceInfo().platform === 'devtools';
-        const envInfo = isDevEnv ? '�开发环境' : '�生产环境';
-        console.log(`�页面路由: ${pagePath} | 页面信息: �| 用户: �未�| 测试模式: �未�| ${envInfo}`);
+        const envInfo = '生产环境';
+        console.log(`页面路由: ${pagePath} | 页面信息: 未知 | 用户: 未知 | 测试模式: 未知 | ${envInfo}`);
       }
     }
   }
@@ -137,16 +133,16 @@ class PerformanceManager {
   getPageInfo(pagePath) {
     // 解析页面路径，获取页面类型信息
     const pageMap = {
-      'pages/home/home': '�首页',
-      'pages/electric/index': '�电费查询',
-      'pages/electric/history/index': '�电费历史',
-      'pages/electric/account-manage/index': '�账号管理',
-      'pages/attendance/index': '�考勤管理',
-      'pages/attendance/history/index': '�考勤历史',
-      'pages/announcement/manage': '�公告管理',
-      'pages/admin/miniprogram-users/index': '�用户管理',
-      'pages/usercenter/index': '�用户中心',
-      'pages/login/index': '�登录页面',
+      'pages/home/home': '首页',
+      'pages/electric/index': '电费查询',
+      'pages/electric/history/index': '电费历史',
+      'pages/electric/account-manage/index': '账号管理',
+      'pages/attendance/index': '考勤管理',
+      'pages/attendance/history/index': '考勤历史',
+      'pages/announcement/manage': '公告管理',
+      'pages/admin/miniprogram-users/index': '用户管理',
+      'pages/usercenter/index': '用户中心',
+      'pages/login/index': '登录页面',
       'pages/user/bind/index': '🔗 账号绑定'
     };
     
@@ -174,37 +170,37 @@ class PerformanceManager {
    * 获取用户等级描述
    */
   getUserLevel(userInfo, openid) {
-    // 检查是否已登录：需要同时�userInfo �openid
+    // 检查是否已登录：需要同时有 userInfo 和 openid
     const isLoggedIn = this.checkLoginStatus(userInfo, openid);
     
     if (!isLoggedIn) {
-      return '�未登录';
+      return '未登录';
     }
     
     // 检查管理员权限（多种可能的字段）
     if (this.isAdminUser(userInfo)) {
-      return '�管理员';
+      return '管理员';
     }
     
-    return '�普通用户';
+    return '普通用户';
   }
   
   /**
    * 检查用户登录状态
    */
   checkLoginStatus(userInfo, openid) {
-    // 基本检查：必须�openid
+    // 基本检查：必须有 openid
     if (!openid) {
       return false;
     }
     
-    // 如果�userInfo，检查关键字段
+    // 如果有 userInfo，检查关键字段
     if (userInfo) {
       // 有用户基本信息就认为已登录
       return !!(userInfo.id || userInfo.nickname || userInfo.openid);
     }
     
-    // 只�openid 也可以认为是登录状态（可能是登录中）
+    // 只有 openid 也可以认为是登录状态（可能是登录中）
     return true;
   }
   
@@ -220,7 +216,13 @@ class PerformanceManager {
       userInfo.is_admin ||
       userInfo.user_level === 'admin' ||
       userInfo.web_user_level === 'admin' ||
-      (userInfo.permissions && userInfo.permissions.includes('admin'))
+      (Array.isArray(userInfo.permissions) && userInfo.permissions.some(perm => {
+        if (typeof perm === 'string') {
+          return perm.toLowerCase() === 'admin';
+        }
+        const code = perm && (perm.code || perm.permission_code);
+        return code && String(code).toLowerCase() === 'admin';
+      }))
     );
   }
   
@@ -228,13 +230,13 @@ class PerformanceManager {
    * 格式化测试模式信息
    */
   formatTestModeInfo(testModeStatus) {
-    // 防御性编程：处�testModeStatus 为空或异常的情况
+    // 防御性编程：处理 testModeStatus 为空或异常的情况
     if (!testModeStatus || typeof testModeStatus.isTestMode === 'undefined') {
-      return '测试模式: ⚠�检测异常';
+      return '测试模式: ⚠检测异常';
     }
-    
+
     if (!testModeStatus.isTestMode) {
-      return '测试模式: �关�(真实数据)';
+      return '测试模式: 关闭（真实数据）';
     }
     
     let modeType = '';
@@ -255,7 +257,7 @@ class PerformanceManager {
         break;
     }
     
-    return `测试模式: �开�(${emoji} ${modeType})`;
+    return `测试模式: 开(${emoji} ${modeType})`;
   }
 
   /**

@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "钉钉考勤设置",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#FFF9F2",
+  "navigationBarBackgroundColor": "#FFF9F2",
+  "navigationBarTextStyle": "black",
+  "backgroundTextStyle": "dark",
+  "usingComponents": {}
+}

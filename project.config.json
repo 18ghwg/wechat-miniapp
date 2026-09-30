@@ -1,7 +1,16 @@
 {
   "description": "项目配置文件，详见文档：https://developers.weixin.qq.com/miniprogram/dev/devtools/projectconfig.html",
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "type": "folder",
+        "value": "screenshots"
+      },
+      {
+        "type": "file",
+        "value": "出差日历logo.png"
+      }
+    ],
     "include": []
   },
   "setting": {
@@ -53,7 +62,7 @@
     "disableSWC": true
   },
   "compileType": "miniprogram",
-  "libVersion": "3.10.1",
+  "libVersion": "3.14.3",
   "appid": "wx215d5c0f12d30adf",
   "projectname": "wechat-management-tool",
   "simulatorType": "wechat",

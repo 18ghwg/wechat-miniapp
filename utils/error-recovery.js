@@ -164,16 +164,16 @@ class ErrorRecoveryManager {
    * 设置全局错误处理
    */
   setupGlobalErrorHandling() {
-    // 监听小程序错误（检�API 是否存在，wept 环境不支持）
+    // 监听小程序错误（检查 API 是否存在，wept 环境不支持）
     if (typeof wx.onError === 'function') {
       wx.onError((error) => {
         this.handleError(error, { source: 'wx.onError' });
       });
     } else {
-      console.warn('当前环境不支�wx.onError (wept 环境)');
+      console.warn('当前环境不支持 wx.onError (wept 环境)');
     }
 
-    // 监听未处理的Promise rejection（检�API 是否存在）
+    // 监听未处理的 Promise rejection（检查 API 是否存在）
     if (typeof wx.onUnhandledRejection === 'function') {
       wx.onUnhandledRejection((res) => {
         this.handleError(res.reason, { 
@@ -182,7 +182,7 @@ class ErrorRecoveryManager {
         });
       });
     } else {
-      console.warn('当前环境不支�wx.onUnhandledRejection (wept 环境)');
+      console.warn('当前环境不支持 wx.onUnhandledRejection (wept 环境)');
     }
 
     // 拦截console.error
@@ -318,7 +318,7 @@ class ErrorRecoveryManager {
           }
         }
       } catch (strategyError) {
-        console.error(`恢复策�${strategyName} 执行失败:`, strategyError);
+        console.error(`恢复策略 ${strategyName} 执行失败:`, strategyError);
       }
     }
     

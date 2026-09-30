@@ -67,6 +67,23 @@
           <view class="deco-circle deco-circle-2"></view>
         </view>
       </view>
+
+      <!-- 报销管理卡片 -->
+      <view class="feature-card expense-card card-enter card-enter-delay-3" bindtap="goToExpense">
+        <view class="card-content">
+          <view class="card-icon-wrapper">
+            <view class="card-icon-svg">
+              <view class="icon-zap-card">
+                <view class="zap-bolt-card"></view>
+              </view>
+            </view>
+          </view>
+          <text class="card-title">报销管理</text>
+          <text class="card-desc">提交报销记录并导出报销表</text>
+          <view class="deco-circle deco-circle-1"></view>
+          <view class="deco-circle deco-circle-2"></view>
+        </view>
+      </view>
     </view>
 
     <!-- 底部提示 -->

@@ -5,10 +5,37 @@ const { chartOptimizer } = require('../../utils/chart-optimizer');
 const { performanceMonitor, PERF_TYPES } = require('../../utils/performance-monitor');
 const { miniprogramInfo } = require('../../utils/miniprogram-info');
 const { isDevtools } = require('../../utils/system-info');
-const mockData = require('../../utils/mock-data'); // �新增：引入mock数据工具
+const mockData = require('../../utils/mock-data'); // 新增：引入 mock 数据工具
+const { enableShareMenu } = require('../../utils/share');
 
-// ===== 性能优化：预编译正则表达式和常�=====
+// ===== 性能优化：预编译正则表达式和常量 =====
 const PLACEHOLDER_STRINGS = new Set(['', '未查询', '未更新', '未知', 'Unknown']);
+
+const CHART_COLORS = {
+  peach: '#FF9F43',
+  mint: '#B9FBC0',
+  pink: '#FFB3BA',
+  lavender: '#E0BBE4',
+  blue: '#98F5E1',
+  yellow: '#FFD93D',
+  foreground: '#5E4E3E',
+  background: '#fef9f3',
+  gridLine: 'rgba(94, 78, 62, 0.1)',
+  axisLine: 'rgba(94, 78, 62, 0.2)'
+};
+const CHART_LINE_COLOR_KEYS = ['peach', 'mint', 'pink', 'lavender', 'blue', 'yellow'];
+
+function resolveChartColors(candidate = {}) {
+  return {
+    ...CHART_COLORS,
+    ...(candidate || {})
+  };
+}
+
+function buildChartLineColors(candidate) {
+  const colors = resolveChartColors(candidate);
+  return CHART_LINE_COLOR_KEYS.map(key => colors[key]);
+}
 
 // 预编译正则表达式（避免每次调用时重新编译）
 const REGEX_CURRENCY = /[¥￥元]/g;
@@ -77,7 +104,7 @@ const hasValidHistoryRecord = (raw = {}) => {
   return true;
 };
 
-// ===== 性能优化：提取格式化函数到外部（避免重复创建�=====
+// ===== 性能优化：提取格式化函数到外部（避免重复创建） =====
 
 /**
  * 格式化金额
@@ -180,6 +207,8 @@ function normalizeHistoryItem(raw = {}) {
   // 解析数值（用于图表计算）
   const dailyUsageValue = getFirstAvailable(raw, FIELD_MAP.dailyUsage);
   const balanceNumValue = getFirstAvailable(raw, FIELD_MAP.balanceNum);
+  const source = raw.source || raw.Source || raw.data_source || '';
+  const isPhysical = source === 'physical' || source === 'physical_meter' || Boolean(raw.meter_sn || raw.SerialNumber);
 
   return {
     id: raw.id || `${roomName}_${checkTime}`,
@@ -194,7 +223,53 @@ function normalizeHistoryItem(raw = {}) {
     daily_date: lastDailyDate || (checkTime ? checkTime.split(' ')[0] : ''),
     account_number: roomName,
     daily_usage: parseNumericValue(dailyUsageValue, REGEX_UNIT_CLEAN),
-    balance_num: parseNumericValue(balanceNumValue, REGEX_CURRENCY_CLEAN)
+    balance_num: parseNumericValue(balanceNumValue, REGEX_CURRENCY_CLEAN),
+    source: isPhysical ? 'physical' : 'grid',
+    is_physical: isPhysical,
+    meter_sn: raw.meter_sn || raw.SerialNumber || '',
+    record_count: raw.record_count || 0,
+    usage_label: '日用电量',
+    balance_label: isPhysical ? '月用电量' : '账户余额',
+    balance_prefix: isPhysical ? '' : '¥',
+    balance_unit: isPhysical ? ' kWh' : ''
+  };
+}
+
+function normalizeElectricSource(source) {
+  return source === 'physical' || source === 'physical_meter' ? 'physical' : 'grid';
+}
+
+function buildDisplayAmount(value) {
+  const formatted = formatAmount(value);
+  return formatted === '--' ? '0' : formatted;
+}
+
+function buildSelectorAccountFromHousehold(household = {}) {
+  const accountNo = household.account_number || household.room_name || household.account_name || '未知户号';
+  const ownerName = household.owner_name || household.account_name || '';
+  const address = household.address || household.room_name || accountNo;
+  const balanceValue = getFirstAvailable(household, ['balance_num', 'balance']);
+  const balance = parseNumericValue(balanceValue, REGEX_CURRENCY_CLEAN);
+  const monthCharge = getFirstAvailable(household, ['month_charge', 'last_month_cost']);
+  const monthUsage = getFirstAvailable(household, ['month_usage', 'current_month_power']);
+  const dailyUsage = getFirstAvailable(household, ['last_daily_usage', 'today_power']);
+  const dailyDate = getFirstAvailable(household, ['last_daily_date', 'latest_date', 'daily_date']);
+  const yearPower = getFirstAvailable(household, ['year_total_power', 'year_power']);
+  const yearCost = getFirstAvailable(household, ['year_total_cost', 'year_cost']);
+
+  return {
+    id: accountNo,
+    address,
+    accountNo,
+    ownerName,
+    balance,
+    balanceText: buildDisplayAmount(balance),
+    dailyUsageText: formatUsage(dailyUsage),
+    monthUsageText: formatUsage(monthUsage),
+    monthChargeText: buildDisplayAmount(monthCharge),
+    yearPowerText: formatUsage(yearPower),
+    yearCostText: buildDisplayAmount(yearCost),
+    latestDate: dailyDate || '--'
   };
 }
 
@@ -203,7 +278,16 @@ Page({
     pageAnimationClass: '',
     cardAnimationClass: '',
     electricData: null,
+    activeDataSource: 'grid',
+    activeDataSourceLabel: '电网数据',
+    sourceTabs: [
+      { key: 'grid', label: '电网数据' },
+      { key: 'physical', label: '实体电表' }
+    ],
+    lastQueryWasFallback: false,
+    lastQueryErrorMessage: '',
     historyData: [],
+    chartData: [],
     queryLoading: false,
     historyLoading: false,
     lastQueryTime: null,
@@ -229,11 +313,11 @@ Page({
     usageTooltip: { show: false, x: 0, y: 0, date: '', value: '', unit: '度' },
     balanceTooltip: { show: false, x: 0, y: 0, date: '', value: '', unit: '元' },
     
-    // �新增：游客模式
+    // 新增：游客模式
     isGuest: false,  // 是否为游客模式
     showGuestBanner: false,  // 是否显示游客模式横幅
     
-    // �公告弹窗相关
+    // 公告弹窗相关
     showNoticeModal: false,
     noticeModalList: [],
     
@@ -248,25 +332,56 @@ Page({
     meterStats: { total: 0, online: 0, offline: 0 }
   },
 
-  // ========== 图表交互数据缓�==========
+  // ========== 图表交互数据缓存 ==========
   _usageChartPoints: [],      // 用电量图表的点坐标缓存
   _balanceChartPoints: [],    // 余额图表的点坐标缓存
   _usageChartPadding: null,   // 用电量图表的padding
   _balanceChartPadding: null, // 余额图表的padding
 
-  // ========== 性能优化：权限判断缓�==========
+  // ========== 性能优化：权限判断缓存 ==========
   _adminCache: null,           // 权限判断缓存
   _adminCacheUserId: null,     // 缓存对应的用户ID
   _isTestMode: false,          // 测试模式状态缓存
-  _isGuestMode: false,         // �游客模式状态缓存
+  _isGuestMode: false,         // 游客模式状态缓存
+
+  getDataSourceLabel(source) {
+    return normalizeElectricSource(source) === 'physical' ? '实体电表数据' : '电网数据';
+  },
+
+  getActiveHistorySource() {
+    return normalizeElectricSource(this.data.activeDataSource);
+  },
+
+  getChartLineColors() {
+    return buildChartLineColors(this._chartColors);
+  },
+
+  onSwitchDataSource(e) {
+    const source = normalizeElectricSource(e.currentTarget.dataset.source);
+    if (source === this.getActiveHistorySource()) {
+      return;
+    }
+
+    this.setData({
+      activeDataSource: source,
+      activeDataSourceLabel: this.getDataSourceLabel(source),
+      historyData: [],
+      chartData: [],
+      showUsageChart: false,
+      showBalanceChart: false
+    });
+
+    this.loadHistoryData();
+    this.loadChartData();
+  },
 
   onLoad() {
-    // ===== 关键修复：在onLoad时立即缓存测试模式和游客模式状�=====
+    // ===== 关键修复：在 onLoad 时立即缓存测试模式和游客模式状态 =====
     this._isTestMode = testModeManager.isTestMode();
     this._isGuestMode = mockData.isGuestMode();
-    console.log(`�电费查询页面加载，测试模式: ${this._isTestMode}, 游客模式: ${this._isGuestMode}`);
+    console.log(`[电费查询] 页面加载，测试模式: ${this._isTestMode}, 游客模式: ${this._isGuestMode}`);
     
-    // �设置游客模式状态到data
+    // 设置游客模式状态到 data
     this.setData({ 
       isGuest: this._isGuestMode 
     });
@@ -284,19 +399,10 @@ Page({
     this.loadPhysicalMeters();
     this.startMeterPolling();
     
-    // �检查是否首次启动，如果是则显示公告弹窗
+    // 检查是否首次启动，如果是则显示公告弹窗
     this.checkAndShowFirstLaunchAnnouncement();
     
-    // 显示分享菜单（包含朋友圈分享）
-    wx.showShareMenu({
-      withShareTicket: true,
-      success: (res) => {
-        console.log('�电费查询：分享菜单显示成功');
-      },
-      fail: (err) => {
-        console.warn('⚠�电费查询：分享菜单显示失败，但不影响分享功能');
-      }
-    });
+    enableShareMenu('电费查询');
     
     // 设置测试模式热加载
     testModeManager.setupPageHotReload(this, function() {
@@ -319,18 +425,18 @@ Page({
 
     this.getTabBar().init();
     
-    // ===== 关键修复：每次显示页面时都重新检测测试模式和游客模�=====
+    // ===== 关键修复：每次显示页面时都重新检测测试模式和游客模式 =====
     const oldTestMode = this._isTestMode;
     const newTestMode = testModeManager.isTestMode();
     const testModeChanged = oldTestMode !== newTestMode;
     
-    // �新增：检查游客模式变化
+    // 新增：检查游客模式变化
     const oldGuestMode = this._isGuestMode || false;
     const newGuestMode = mockData.isGuestMode();
     const guestModeChanged = oldGuestMode !== newGuestMode;
     this._isGuestMode = newGuestMode;
     
-    // �更新游客模式状态到data
+    // 更新游客模式状态到 data
     if (guestModeChanged) {
       this.setData({ isGuest: newGuestMode });
     }
@@ -386,9 +492,8 @@ Page({
     const appName = miniprogramInfo.getAppName();
     
     return {
-      title: `电费查�- ${appName}`,
-      path: '/pages/electric/index',
-      imageUrl: ''
+      title: `电费查询 - ${appName}`,
+      path: '/pages/electric/index'
     };
   },
   
@@ -399,22 +504,27 @@ Page({
     const appName = miniprogramInfo.getAppName();
     
     return {
-      title: `电费查�- ${appName}`,
-      query: '',
-      imageUrl: ''
+      title: `电费查询 - ${appName}`,
+      query: ''
     };
   },
 
   onPullDownRefresh() {
+    if (mockData.showGuestModeTip('electric')) {
+      wx.stopPullDownRefresh();
+      return;
+    }
+
     // 下拉刷新时，清除权限缓存并检查绑定状态
     this.clearAdminCache();
     
     // 历史数据将在绑定状态检查完成后根据结果决定是否加载
     this.checkUserBinding();
+    this.loadPhysicalMeters();
   },
 
   /**
-   * 统一的管理员权限判断方法（优化�- 带缓存）
+   * 统一的管理员权限判断方法（优化版 - 带缓存）
    * 
    * 性能优化：
    * 1. 添加权限判断结果缓存
@@ -439,7 +549,7 @@ Page({
       return false;
     }
 
-    // ===== 性能优化：使用缓�=====
+    // ===== 性能优化：使用缓存 =====
     const userId = userInfo.id || userInfo.openid || userInfo.nickname;
     
     // 如果缓存有效且用户ID匹配，直接返回缓存结果
@@ -450,15 +560,15 @@ Page({
     // 执行权限判断
     let isAdmin = false;
 
-    // 检�is_admin 字段
+    // 检查 is_admin 字段
     if (userInfo.is_admin) {
       isAdmin = true;
     } 
-    // 检�user_level 字段
+    // 检查 user_level 字段
     else if (userInfo.user_level && String(userInfo.user_level).toLowerCase() === 'admin') {
       isAdmin = true;
     }
-    // 检�permissions 数组中的权限
+    // 检查 permissions 数组中的权限
     else if (Array.isArray(userInfo.permissions)) {
       isAdmin = userInfo.permissions.some((permission) => {
         const code = (permission ? permission.code : undefined) || (permission ? permission.permission_code : undefined);
@@ -579,20 +689,10 @@ Page({
 
     console.log('开始加载用户绑定的账号详情');
 
-    // �游客模式：使用mock数据
+    // 未登录预览：账号列表为空。
     if (mockData.isGuestMode()) {
-      console.log('�用户绑定账号-游客模式：使用mock数据');
-      const mockAccounts = [
-        {
-          id: 1,
-          phone_name: '13812345678',
-          phone_display: '138****5678',
-          account_name: '演示账号',
-          status: '正常',
-          add_time: '2025-09-27 10:00:00'
-        }
-      ];
-      this.setData({ userGridAccounts: mockAccounts });
+      console.log('用户绑定账号-未登录预览：保持为空');
+      this.setData({ userGridAccounts: [] });
       return Promise.resolve();
     }
 
@@ -648,9 +748,9 @@ Page({
    * 加载实体电表数据（今日用电量已由后端合并在响应里）
    */
   loadPhysicalMeters() {
-    // �游客模式：不加载实体电表数据
+    // 游客模式：不加载实体电表数据
     if (mockData.isGuestMode()) {
-      console.log('�实体电表-游客模式：跳过加载');
+      console.log('实体电表-游客模式：跳过加载');
       this.setData({
         physicalMeters: [],
         physicalMetersLoading: false,
@@ -660,13 +760,13 @@ Page({
     }
 
     this.setData({ physicalMetersLoading: true });
-    console.log('�[实体电表] 发起请求: GET /physical-meters');
+    console.log('[实体电表] 发起请求: GET /physical-meters');
 
     return apiCall(
       () => API.electric.getPhysicalMeters(),
       null,
       (response) => {
-        console.log('�[实体电表] 接口返回:', JSON.stringify(response.data));
+        console.log('[实体电表] 接口返回:', JSON.stringify(response.data));
         const meters = (response.data?.meters || []).map(meter => {
           const existing = this.data.physicalMeters.find(m => m.location === meter.location);
           return {
@@ -696,7 +796,7 @@ Page({
         }
       },
       (error) => {
-        console.error('�[实体电表] 请求失败:', error);
+        console.error('[实体电表] 请求失败:', error);
         this.setData({
           physicalMeters: [],
           physicalMetersLoading: false,
@@ -711,7 +811,7 @@ Page({
    */
   startMeterPolling() {
     this.stopMeterPolling();
-    console.log('�[实体电表] 启动6秒轮询');
+    console.log('[实体电表] 启动 6 秒轮询');
     this._meterPollTimer = setInterval(() => {
       this.loadPhysicalMeters();
     }, 6000);
@@ -724,7 +824,7 @@ Page({
     if (this._meterPollTimer) {
       clearInterval(this._meterPollTimer);
       this._meterPollTimer = null;
-      console.log('�[实体电表] 停止轮询');
+      console.log('[实体电表] 停止轮询');
     }
   },
 
@@ -757,27 +857,21 @@ Page({
   checkUserBinding() {
     this.setData({ checkingBinding: true });
 
-    // �游客模式：使用mock数据
+    // 未登录预览：不请求任何用户数据。
     if (mockData.isGuestMode()) {
-      console.log('�电费查询-游客模式：使用mock数据');
+      console.log('电费查询-未登录预览：保持空状态');
       this.setData({
-        hasGridAccount: true,
-        checkingBinding: false
+        hasGridAccount: false,
+        checkingBinding: false,
+        electricData: null,
+        historyData: [],
+        chartData: [],
+        userGridAccounts: [],
+        physicalMeters: [],
+        showUsageChart: false,
+        showBalanceChart: false
       });
-      
-      // 并发加载mock数据
-      Promise.all([
-        this.loadHistoryData(),
-        this.loadChartData(),
-        this.loadAccountStats(),
-        this.loadAllAccountsCount(),
-        this.loadUserGridAccounts()
-      ]).then(() => {
-        console.log('[游客模式] 所有mock数据加载完成');
-      }).catch(err => {
-        console.error('[游客模式] 数据加载失败', err);
-      });
-      
+      wx.stopPullDownRefresh();
       return;
     }
 
@@ -789,7 +883,7 @@ Page({
         checkingBinding: false
       });
       
-      // ===== 性能优化：并发加载所有数�=====
+      // ===== 性能优化：并发加载所有数据 =====
       console.log('[性能优化] 测试模式：并发加载5个数据源');
       Promise.all([
         this.loadHistoryData(),
@@ -803,6 +897,17 @@ Page({
         console.error('[性能优化] 测试模式：数据加载失败', err);
       });
       
+      return;
+    }
+
+    if (this.getActiveHistorySource() === 'physical') {
+      this.setData({ checkingBinding: false });
+      Promise.all([
+        this.loadHistoryData(),
+        this.loadChartData()
+      ]).catch(err => {
+        console.error('[实体电表] 数据加载失败', err);
+      });
       return;
     }
 
@@ -822,7 +927,7 @@ Page({
           checkingBinding: false 
         });
         
-        // ===== 性能优化：管理员并发加载所有数�=====
+        // ===== 性能优化：管理员并发加载所有数据 =====
         console.log('[性能优化] 管理员：并发加载4个数据源');
         Promise.all([
           this.loadHistoryData(),
@@ -859,7 +964,7 @@ Page({
         });
         
         if (hasBinding) {
-          // ===== 性能优化：普通用户并发加载数�=====
+          // ===== 性能优化：普通用户并发加载数据 =====
           console.log('[性能优化] 普通用户：并发加载3个数据源');
           Promise.all([
             this.loadHistoryData(),
@@ -901,6 +1006,10 @@ Page({
    * 查询电费
    */
   onQueryElectric() {
+    if (mockData.showGuestModeTip('electric')) {
+      return;
+    }
+
     // 统一的权限检查
     const userInfo = wx.getStorageSync('userInfo');
     const isAdmin = this.isAdminUser(userInfo);
@@ -1007,8 +1116,15 @@ Page({
           return;
         }
         
-        const queryResult = (response && response.data ? response.data.query_result : undefined) || response;
+        const responseData = response && response.data ? response.data : {};
+        const queryResult = responseData.query_result || response;
         const accountStats = (response && response.data ? response.data.account_stats : undefined) || { account_count: 0, household_count: 0 };
+        const fallbackUsed = Boolean(responseData.fallback_used);
+        const source = normalizeElectricSource(queryResult && queryResult.source ? queryResult.source : (fallbackUsed ? 'physical' : 'grid'));
+        const sourceLabel = this.getDataSourceLabel(source);
+        const primaryErrorMessage = responseData.primary_query_result && responseData.primary_query_result.message
+          ? responseData.primary_query_result.message
+          : '';
         
       // 如果后端统计信息缺失但用户是管理员，清空卡片（避免遗留）
       if (!accountStats && this.data.isAdmin) {
@@ -1019,40 +1135,74 @@ Page({
         if (queryResult && queryResult.success !== undefined) {
           // 处理后端返回的格式
           if (queryResult.success) {
-            // 转换数据格式以适配前端显示
-            const convertedData = {
-              query_time: queryResult.update_time || new Date().toISOString(),
-              account_count: accountStats.account_count,
-              household_count: accountStats.household_count,
-              households: (queryResult.accounts || []).map(account => ({
-                room_name: account.account_number || account.account_name || 'N/A',
-                owner_name: account.account_name || 'N/A',
-                balance: `${account.balance || 0}元`,
-                balance_num: account.balance || 0,
-                last_daily_date: account.latest_date || 'N/A',
-                last_daily_usage: `${account.today_power || 0}度`,
-                month_usage: `${account.current_month_power || 0}度`,
-                month_charge: `${account.last_month_cost || 0}元`,
-                // 额外信息
-                account_name: account.account_name || 'N/A',
-                address: account.address || 'N/A',
-                year_total_cost: account.year_total_cost || 0,
-                year_total_power: account.year_total_power || 0
-              }))
-            };
+            let convertedData;
+            if (source === 'physical') {
+              convertedData = {
+                query_time: queryResult.update_time || new Date().toISOString(),
+                source,
+                fallback: fallbackUsed,
+                households: (queryResult.meters || []).map(meter => ({
+                  room_name: meter.location || '实体电表',
+                  owner_name: meter.account_name || '实体电表',
+                  balance: String(meter.current_month_kwh || 0),
+                  balance_num: meter.current_month_kwh || 0,
+                  last_daily_date: meter.check_time ? String(meter.check_time).split(' ')[0] : 'N/A',
+                  last_daily_usage: `${meter.today_kwh || 0}度`,
+                  month_usage: String(meter.current_month_kwh || 0) + '度',
+                  month_charge: '0元',
+                  account_name: meter.account_name || '实体电表',
+                  address: meter.location || '实体电表',
+                  year_total_cost: 0,
+                  year_total_power: 0,
+                  meter_sn: meter.meter_sn || '',
+                  current_power_kw: meter.current_power_kw || 0
+                }))
+              };
+            } else {
+              convertedData = {
+                query_time: queryResult.update_time || new Date().toISOString(),
+                source,
+                fallback: false,
+                account_count: accountStats.account_count,
+                household_count: accountStats.household_count,
+                households: (queryResult.accounts || []).map(account => ({
+                  room_name: account.account_number || account.account_name || 'N/A',
+                  owner_name: account.account_name || 'N/A',
+                  balance: `${account.balance || 0}元`,
+                  balance_num: account.balance || 0,
+                  last_daily_date: account.latest_date || 'N/A',
+                  last_daily_usage: `${account.today_power || 0}度`,
+                  month_usage: `${account.current_month_power || 0}度`,
+                  month_charge: `${account.last_month_cost || 0}元`,
+                  account_name: account.account_name || 'N/A',
+                  address: account.address || 'N/A',
+                  year_total_cost: account.year_total_cost || 0,
+                  year_total_power: account.year_total_power || 0
+                }))
+              };
+            }
             
             this.setData({
               electricData: convertedData,
               lastQueryTime: convertedData.query_time,
               queryLoading: false,
-              accountStats
+              accountStats,
+              activeDataSource: source,
+              activeDataSourceLabel: sourceLabel,
+              lastQueryWasFallback: fallbackUsed,
+              lastQueryErrorMessage: primaryErrorMessage
             });
+            this._applyHouseholdsToAccountSelector(convertedData.households);
             
             // 刷新历史数据和图表数据
             this.loadHistoryData();
             this.loadChartData();
             
-            showSuccess(`查询成功，获取到${convertedData.household_count || convertedData.account_count || 0}条数据`);
+            if (fallbackUsed) {
+              showSuccess('电网查询失败，已切换为实体电表备用数据');
+            } else {
+              showSuccess(`查询成功，获取到${convertedData.household_count || convertedData.account_count || convertedData.households.length || 0}条数据`);
+            }
           } else {
             // 查询失败，显示错误信息
             this.setData({ queryLoading: false });
@@ -1064,11 +1214,16 @@ Page({
             electricData: queryResult,
             lastQueryTime: queryResult.query_time || new Date().toISOString(),
             queryLoading: false,
+            activeDataSource: 'grid',
+            activeDataSourceLabel: this.getDataSourceLabel('grid'),
+            lastQueryWasFallback: false,
+            lastQueryErrorMessage: '',
             accountStats: {
               account_count: queryResult.account_count || (queryResult.accounts ? queryResult.accounts.length : 0) || 0,
               household_count: queryResult.household_count || (queryResult.households ? queryResult.households.length : 0) || 0
             }
           });
+          this._applyHouseholdsToAccountSelector(queryResult.households || queryResult.accounts || []);
           
           // 刷新历史数据和图表数据
           this.loadHistoryData();
@@ -1112,17 +1267,20 @@ Page({
   loadChartData() {
     console.log('开始加载图表数据（当年所有记录）');
 
-    // �游客模式：使用mock数据
+    // 未登录预览：图表保持空状态。
     if (mockData.isGuestMode()) {
-      console.log('�图表数据加载-游客模式：使用mock数据');
-      // 游客模式下，图表数据会�loadHistoryData 中一起处理
+      this.setData({
+        chartData: [],
+        showUsageChart: false,
+        showBalanceChart: false
+      });
       return;
     }
 
     // 检查是否为测试模式
     if (this._isTestMode) {
       console.log('图表数据加载-测试模式：使用mock数据');
-      // 测试模式下，图表数据会�loadHistoryData 中一起处理
+      // 测试模式下，图表数据会在 loadHistoryData 中一起处理
       return;
     }
 
@@ -1134,14 +1292,16 @@ Page({
     const currentYear = new Date().getFullYear();
     
     // 请求当年所有数据（不限制条数）
+    const source = this.getActiveHistorySource();
     const params = {
       limit: 1000,  // 设置一个足够大的值，确保获取全年数据
       is_admin_request: isAdmin,
-      year: currentYear  // 只获取当年数据
+      year: currentYear,  // 只获取当年数据
+      source
     };
 
     apiCall(
-      () => API.electric.getHistory(params),
+      () => source === 'physical' ? API.electric.getPhysicalMeterStats(params) : API.electric.getHistory(params),
       null,
       (result) => {
         const normalizeHistoryList = (data) => {
@@ -1187,7 +1347,7 @@ Page({
           showBalanceChart: chartData.length > 0
         });
         
-        // ===== 性能优化：使用防抖优化图表渲�=====
+        // ===== 性能优化：使用防抖优化图表渲染 =====
         chartOptimizer.debounce('usage_chart', () => {
           this.processUsageChartData();
         }, 200);
@@ -1213,56 +1373,19 @@ Page({
   loadHistoryData() {
     this.setData({ historyLoading: true });
 
-    // �游客模式：使用mock数据
+    // 未登录预览：历史记录为空。
     if (mockData.isGuestMode()) {
-      console.log('�电费历史加载-游客模式：使用mock数据');
-      setTimeout(() => {
-        const mockHistory = [
-          {
-            id: 'history_1',
-            RoomName: '1234****5678',
-            Balance: '156.80',
-            LastDailyDate: '2025-10-20',
-            LastDailyUsage: '10.6',
-            MonthUsage: '328.5',
-            MonthCharge: '143.20',
-            CheckTime: '2025-10-20 18:30:00',
-            grid_account: '1234****5678'
-          },
-          {
-            id: 'history_2',
-            RoomName: '1234****5678',
-            Balance: '300.00',
-            LastDailyDate: '2025-09-30',
-            LastDailyUsage: '9.5',
-            MonthUsage: '285.2',
-            MonthCharge: '125.50',
-            CheckTime: '2025-09-30 18:30:00',
-            grid_account: '1234****5678'
-          }
-        ];
-
-        const normalizedMockHistory = mockHistory.map(item => normalizeHistoryItem(item));
-        
-        this.setData({
-          historyData: normalizedMockHistory,
-          chartData: normalizedMockHistory,
-          historyLoading: false,
-          showUsageChart: true,
-          showBalanceChart: true
-        });
-        this._buildAccountSelector(normalizedMockHistory);
-        wx.stopPullDownRefresh();
-        
-        // 处理图表数据
-        chartOptimizer.debounce('usage_chart', () => {
-          this.processUsageChartData();
-        }, 200);
-        
-        chartOptimizer.debounce('balance_chart', () => {
-          this.processBalanceChartData();
-        }, 250);
-      }, 300);
+      console.log('电费历史加载-未登录预览：保持为空');
+      this.setData({
+        historyData: [],
+        chartData: [],
+        historyLoading: false,
+        showUsageChart: false,
+        showBalanceChart: false,
+        electricAccounts: [],
+        selectedAccount: {}
+      });
+      wx.stopPullDownRefresh();
       return;
     }
 
@@ -1309,9 +1432,9 @@ Page({
           showBalanceChart: normalizedMockHistory.length > 0
         });
         
-        // ===== 性能优化：测试模式下也使用防抖优�=====
+        // ===== 性能优化：测试模式下也使用防抖优化 =====
         chartOptimizer.debounce('usage_chart', () => {
-          console.log('测试模式：处理用电量图表数�- 全部数据条数:', normalizedMockHistory.length);
+          console.log('测试模式：处理用电量图表数据 - 全部数据条数:', normalizedMockHistory.length);
           this.processUsageChartData();
         }, 200);
         
@@ -1340,13 +1463,15 @@ Page({
       this.setData({ isAdmin });
     }
     
+    const source = this.getActiveHistorySource();
     const params = {
       limit: 10,
-      is_admin_request: isAdmin  // 传递管理员标识
+      is_admin_request: isAdmin,  // 传递管理员标识
+      source
     };
 
     apiCall(
-      () => API.electric.getHistory(params),
+      () => source === 'physical' ? API.electric.getPhysicalMeterStats(params) : API.electric.getHistory(params),
       null,
       (result) => {
         const normalizeHistoryList = (data) => {
@@ -1455,8 +1580,22 @@ Page({
    * 查看更多历史
    */
   onViewMoreHistory() {
+    if (mockData.showGuestModeTip('electric')) {
+      return;
+    }
+
     wx.navigateTo({
-      url: '/pages/electric/history/index'
+      url: `/pages/electric/history/index?source=${this.getActiveHistorySource()}`
+    });
+  },
+
+  goToPhysicalMeterHistory() {
+    if (mockData.showGuestModeTip('electric')) {
+      return;
+    }
+
+    wx.navigateTo({
+      url: '/pages/electric/history/index?source=physical'
     });
   },
 
@@ -1464,6 +1603,10 @@ Page({
    * 刷新数据
    */
   onRefresh() {
+    if (mockData.showGuestModeTip('electric')) {
+      return;
+    }
+
     // 刷新时，重新检查绑定状态
     // 历史数据将在绑定状态检查完成后根据结果决定是否加载
     this.setData({ checkingBinding: true });
@@ -1474,6 +1617,10 @@ Page({
    * 跳转到绑定页面
    */
   goToBind() {
+    if (mockData.showGuestModeTip('electric')) {
+      return;
+    }
+
                   wx.navigateTo({
                     url: '/pages/user/bind/index?tab=grid'
                   });
@@ -1483,6 +1630,10 @@ Page({
    * 跳转到账号管理页面（管理员功能）
    */
   goToAccountManage() {
+    if (mockData.showGuestModeTip('electric')) {
+      return;
+    }
+
     if (!this.data.isAdmin) {
       showError('权限不足');
       return;
@@ -1519,6 +1670,21 @@ Page({
     console.log('已选择账号:', account);
   },
 
+  _applyHouseholdsToAccountSelector(households) {
+    if (!Array.isArray(households) || households.length === 0) return;
+
+    const accounts = households.map(buildSelectorAccountFromHousehold);
+    const current = this.data.selectedAccount;
+    const selected = current && current.id
+      ? (accounts.find(account => account.id === current.id) || accounts[0])
+      : accounts[0];
+
+    this.setData({
+      electricAccounts: accounts,
+      selectedAccount: selected
+    });
+  },
+
   /**
    * 从历史数据中提取账号列表，填充账号选择器
    * 使用最新一条记录的余额作为账号余额
@@ -1526,8 +1692,14 @@ Page({
   _buildAccountSelector(historyList) {
     if (!historyList || historyList.length === 0) return;
 
-    // �account_number 去重，取最新一条
+    // 按 account_number 去重，取最新一条
     const accountMap = {};
+    (this.data.electricAccounts || []).forEach(account => {
+      if (account && account.id) {
+        accountMap[account.id] = account;
+      }
+    });
+
     historyList.forEach(item => {
       const key = item.account_number || item.room_name;
       if (!key) return;
@@ -1537,7 +1709,14 @@ Page({
           address: item.room_name || key,
           accountNo: item.account_number || key,
           ownerName: item.owner_name || '',
-          balance: item.balance_num || 0
+          balance: item.balance_num || 0,
+          balanceText: buildDisplayAmount(item.balance_num || 0),
+          dailyUsageText: item.last_daily_usage || '--',
+          monthUsageText: item.month_usage || '--',
+          monthChargeText: item.month_charge || '0',
+          yearPowerText: '--',
+          yearCostText: '0',
+          latestDate: item.daily_date || '--'
         };
       }
     });
@@ -1580,7 +1759,7 @@ Page({
     const currentMonth = currentDate.getMonth() + 1;
     const currentDay = currentDate.getDate();
     
-    // 计算筛选日期范围：当月数�+ 上月末5天（月初时补充数据）
+    // 计算筛选日期范围：当月数据 + 上月末 5 天（月初时补充数据）
     const currentYearMonth = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
     
     // 计算上月末5天的起始日期
@@ -1589,7 +1768,7 @@ Page({
     lastMonthEnd5Days.setDate(lastMonthEndDate.getDate() - 4); // 往前推4天，加上最后一天共5天
     const lastMonthEnd5DaysStr = `${lastMonthEnd5Days.getFullYear()}-${String(lastMonthEnd5Days.getMonth() + 1).padStart(2, '0')}-${String(lastMonthEnd5Days.getDate()).padStart(2, '0')}`;
     
-    // 过滤当�+ 上月末5天的有效数据
+    // 过滤当月 + 上月末 5 天的有效数据
     const validData = allData.filter(item => {
       const hasDate = item.daily_date && item.daily_date !== '';
       const hasUsage = typeof item.daily_usage === 'number' && item.daily_usage >= 0;
@@ -1649,7 +1828,7 @@ Page({
       };
       
       roomGroups[roomName].push(dataPoint);
-      // console.log(`添加用电量数据�- 户号: ${roomName}, 日期: ${item.daily_date}, 用电: ${item.daily_usage}`);
+      // console.log(`添加用电量数据 - 户号: ${roomName}, 日期: ${item.daily_date}, 用电: ${item.daily_usage}`);
     });
 
     // 为每个户号排序数据（按日期）
@@ -1658,7 +1837,7 @@ Page({
     });
 
     // 生成图例和颜色
-    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
+    const colors = this.getChartLineColors();
     const usageChartLegend = Object.keys(roomGroups).map((roomName, index) => ({
       roomName,
       color: colors[index % colors.length],
@@ -1762,7 +1941,7 @@ Page({
         return;
       }
 
-      // 提取年月信�(格式：2025-09)
+      // 提取年月信息(格式：2025-09)
       const yearMonth = item.check_time.substring(0, 7);
       
       // 对于同一个月，取最新的数据（按日期排序取最后一个）
@@ -1771,7 +1950,7 @@ Page({
         roomGroups[roomName][yearMonth] = {
           date: item.check_time.split(' ')[0], // 只保留日期部分
           yearMonth: yearMonth,
-          balance: item.balance_num,  // 使用账户余额
+          balance: item.balance_num,
           dateObj: dateObj,
           monthObj: new Date(yearMonth + '-01T00:00:00') // 月份的第一天，用于排序
         };
@@ -1786,7 +1965,7 @@ Page({
     });
 
     // 生成图例和颜色（使用不同的颜色系列）
-    const colors = ['#1890ff', '#52c41a', '#fa541c', '#722ed1', '#13c2c2', '#eb2f96', '#f5222d'];
+    const colors = this.getChartLineColors();
     const balanceChartLegend = Object.keys(finalRoomGroups).map((roomName, index) => ({
       roomName,
       color: colors[index % colors.length],
@@ -1819,20 +1998,11 @@ Page({
     }, 100);
   },
 
-  // ==================== 马卡龙风格图表配�====================
-  _chartColors: {
-    // 主色调 - 马卡龙配色
-    peach: '#FF9F43',      // 橙色马卡龙
-    mint: '#B9FBC0',       // 薄荷绿马卡龙
-    pink: '#FFB3BA',       // 粉色马卡龙
-    lavender: '#E0BBE4',   // 薰衣草马卡龙
-    blue: '#98F5E1',       // 蓝色马卡龙
-    yellow: '#FFD93D',     // 黄色马卡龙
-    // 辅助色
-    foreground: '#5E4E3E', // 前景色（文字、边框）
-    background: '#fef9f3', // 背景色
-    gridLine: 'rgba(94, 78, 62, 0.1)', // 网格线
-    axisLine: 'rgba(94, 78, 62, 0.2)', // 坐标轴
+  // ==================== 马卡龙风格图表配置 ====================
+  _chartColors: CHART_COLORS,
+
+  getChartColors() {
+    return resolveChartColors(this._chartColors);
   },
 
   /**
@@ -1863,14 +2033,15 @@ Page({
       return;
     }
 
-    this.drawChart('balanceChart', chartData, chartLegend, 'balance', '账户余额', '元');
+    const isPhysical = this.getActiveHistorySource() === 'physical';
+    this.drawChart('balanceChart', chartData, chartLegend, 'balance', isPhysical ? '月用电量' : '账户余额', isPhysical ? 'kWh' : '元');
   },
 
   /**
    * 通用图表绘制函数（Canvas 2D接口 - 马卡龙风格）
    */
   drawChart(canvasId, chartData, chartLegend, valueKey, valueLabel, unit) {
-    const colors = this._chartColors;
+    const colors = this.getChartColors();
     
     // 使用Canvas 2D接口获取canvas节点
     const query = wx.createSelectorQuery().in(this);
@@ -1910,7 +2081,7 @@ Page({
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, width, height);
 
-        // 计算绘图区�- 增加边距让图表更舒适
+        // 计算绘图区域 - 增加边距让图表更舒适
         const padding = {
           top: 30,
           right: 25,
@@ -1950,7 +2121,7 @@ Page({
         this.drawMacaronAxes(ctx, padding, chartWidth, chartHeight, minDate, maxDate, minValue, maxValue, valueLabel, unit, chartData, colors);
 
         // 马卡龙配色数组
-        const macaronColors = [colors.peach, colors.mint, colors.pink, colors.lavender, colors.blue, colors.yellow];
+        const macaronColors = this.getChartLineColors();
 
         // 收集所有点的坐标用于触摸交互
         const allPoints = [];
@@ -2004,14 +2175,14 @@ Page({
     for (let i = 0; i <= ySteps; i++) {
       const value = minValue + (valueRange * i / ySteps);
       const y = padding.top + chartHeight - (chartHeight * i / ySteps);
-      const decimals = (valueLabel === '账户余额' || valueLabel === '余额') ? 0 : 1;
+      const decimals = (valueLabel === '账户余额' || valueLabel === '余额' || valueLabel === '月用电量') ? 0 : 1;
       ctx.fillText(value.toFixed(decimals), padding.left - 8, y + 4);
     }
 
     // 绘制X轴日期标签
     const dateRange = maxDate.getTime() - minDate.getTime();
     if (dateRange > 0) {
-      const isMonthlyChart = (valueLabel === '账户余额' || valueLabel === '余额' || valueLabel === '月消费');
+      const isMonthlyChart = (valueLabel === '账户余额' || valueLabel === '余额' || valueLabel === '月用电量' || valueLabel === '月消费');
       ctx.textAlign = 'center';
       ctx.font = 'bold 10px "PingFang SC", sans-serif';
       ctx.fillStyle = colors.foreground;
@@ -2168,14 +2339,14 @@ Page({
       ctx.stroke();
 
       // 绘制标签（根据数值类型决定小数位数）
-      const decimals = (valueLabel === '账户余额' || valueLabel === '余额') ? 1 : 1;
+      const decimals = (valueLabel === '账户余额' || valueLabel === '余额' || valueLabel === '月用电量') ? 1 : 1;
       ctx.fillText(value.toFixed(decimals), padding.left - 50, y + 3);
     }
 
     // 绘制X轴日期标签
     const dateRange = maxDate.getTime() - minDate.getTime();
     if (dateRange > 0) {
-      const isMonthlyChart = (valueLabel === '账户余额' || valueLabel === '余额' || valueLabel === '月消费');
+      const isMonthlyChart = (valueLabel === '账户余额' || valueLabel === '余额' || valueLabel === '月用电量' || valueLabel === '月消费');
       
       if (isMonthlyChart && chartData) {
         // 月度图表：直接在每个数据点的位置显示月份标签
@@ -2250,7 +2421,7 @@ Page({
       const y = padding.top + chartHeight - ((point[valueKey] - minValue) / valueRange * chartHeight);
 
       const displayDate = (valueKey === 'balance' || valueKey === 'monthCharge') ? point.yearMonth : point.date;
-      // console.log(`绘制�${index} - x: ${x.toFixed(1)}, y: ${y.toFixed(1)}, ${valueKey}: ${point[valueKey]}, 显示: ${displayDate}`);
+      // console.log(`绘制点 ${index} - x: ${x.toFixed(1)}, y: ${y.toFixed(1)}, ${valueKey}: ${point[valueKey]}, 显示: ${displayDate}`);
 
       if (index === 0) {
         ctx.moveTo(x, y);
@@ -2286,15 +2457,27 @@ Page({
    * Canvas触摸开始事件 - 显示tooltip
    */
   onChartTouchStart(e) {
+    if (!e || !Array.isArray(e.touches) || !e.touches[0]) return;
     const touch = e.touches[0];
-    const canvasId = e.currentTarget.id;
+    const canvasId = e.currentTarget && e.currentTarget.id;
     
     // 获取对应图表的点数据和padding
-    const points = canvasId === 'usageChart' ? this._usageChartPoints : this._balanceChartPoints;
-    const padding = canvasId === 'usageChart' ? this._usageChartPadding : this._balanceChartPadding;
-    const tooltipKey = canvasId === 'usageChart' ? 'usageTooltip' : 'balanceTooltip';
-    const unit = canvasId === 'usageChart' ? '度' : '元';
-    const label = canvasId === 'usageChart' ? '日用电量' : '账户余额';
+    const chartConfig = canvasId === 'usageChart'
+      ? {
+          points: this._usageChartPoints,
+          padding: this._usageChartPadding,
+          tooltipKey: 'usageTooltip',
+          unit: '度',
+          label: '日用电量'
+        }
+      : {
+          points: this._balanceChartPoints,
+          padding: this._balanceChartPadding,
+          tooltipKey: 'balanceTooltip',
+          unit: this.getActiveHistorySource() === 'physical' ? 'kWh' : '元',
+          label: this.getActiveHistorySource() === 'physical' ? '月用电量' : '账户余额'
+        };
+    const { points, padding, tooltipKey, unit, label } = chartConfig;
     
     if (!points || points.length === 0) return;
     
@@ -2319,7 +2502,7 @@ Page({
         ? nearestPoint.value.toFixed(2) 
         : nearestPoint.value;
       
-      // tooltip 尺寸估算（rpx �px，假设屏幕宽�375px 对�750rpx）
+      // tooltip 尺寸估算（rpx -> px，假设屏幕宽度 375px 对应 750rpx）
       const rpxRatio = wx.getSystemInfoSync().windowWidth / 750;
       const tooltipWidth = 220 * rpxRatio;  // 估算 tooltip 宽度
       const tooltipHeight = 100 * rpxRatio; // 估算 tooltip 高度
@@ -2333,7 +2516,7 @@ Page({
       const chartRight = padding ? (padding.left + (e.currentTarget.offsetWidth || 300) - padding.right) : 260;
       const chartTop = padding ? padding.top : 20;
       
-      // 水平边界检测：确�tooltip 不超出左右边界
+      // 水平边界检测：确保 tooltip 不超出左右边界
       const halfWidth = tooltipWidth / 2;
       if (tooltipX - halfWidth < chartLeft) {
         // 靠近左边界，tooltip 向右偏移
@@ -2385,97 +2568,28 @@ Page({
     }, 1500);
   },
 
-  /**
-   * �新增：加载游客模式数据
-   */
+  /** 将电费页重置为未登录空状态。 */
   loadGuestModeData() {
-    console.log('�开始加载游客模式mock数据');
-    
-    // 获取mock电费数据
-    const mockResult = mockData.getElectricData();
-    
-    if (mockResult) {
-      wx.showLoading({ title: '加载体验数据...' });
-      
-      mockResult.then(res => {
-        wx.hideLoading();
-        
-        if (res.success) {
-          console.log('�游客模式数据加载成功:', res.data);
-          
-          // 显示游客提示
-          wx.showToast({
-            title: '体验模式',
-            icon: 'none',
-            duration: 2000
-          });
-          
-          // 设置mock数据
-          this.setData({
-            isGuest: true,
-            showGuestBanner: true,
-            hasGridAccount: true,
-            checkingBinding: false,
-            historyData: res.data.history || [],
-            electricData: {
-              balance: res.data.balance,
-              currentMonthUsage: res.data.currentMonthUsage,
-              lastMonthUsage: res.data.lastMonthUsage
-            },
-            userGridAccounts: res.data.boundAccounts || []
-          });
-          
-          // 渲染图表
-          if (res.data.chartData) {
-            this.renderMockCharts(res.data.chartData);
-          }
-          
-          // 停止下拉刷新（如果有）
-          wx.stopPullDownRefresh();
-        }
-      }).catch(err => {
-        wx.hideLoading();
-        console.error('�游客模式数据加载失败:', err);
-        showError('数据加载失败');
-      });
-    }
-  },
-
-  /**
-   * �新增：渲染mock数据的图表
-   */
-  renderMockCharts(chartData) {
-    console.log('�渲染游客模式图表:', chartData);
-    
-    // 这里可以调用现有的图表渲染逻辑
-    // 简化版本：直接设置图表数据
     this.setData({
-      showUsageChart: true,
-      showBalanceChart: true,
-      usageChartData: chartData,
-      balanceChartData: chartData
+      isGuest: true,
+      showGuestBanner: true,
+      hasGridAccount: false,
+      checkingBinding: false,
+      historyData: [],
+      chartData: [],
+      electricData: null,
+      userGridAccounts: [],
+      showUsageChart: false,
+      showBalanceChart: false
     });
+    wx.stopPullDownRefresh();
   },
 
   /**
-   * �新增：跳转登录页面
+   * 新增：跳转登录页面
    */
   goToLogin() {
-    wx.showModal({
-      title: '提示',
-      content: '登录后可查询真实电费数据，是否立即登录？',
-      confirmText: '立即登录',
-      success: (res) => {
-        if (res.confirm) {
-          // 清除游客模式标识
-          wx.removeStorageSync('isGuestMode');
-          // 跳转到登录页
-          wx.redirectTo({
-            url: '/pages/login/index'
-          });
-        }
-      }
-    });
+    mockData.showGuestModeTip('electric');
   },
 
   /**
@@ -2491,7 +2605,7 @@ Page({
     // 清除首次启动标记
     wx.removeStorageSync('isFirstLaunch');
     
-    console.log('�首次启动小程序，准备显示公告弹窗');
+    console.log('首次启动小程序，准备显示公告弹窗');
     
     // 延迟显示公告弹窗，确保页面加载完成
     setTimeout(() => {
@@ -2526,7 +2640,7 @@ Page({
             tag: item.title
           }));
 
-        // 电费页面需要先设�showNoticeModal �noticeModalList 数据
+        // 电费页面需要先设置 showNoticeModal 和 noticeModalList 数据
         this.setData({
           showNoticeModal: true,
           noticeModalList: noticeList

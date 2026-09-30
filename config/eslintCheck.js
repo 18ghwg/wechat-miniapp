@@ -79,7 +79,7 @@ exec('git diff --cached --name-only --diff-filter=ACM | grep -Ei "\\.ts$|\\.js$"
           ' warnings) \0',
       );
     }
-    !pass && log(chalk.green.bold('~~ Done: 代码检验通过，提交成�~~'));
+    !pass && log(chalk.green.bold('~~ Done: 代码检验通过，提交成功 ~~'));
     process.exit(pass);
   }
   if (error !== null) {

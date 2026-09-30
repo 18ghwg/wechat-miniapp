@@ -1,6 +1,6 @@
 /**
- * 头像生成�- Canvas 2D 版本
- * 这是迁移后的新版本，使�Canvas 2D API
+ * 头像生成器 - Canvas 2D 版本
+ * 这是迁移后的新版本，使用 Canvas 2D API
  */
 
 class AvatarGenerator {
@@ -35,7 +35,7 @@ class AvatarGenerator {
   }
 
   /**
-   * 绘制文字头�- Canvas 2D 版本
+   * 绘制文字头像 - Canvas 2D 版本
    * @param {String} canvasSelector - Canvas选择器（如 '#avatarCanvas'）
    * @param {Object} componentInstance - 组件实例（Page或Component的this）
    * @param {String} text - 显示文字
@@ -52,7 +52,7 @@ class AvatarGenerator {
         size: size
       });
       
-      // 使�Canvas 2D API
+      // 使用 Canvas 2D API
       const query = wx.createSelectorQuery().in(componentInstance);
       query.select(canvasSelector)
         .fields({ node: true, size: true })
@@ -95,10 +95,10 @@ class AvatarGenerator {
             
             console.log('AvatarGenerator Canvas2D - 绘制完成，准备导出图片');
             
-            // Canvas 2D 不需�draw()，直接导出
+            // Canvas 2D 不需要 draw()，直接导出
             setTimeout(() => {
               wx.canvasToTempFilePath({
-                canvas: canvas,  // 使�canvas 对象
+                canvas: canvas,  // 使用 canvas 对象
                 destWidth: size,
                 destHeight: size,
                 quality: 0.8,

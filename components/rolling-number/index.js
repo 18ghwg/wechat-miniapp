@@ -1,6 +1,6 @@
 /**
  * RollingNumber 组件 - 数值滚动动画
- * 模�React �useSpring 的平滑数值过渡效果
+ * 模拟 React useSpring 的平滑数值过渡效果
  * 使用弹簧物理模型（stiffness + damping）实现自然的数值滚动
  */
 Component({
@@ -16,7 +16,7 @@ Component({
       type: Number,
       value: 2
     },
-    // 动画时长 ms（弹簧模型下作为参考，实际�stiffness/damping 决定）
+    // 动画时长 ms（弹簧模型下作为参考，实际由 stiffness/damping 决定）
     duration: {
       type: Number,
       value: 1200
@@ -71,7 +71,7 @@ Component({
 
     /**
      * 弹簧物理模型动画
-     * 匹�React useSpring({ stiffness: 50, damping: 20 })
+     * 匹配 React useSpring({ stiffness: 50, damping: 20 })
      */
     _runSpring() {
       const stiffness = 50;
@@ -86,7 +86,7 @@ Component({
         this._lastTime = now;
 
         const displacement = this._currentValue - this._targetValue;
-        // 弹簧�= -stiffness * displacement - damping * velocity
+        // 弹簧力 = -stiffness * displacement - damping * velocity
         const springForce = -stiffness * displacement;
         const dampingForce = -damping * this._velocity;
         const acceleration = (springForce + dampingForce) / mass;
@@ -107,7 +107,7 @@ Component({
 
         this.setData({ displayValue: this._currentValue.toFixed(precision) });
 
-        // �30fps，�setTimeout 模�requestAnimationFrame
+        // 约 30fps，使用 setTimeout 模拟 requestAnimationFrame
         this._animFrame = setTimeout(step, 33);
       };
 

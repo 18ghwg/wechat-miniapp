@@ -1,6 +1,6 @@
 {
   "name": "@tencent/tdesign-miniprogram-starter-retail",
-  "version": "1.0.1",
+  "version": "1.1.15",
   "description": "",
   "main": "app.js",
   "scripts": {
@@ -12,7 +12,8 @@
     "prepare": "husky install",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "browser-tools:server": "npx @agentdeskai/browser-tools-server",
-    "browser-tools:mcp": "npx @agentdeskai/browser-tools-mcp"
+    "browser-tools:mcp": "npx @agentdeskai/browser-tools-mcp",
+    "wx:upload": "node scripts/wx-upload.js"
   },
   "author": "",
   "license": "ISC",
@@ -47,7 +48,8 @@
     "husky": "^8.0.3",
     "jest": "^30.2.0",
     "lint-staged": "^10.0.8",
-    "miniprogram-automator": "^0.10.0",
+    "miniprogram-automator": "^0.12.1",
+    "miniprogram-ci": "^2.1.31",
     "prettier": "^2.1.2",
     "sharp": "^0.34.5"
   }

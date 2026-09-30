@@ -1,167 +1,327 @@
-<!--网盘账号管理页面-->
-<view class="netdisk-container">
-  <!-- 页面标题 -->
-  <view class="page-header">
-    <view class="header-content">
-      <text class="page-title">网盘账号管理</text>
-      <text class="page-subtitle">管理您的网盘账号信息</text>
+<!-- 工资条配置页面 - Macaron Theme -->
+<view class="salary-config-container page-enter">
+  <view class="page-header card-enter">
+    <view class="header-icon-wrapper">
+      <image class="header-icon" src="/assets/icons/clipboard.png" mode="aspectFit" />
     </view>
-    <view class="header-decoration">
-      <view class="decoration-circle circle-1"></view>
-      <view class="decoration-circle circle-2"></view>
-      <view class="decoration-circle circle-3"></view>
+    <text class="page-title">工资条配置</text>
+    <text class="page-subtitle">统一维护网盘账号与个人工资信息</text>
+  </view>
+
+  <view class="cartoon-card record-entry-card" wx:if="{{!loading}}">
+    <view class="record-entry-main" bindtap="goToSalaryRecords">
+      <view class="record-entry-left">
+        <view class="record-entry-icon-wrap">
+          <image class="record-entry-icon" src="/assets/icons/history.png" mode="aspectFit"/>
+        </view>
+        <view class="record-entry-content">
+          <text class="record-entry-title">工资条生成记录</text>
+          <text class="record-entry-desc">查看已生成工资条，并在记录页中编辑工资内容</text>
+        </view>
+      </view>
+      <text class="record-entry-arrow">›</text>
     </view>
   </view>
 
-  <!-- 用户信息卡片 -->
-  <view class="info-card">
-    <view class="card-header">
-      <icon type="info" size="20" style="color: #007AFF;"></icon>
-      <text class="card-title">当前用户信息</text>
-    </view>
-    <view class="user-info">
-      <text class="user-name">{{(userInfo && userInfo.real_name) || (userInfo && userInfo.nickname) || '未知用户'}}</text>
-      <view class="user-badges">
-        <text class="badge admin" wx:if="{{isAdmin}}">管理员</text>
-        <text class="badge test" wx:if="{{testMode}}">测试模式</text>
+  <view class="cartoon-card profile-card card-enter card-enter-delay-1">
+    <view class="profile-row">
+      <view class="profile-main">
+        <text class="profile-name">{{(userInfo && userInfo.real_name) || (userInfo && userInfo.nickname) || '未知用户'}}</text>
+        <text class="profile-desc">当前登录用户</text>
+      </view>
+      <view class="profile-badges">
+        <view class="status-badge status-active" wx:if="{{false && isAdmin}}">
+          <text>管理员</text>
+        </view>
+        <view class="status-badge status-inactive" wx:if="{{testMode}}">
+          <text>测试模式</text>
+        </view>
       </view>
     </view>
   </view>
 
-  <!-- 管理员用户选择 -->
-  <view class="form-section" wx:if="{{isAdmin && allUsers && allUsers.length > 0}}">
-    <view class="section-title">选择用户</view>
-    <picker 
-      mode="selector" 
-      range="{{allUsers}}" 
+  <!-- 管理员跨用户配置入口暂不在用户小程序展示。 -->
+  <view class="cartoon-card selector-card card-enter card-enter-delay-2" wx:if="{{false && isAdmin && allUsers && allUsers.length > 0}}">
+    <view class="section-header">
+      <text class="section-title">选择用户</text>
+      <text class="section-subtitle">管理员可切换成员配置，并查看{{statusMonthLabel}}工资条状态</text>
+    </view>
+    <picker
+      mode="selector"
+      range="{{allUsers}}"
       range-key="name"
       value="{{selectedUserIndex}}"
       bindchange="onUserSelect"
     >
-      <view class="picker-input">
-        <text>{{(formData && formData.user_name) || '请选择用户'}}</text>
-        <icon type="download" size="16" style="transform: rotate(90deg);"></icon>
+      <view class="form-picker-macaron">
+        <text class="picker-value">{{(formData && formData.user_name) || '请选择用户'}}</text>
+        <text class="picker-arrow">›</text>
       </view>
     </picker>
-  </view>
 
-  <!-- 网盘账号信息表单 -->
-  <view class="form-section">
-    <view class="section-title">
-      <text>网盘账号信息</text>
+    <view class="selected-status-card" wx:if="{{selectedUserStatus}}">
+      <view class="selected-status-header">
+        <text class="selected-status-name">{{selectedUserStatus.name}}</text>
+        <view class="selected-status-badge selected-status-badge-{{selectedUserStatus.salary_status.badgeType}}">
+          <text class="status-badge-text">{{selectedUserStatus.salary_status.text}}</text>
+        </view>
+      </view>
+      <text class="selected-status-desc">{{selectedUserStatus.salary_status.description}}</text>
+      <text class="selected-status-time" wx:if="{{selectedUserStatus.salary_status.generatedAt}}">
+        最后生成时间：{{selectedUserStatus.salary_status.generatedAt}}
+      </text>
     </view>
 
-    <!-- 加载状态 -->
-    <view class="loading-container" wx:if="{{loading}}">
+    <view class="user-status-list" wx:if="{{displayUsers && displayUsers.length > 0}}">
+      <view
+        class="user-status-item"
+        wx:for="{{displayUsers}}"
+        wx:key="id"
+        data-index="{{item.originalIndex}}"
+        bindtap="onUserCardSelect"
+      >
+        <view class="user-status-main">
+          <text class="user-status-name">{{item.name}}</text>
+          <text class="user-status-desc">{{item.salary_status.description}}</text>
+          <text class="user-status-time" wx:if="{{item.salary_status.generatedAt}}">
+            {{item.salary_status.generatedAt}}
+          </text>
+        </view>
+        <view class="user-status-badge user-status-badge-{{item.salary_status.badgeType}}">
+          <text class="status-badge-text">{{item.salary_status.text}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="cartoon-card form-card card-enter card-enter-delay-3">
+    <view class="section-header">
+      <text class="section-title">配置内容</text>
+      <text class="section-subtitle">保存后会直接用于工资条生成</text>
+    </view>
+
+    <view class="loading-state" wx:if="{{loading}}">
       <view class="loading-spinner"></view>
       <text class="loading-text">加载中...</text>
     </view>
 
-    <!-- 表单内容 -->
     <view class="form-content" wx:elif="{{!loading}}">
-      <!-- 用户名 -->
-      <view class="form-item" wx:if="{{!isAdmin}}">
-        <view class="form-label">用户姓名</view>
-        <input 
-          class="form-input disabled"
+      <view class="form-group" wx:if="{{!isAdmin}}">
+        <text class="form-label">用户姓名</text>
+        <input
+          class="form-input-macaron input-disabled"
           value="{{formData && formData.user_name || ''}}"
           disabled="{{true}}"
-          placeholder="用户姓名"
         />
       </view>
 
-      <!-- 网盘用户名 -->
-      <view class="form-item">
-        <view class="form-label">网盘用户名</view>
-        <input 
-          class="form-input {{isEditing ? '' : 'disabled'}}"
-          value="{{formData && formData.sony_username || ''}}"
-          data-field="sony_username"
-          bindinput="onInputChange"
-          disabled="{{!isEditing}}"
-          placeholder="请输入网盘用户名"
-        />
+      <view class="section-header section-header-compact">
+        <text class="section-title">公司网盘设置</text>
+        <text class="section-subtitle">验证所属公司后可维护网盘账号和上传方式</text>
       </view>
 
-      <!-- 网盘密码 -->
-      <view class="form-item">
-        <view class="form-label">网盘密码</view>
-        <input 
-          class="form-input {{isEditing ? '' : 'disabled'}}"
-          value="{{formData && formData.sony_password || ''}}"
-          data-field="sony_password"
-          bindinput="onInputChange"
-          disabled="{{!isEditing}}"
-          password="{{!isEditing}}"
-          placeholder="请输入网盘密码"
+      <block wx:if="{{companyVerified}}">
+        <view class="form-group">
+          <text class="form-label">网盘用户名</text>
+          <input
+            class="form-input-macaron {{!isEditing ? 'input-disabled' : ''}}"
+            value="{{formData && formData.sony_username || ''}}"
+            data-field="sony_username"
+            bindinput="onInputChange"
+            disabled="{{!isEditing}}"
+            placeholder="{{(formData && formData.is_upload_to_netdisk !== false) ? '请输入网盘用户名' : '已关闭网盘上传，可留空'}}"
+          />
+        </view>
+
+        <view class="form-group">
+          <text class="form-label">网盘密码</text>
+          <input
+            class="form-input-macaron {{!isEditing ? 'input-disabled' : ''}}"
+            value="{{formData && formData.sony_password || ''}}"
+            data-field="sony_password"
+            bindinput="onInputChange"
+            disabled="{{!isEditing}}"
+            password="{{!isEditing}}"
+            placeholder="{{(formData && formData.is_upload_to_netdisk !== false) ? '请输入网盘密码' : '已关闭网盘上传，可留空'}}"
+          />
+        </view>
+
+        <view class="form-group switch-group">
+          <view class="switch-copy">
+            <text class="form-label">上传工资条到网盘</text>
+            <text class="form-helper">关闭后只更新本地 Excel，不上传工资条和考勤表</text>
+          </view>
+          <switch
+            class="macaron-switch"
+            checked="{{formData && formData.is_upload_to_netdisk !== false}}"
+            data-field="is_upload_to_netdisk"
+            bindchange="onSwitchChange"
+            disabled="{{!isEditing}}"
+            color="#4ECDC4"
+          />
+        </view>
+      </block>
+
+      <view class="company-verification-inline" wx:else>
+        <text class="company-verification-question">请输入您所在的公司名称</text>
+        <input
+          class="company-verification-input"
+          value="{{companyVerificationInput}}"
+          placeholder="公司名称"
+          maxlength="40"
+          confirm-type="done"
+          bindinput="onCompanyVerificationInput"
+          bindconfirm="confirmCompanyVerification"
         />
+        <text class="company-verification-error" wx:if="{{companyVerificationError}}">{{companyVerificationError}}</text>
+        <button class="company-verification-btn" bindtap="confirmCompanyVerification">验证公司</button>
       </view>
 
-      <!-- 自动生成工资条 -->
-      <view class="form-item switch-item">
-        <view class="form-label">自动生成工资条</view>
-        <switch 
+      <view class="divider-line"></view>
+
+      <view class="section-header section-header-compact">
+        <text class="section-title">个人工资信息</text>
+        <text class="section-subtitle">工资条设置可直接查看和维护，不受公司验证影响</text>
+      </view>
+
+      <view class="form-group switch-group">
+        <view class="switch-copy">
+          <text class="form-label">自动生成工资条</text>
+          <text class="form-helper">开启后按当前配置自动计算工资条</text>
+        </view>
+        <switch
+          class="macaron-switch"
           checked="{{formData && formData.is_auto_create_salary || false}}"
           data-field="is_auto_create_salary"
           bindchange="onSwitchChange"
           disabled="{{!isEditing}}"
-          color="#007AFF"
+          color="#FF9F43"
         />
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">底薪</text>
+        <input
+          class="form-input-macaron {{!isEditing ? 'input-disabled' : ''}}"
+          value="{{formData && formData.base_salary || ''}}"
+          data-field="base_salary"
+          bindinput="onInputChange"
+          disabled="{{!isEditing}}"
+          type="digit"
+          placeholder="请输入底薪"
+        />
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">双倍/三倍加班单价</text>
+        <input
+          class="form-input-macaron {{!isEditing ? 'input-disabled' : ''}}"
+          value="{{formData && formData.overtime_pay_per_day || ''}}"
+          data-field="overtime_pay_per_day"
+          bindinput="onInputChange"
+          disabled="{{!isEditing}}"
+          type="digit"
+          placeholder="请输入双倍/三倍加班单价"
+        />
+        <text class="form-helper">用于法定节假日和周六日每天前8小时的双倍/三倍计算</text>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">日常加班小时单价</text>
+        <input
+          class="form-input-macaron {{!isEditing ? 'input-disabled' : ''}}"
+          value="{{formData && formData.overtime_pay_per_hour || ''}}"
+          data-field="overtime_pay_per_hour"
+          bindinput="onInputChange"
+          disabled="{{!isEditing}}"
+          type="digit"
+          placeholder="请输入日常加班小时单价"
+        />
+        <text class="form-helper">用于普通加班，以及节假日/周六日超过8小时外的部分</text>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">国内出差补贴/天</text>
+        <input
+          class="form-input-macaron {{!isEditing ? 'input-disabled' : ''}}"
+          value="{{formData && formData.domestic_allowance_per_trip_day || ''}}"
+          data-field="domestic_allowance_per_trip_day"
+          bindinput="onInputChange"
+          disabled="{{!isEditing}}"
+          type="digit"
+          placeholder="请输入国内出差补贴/天"
+        />
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">餐补/出差天</text>
+        <input
+          class="form-input-macaron {{!isEditing ? 'input-disabled' : ''}}"
+          value="{{formData && formData.meal_allowance_per_trip_day || ''}}"
+          data-field="meal_allowance_per_trip_day"
+          bindinput="onInputChange"
+          disabled="{{!isEditing}}"
+          type="digit"
+          placeholder="请输入餐补/出差天"
+        />
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">休息制度</text>
+        <picker
+          mode="selector"
+          range="{{workRestModeOptions}}"
+          value="{{workRestModeIndex}}"
+          data-field="work_rest_mode"
+          bindchange="onWorkRestModeChange"
+          disabled="{{!isEditing}}"
+        >
+          <view class="form-picker-macaron {{!isEditing ? 'input-disabled' : ''}}">
+            <text class="picker-value">{{(formData && formData.work_rest_mode) === 'single_rest' ? '单休' : '双休'}}</text>
+            <text class="picker-arrow">›</text>
+          </view>
+        </picker>
+        <text class="form-helper">单休时周六按工作日处理，仅周日计入周六日加班；双休时周六和周日都计入周六日加班</text>
       </view>
     </view>
   </view>
 
-  <!-- 编辑按钮区域 -->
-  <view class="edit-section" wx:if="{{!loading && !isEditing && netdiskInfo}}">
-    <button class="edit-action-btn" bindtap="toggleEditMode">
-      <icon type="pencil" size="20" style="color: #007AFF;"></icon>
-      <text>编辑网盘信息</text>
-    </button>
-  </view>
-
-  <!-- 操作按钮 -->
-  <view class="action-buttons" wx:if="{{!loading}}">
-    <!-- 编辑模式按钮 -->
-    <view wx:if="{{isEditing}}">
-      <button class="action-btn primary" bindtap="saveNetdiskInfo">
-        <icon type="success" size="16"></icon>
-        <text>保存信息</text>
-      </button>
-      <button class="action-btn secondary" bindtap="toggleEditMode">
-        <icon type="cancel" size="16"></icon>
-        <text>取消编辑</text>
-      </button>
+  <view class="action-section card-enter card-enter-delay-4" wx:if="{{!loading}}">
+    <view wx:if="{{isEditing}}" class="action-row">
+      <view class="macaron-btn macaron-btn-peach action-btn" bindtap="saveNetdiskInfo">
+        保存信息
+      </view>
+      <view class="macaron-btn macaron-btn-lavender action-btn" bindtap="toggleEditMode">
+        取消编辑
+      </view>
     </view>
 
-    <!-- 查看模式按钮 -->
-    <view wx:else>
-      <button class="action-btn primary" wx:if="{{!netdiskInfo}}" bindtap="toggleEditMode">
-        <icon type="success" size="16"></icon>
-        <text>添加网盘信息</text>
-      </button>
-      
-      <button 
-        class="action-btn danger" 
-        wx:if="{{netdiskInfo && isAdmin}}" 
-        bindtap="deleteNetdiskInfo"
-      >
-        <icon type="warn" size="16"></icon>
-        <text>删除信息</text>
-      </button>
+    <view wx:else class="action-row">
+      <view class="macaron-btn macaron-btn-yellow action-btn" wx:if="{{netdiskInfo}}" bindtap="toggleEditMode">
+        编辑配置
+      </view>
+      <view class="macaron-btn macaron-btn-mint action-btn" wx:if="{{!netdiskInfo}}" bindtap="toggleEditMode">
+        添加配置
+      </view>
+      <view class="macaron-btn macaron-btn-pink action-btn" wx:if="{{false && netdiskInfo && isAdmin}}" bindtap="deleteNetdiskInfo">
+        删除信息
+      </view>
     </view>
   </view>
 
-  <!-- 说明信息 -->
-  <view class="help-section">
-    <view class="help-header">
-      <icon type="info" size="16" style="color: #999;"></icon>
-      <text class="help-title">使用说明</text>
+  <view class="cartoon-card help-card card-enter card-enter-delay-5">
+    <view class="section-header">
+      <text class="section-title">使用说明</text>
+      <text class="section-subtitle">与当前考勤工资条生成逻辑保持一致</text>
     </view>
-    <view class="help-content">
-      <text class="help-text">• 网盘账号用于自动上传考勤Excel文件到公司网盘</text>
-      <text class="help-text">• 未配置网盘信息的用户无法提交考勤记录</text>
-      <text class="help-text">• 请联系管理员配置您的网盘账号信息</text>
-      <text class="help-text" wx:if="{{isAdmin}}">• 管理员可以管理所有用户的网盘账号</text>
+    <view class="tips-list">
+      <text class="tip-item">• “上传工资条到网盘”关闭后，只会更新本地 Excel，不会上传工资条和考勤表</text>
+      <text class="tip-item">• 开启网盘上传时，网盘账号用于自动上传考勤 Excel 文件到公司网盘</text>
+      <text class="tip-item">• 底薪、加班费、休息制度、餐补/出差天会用于生成工资条</text>
+      <text class="tip-item">• 开启网盘上传但未配置网盘信息时，相关上传功能会被拦截</text>
+      <text class="tip-item">• 加班费会拆分为节假日加班费、周六日小时加班费、非周六日小时加班费写入工资条和考勤表</text>
+      <text class="tip-item">• 普通用户只能维护自己的配置</text>
+      <text class="tip-item" wx:if="{{false && isAdmin}}">• 管理员可以管理所有用户的工资条配置</text>
     </view>
   </view>
 </view>

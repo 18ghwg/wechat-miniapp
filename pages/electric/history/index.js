@@ -1,5 +1,32 @@
 const { API, apiCall, showError, showSuccess } = require('../../../utils/api');
 const { testModeManager } = require('../../../utils/testMode');
+const guestMode = require('../../../utils/mock-data');
+
+const CHART_COLORS = {
+  peach: '#FF9F43',
+  mint: '#B9FBC0',
+  pink: '#FFB3BA',
+  lavender: '#E0BBE4',
+  blue: '#98F5E1',
+  yellow: '#FFD93D',
+  foreground: '#5E4E3E',
+  background: '#fef9f3',
+  gridLine: 'rgba(94, 78, 62, 0.1)',
+  axisLine: 'rgba(94, 78, 62, 0.2)'
+};
+const CHART_LINE_COLOR_KEYS = ['peach', 'mint', 'pink', 'lavender', 'blue', 'yellow'];
+
+function resolveChartColors(candidate = {}) {
+  return {
+    ...CHART_COLORS,
+    ...(candidate || {})
+  };
+}
+
+function buildChartLineColors(candidate) {
+  const colors = resolveChartColors(candidate);
+  return CHART_LINE_COLOR_KEYS.map(key => colors[key]);
+}
 
 Page({
   data: {
@@ -7,6 +34,8 @@ Page({
     loading: false,
     loadingMore: false,
     isAdmin: false,
+    source: 'grid',
+    sourceLabel: '电网记录',
     bindingStatus: {
       hasBound: false,
       hasGridAccount: false
@@ -59,33 +88,50 @@ Page({
     chartLegend: [],
     
     // 图表 tooltip
-    chartTooltip: { show: false, x: 0, y: 0, date: '', value: '', unit: '度', label: '日用电量' }
+    chartTooltip: { show: false, x: 0, y: 0, date: '', value: '', unit: '度', label: '日用电量' },
+    powerCurve: { date: '', series: [], summary: {} },
+    powerCurveLoading: false,
+    powerCurveLoaded: false,
+    showPowerCurve: false,
+    powerTooltip: { show: false, x: 0, y: 0, date: '', value: '', unit: 'kW', label: '用电功率' },
+    isGuest: false
   },
 
   // ========== 图表交互数据缓存 ==========
   _chartPoints: [],      // 图表的点坐标缓存
   _chartPadding: null,   // 图表的padding缓存
+  _powerChartPoints: [],
+  _powerChartPadding: null,
   
   // ==================== 马卡龙风格图表配置 ====================
-  _chartColors: {
-    // 主色调 - 马卡龙配色
-    peach: '#FF9F43',      // 橙色马卡龙
-    mint: '#B9FBC0',       // 薄荷绿马卡龙
-    pink: '#FFB3BA',       // 粉色马卡龙
-    lavender: '#E0BBE4',   // 薰衣草马卡龙
-    blue: '#98F5E1',       // 蓝色马卡龙
-    yellow: '#FFD93D',     // 黄色马卡龙
-    // 辅助色
-    foreground: '#5E4E3E', // 前景色（文字、边框）
-    background: '#fef9f3', // 背景色
-    gridLine: 'rgba(94, 78, 62, 0.1)', // 网格线
-    axisLine: 'rgba(94, 78, 62, 0.2)', // 坐标轴
+  _chartColors: CHART_COLORS,
+
+  getChartColors() {
+    return resolveChartColors(this._chartColors);
+  },
+
+  getChartLineColors() {
+    return buildChartLineColors(this._chartColors);
   },
 
   onLoad(options) {
+    const source = options && options.source === 'physical' ? 'physical' : 'grid';
+    const isGuest = guestMode.isGuestMode();
+    this.setData({
+      source,
+      sourceLabel: source === 'physical' ? '实体电表记录' : '电网记录',
+      isGuest
+    });
+    if (isGuest) {
+      this.resetGuestPreview();
+      return;
+    }
     this.checkUserPermission();
     this.checkBindingStatus();
     this.loadAccountOptions();
+    if (source === 'physical') {
+      this.loadPowerCurve();
+    }
     
     // 设置测试模式热加载
     testModeManager.setupPageHotReload(this, function() {
@@ -95,11 +141,40 @@ Page({
   },
 
   onShow() {
+    if (guestMode.isGuestMode()) {
+      this.resetGuestPreview();
+      return;
+    }
     this.refreshData();
   },
 
   onPullDownRefresh() {
+    if (guestMode.showGuestModeTip('electric')) {
+      wx.stopPullDownRefresh();
+      return;
+    }
     this.refreshData();
+  },
+
+  resetGuestPreview() {
+    this.setData({
+      isGuest: true,
+      historyData: [],
+      accountOptions: [],
+      chartData: [],
+      chartStats: {},
+      chartLegend: [],
+      loading: false,
+      loadingMore: false,
+      hasMoreData: false,
+      stats: { totalQueries: 0, avgUsage: '0.00', latestBalance: 0 },
+      bindingStatus: { hasBound: false, hasGridAccount: false },
+      powerCurve: { date: '', series: [], summary: {} },
+      powerCurveLoading: false,
+      powerCurveLoaded: false,
+      showPowerCurve: false
+    });
+    wx.stopPullDownRefresh();
   },
 
   // 返回上一页
@@ -109,6 +184,9 @@ Page({
 
   // 导出数据
   onExport() {
+    if (guestMode.showGuestModeTip('electric')) {
+      return;
+    }
     wx.showToast({
       title: '导出功能开发中',
       icon: 'none'
@@ -117,9 +195,13 @@ Page({
 
   // 选择账号筛选
   onSelectAccount(e) {
+    if (guestMode.showGuestModeTip('electric')) {
+      return;
+    }
     const id = e.currentTarget.dataset.id;
-    this.setData({ selectedAccountId: id });
-    this.filterAndRefresh();
+    this.setData({ selectedAccountId: id }, () => {
+      this.filterAndRefresh(id);
+    });
   },
 
   // 加载账号选项
@@ -166,13 +248,30 @@ Page({
   },
 
   // 筛选并刷新
-  filterAndRefresh() {
+  filterAndRefresh(selectedId = this.data.selectedAccountId) {
     this.setData({ currentPage: 1, historyData: [] });
+    if (this.data.source === 'physical') {
+      this.loadPowerCurve(selectedId);
+    }
     this.loadHistoryData();
   },
 
   // 检查用户绑定状态
   checkBindingStatus() {
+    if (guestMode.isGuestMode()) {
+      this.resetGuestPreview();
+      return;
+    }
+    if (this.data.source === 'physical') {
+      this.setData({
+        bindingStatus: {
+          hasBound: true,
+          hasGridAccount: true
+        }
+      });
+      return;
+    }
+
     // 检查是否为测试模式
     if (testModeManager.isTestMode()) {
       console.log('电费历史-测试模式：模拟绑定状态检查');
@@ -250,6 +349,11 @@ Page({
 
   // 加载历史数据
   loadHistoryData() {
+    if (guestMode.isGuestMode()) {
+      this.resetGuestPreview();
+      return;
+    }
+
     // 检查是否为测试模式
     if (testModeManager.isTestMode()) {
       console.log('电费历史-测试模式：使用mock历史数据');
@@ -268,7 +372,7 @@ Page({
     }
     
     // 管理员直接允许查看数据，普通用户需要检查绑定状态
-    if (!this.data.isAdmin && !this.data.bindingStatus.hasBound) {
+    if (this.data.source !== 'physical' && !this.data.isAdmin && !this.data.bindingStatus.hasBound) {
       console.log('普通用户未绑定，跳过加载数据');
         return;
       }
@@ -281,7 +385,8 @@ Page({
       limit: this.data.limit,
       grid_account: this.data.filterOptions.gridAccount,
       room_name: this.data.filterOptions.roomName,
-      is_admin_request: this.data.isAdmin
+      is_admin_request: this.data.isAdmin,
+      source: this.data.source
     };
 
       apiCall(
@@ -379,8 +484,8 @@ Page({
         formatted_usage: this.formatUsage(item.LastDailyUsage || dailyUsage || 0),
         
         // 状态字段
-        status: 'normal',
-        status_text: '正常',
+        status: item.source === 'physical' ? 'physical' : 'normal',
+        status_text: item.source === 'physical' ? '实体电表' : '正常',
         
         // 供电所信息
         org_name: item.OrgName || '未知供电所',
@@ -463,6 +568,11 @@ Page({
 
   // 刷新数据
   refreshData() {
+    if (guestMode.isGuestMode()) {
+      this.resetGuestPreview();
+      return;
+    }
+
     console.log('refreshData - 开始刷新数据');
     
     this.setData({
@@ -475,9 +585,12 @@ Page({
       chartLegend: [],
       chartData: {}
     });
+    if (this.data.source === 'physical') {
+      this.loadPowerCurve();
+    }
     
     // 管理员直接加载历史数据，普通用户需要先检查绑定状态
-    if (this.data.isAdmin) {
+    if (this.data.source === 'physical' || this.data.isAdmin) {
       console.log('管理员刷新数据，直接加载历史');
       this.loadHistoryData();
     } else {
@@ -489,6 +602,10 @@ Page({
 
   // 加载更多数据
   loadMore() {
+    if (guestMode.showGuestModeTip('electric')) {
+      return;
+    }
+
     if (!this.data.hasMoreData || this.data.loading || this.data.loadingMore) {
       return;
     }
@@ -633,6 +750,266 @@ Page({
 
   // ==================== Canvas图表绘制 ====================
 
+  // 加载实体电表昨日功率曲线
+  loadPowerCurve(selectedId = this.data.selectedAccountId) {
+    if (guestMode.isGuestMode()) {
+      this.resetGuestPreview();
+      return Promise.resolve();
+    }
+
+    if (this.data.source !== 'physical') {
+      return Promise.resolve();
+    }
+
+    const params = {};
+    if (selectedId && selectedId !== 'all') {
+      params.room_name = selectedId;
+    }
+
+    this._powerCurveRequestSeq = (this._powerCurveRequestSeq || 0) + 1;
+    const requestSeq = this._powerCurveRequestSeq;
+    this.setData({
+      powerCurve: { date: '', series: [], summary: {} },
+      showPowerCurve: false,
+      powerCurveLoaded: false,
+      powerCurveLoading: true,
+      'powerTooltip.show': false
+    });
+    return apiCall(
+      () => API.electric.getPhysicalMeterPowerCurve(params),
+      null,
+      (response) => {
+        if (requestSeq !== this._powerCurveRequestSeq || selectedId !== this.data.selectedAccountId) {
+          return;
+        }
+        const rawCurve = response.data || { date: '', series: [], summary: {} };
+        const responseSeries = rawCurve.series || [];
+        const filteredSeries = selectedId && selectedId !== 'all'
+          ? responseSeries.filter(item =>
+              item.location === selectedId ||
+              String(item.location || '').includes(selectedId) ||
+              String(item.meter_sn || '') === selectedId ||
+              String(item.account_name || '').includes(selectedId)
+            )
+          : responseSeries;
+        const pointCount = filteredSeries.reduce((sum, item) => sum + ((item.points || []).length), 0);
+        const curve = {
+          ...rawCurve,
+          series: filteredSeries.map((item, index) => ({
+            ...item,
+            colorClass: `power-dot-${index % 6}`
+          })),
+          summary: {
+            ...(rawCurve.summary || {}),
+            meter_count: filteredSeries.length,
+            point_count: pointCount
+          }
+        };
+        const hasPoints = (curve.series || []).some(item => (item.points || []).length > 0);
+        this.setData({
+          powerCurve: curve,
+          showPowerCurve: hasPoints,
+          powerCurveLoading: false,
+          powerCurveLoaded: true
+        });
+        if (hasPoints) {
+          setTimeout(() => this.drawPowerCurve(), 100);
+        }
+      },
+      (error) => {
+        if (requestSeq !== this._powerCurveRequestSeq || selectedId !== this.data.selectedAccountId) {
+          return;
+        }
+        console.error('[实体电表记录] 昨日功率曲线请求失败:', error);
+        this.setData({
+          powerCurve: { date: '', series: [], summary: {} },
+          showPowerCurve: false,
+          powerCurveLoading: false,
+          powerCurveLoaded: true
+        });
+      }
+    );
+  },
+
+  // 绘制实体电表昨日功率曲线
+  drawPowerCurve() {
+    const curve = this.data.powerCurve || {};
+    const series = curve.series || [];
+    if (!series.some(item => (item.points || []).length > 0)) {
+      return;
+    }
+
+    const colors = this.getChartColors();
+    const query = wx.createSelectorQuery().in(this);
+    query.select('#powerCurveChart')
+      .fields({ node: true, size: true })
+      .exec((res) => {
+        if (!res || !res[0]) {
+          if (!this.powerCurveRetryCount) this.powerCurveRetryCount = 0;
+          if (this.powerCurveRetryCount < 5) {
+            this.powerCurveRetryCount++;
+            setTimeout(() => this.drawPowerCurve(), 200);
+          }
+          return;
+        }
+        this.powerCurveRetryCount = 0;
+
+        const canvas = res[0].node;
+        const { width, height } = res[0];
+        if (!width || !height || width <= 0 || height <= 0) {
+          return;
+        }
+
+        const ctx = canvas.getContext('2d');
+        const dpr = wx.getWindowInfo().pixelRatio || 1;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+
+        const padding = { top: 36, right: 24, bottom: 46, left: 72 };
+        const chartWidth = width - padding.left - padding.right;
+        const chartHeight = height - padding.top - padding.bottom;
+        if (chartWidth <= 0 || chartHeight <= 0) return;
+
+        const filteredSeries = series.map(item => ({
+          ...item,
+          filteredPoints: this.getFilteredPowerPoints(item.points || [])
+        }));
+        const allValues = [];
+        filteredSeries.forEach(item => {
+          item.filteredPoints.forEach(point => {
+            const value = Number(point.power_kw || 0);
+            if (Number.isFinite(value)) allValues.push(value);
+          });
+        });
+        if (!allValues.length) return;
+
+        const maxValue = Math.max.apply(Math, allValues);
+        const yMax = Math.max(maxValue * 1.12, 0.5);
+        const ySteps = 4;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = colors.gridLine;
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= ySteps; i++) {
+          const y = padding.top + chartHeight - (chartHeight * i / ySteps);
+          ctx.beginPath();
+          ctx.moveTo(padding.left, y);
+          ctx.lineTo(padding.left + chartWidth, y);
+          ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = colors.foreground;
+        ctx.font = 'bold 11px "PingFang SC", sans-serif';
+        ctx.textAlign = 'right';
+        for (let i = 0; i <= ySteps; i++) {
+          const value = yMax * i / ySteps;
+          const y = padding.top + chartHeight - (chartHeight * i / ySteps);
+          ctx.fillText(`${value.toFixed(1)} kW`, padding.left - 8, y + 4);
+        }
+
+        ctx.textAlign = 'left';
+        ctx.font = 'bold 12px "PingFang SC", sans-serif';
+        ctx.fillText('功率 (kW)', padding.left, padding.top - 10);
+
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 10px "PingFang SC", sans-serif';
+        ['00:00', '06:00', '12:00', '18:00', '24:00'].forEach((label, index) => {
+          const x = padding.left + chartWidth * index / 4;
+          ctx.fillText(label, x, padding.top + chartHeight + 22);
+        });
+
+        const macaronColors = this.getChartLineColors();
+        const allPoints = [];
+        filteredSeries.forEach((item, seriesIndex) => {
+          const color = macaronColors[seriesIndex % macaronColors.length];
+          const points = item.filteredPoints.map(point => {
+            return {
+              x: padding.left + (point.minutes / 1440) * chartWidth,
+              y: padding.top + chartHeight - (point.power_kw / yMax) * chartHeight,
+              value: point.power_kw,
+              date: `${item.location} ${point.time || ''}`
+            };
+          });
+          if (!points.length) return;
+
+          ctx.beginPath();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2.4;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          points.forEach((point, index) => {
+            if (index === 0) ctx.moveTo(point.x, point.y);
+            else ctx.lineTo(point.x, point.y);
+          });
+          ctx.stroke();
+
+          points.forEach((point, index) => {
+            if (index % Math.max(1, Math.ceil(points.length / 16)) !== 0 && index !== points.length - 1) return;
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 3.5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          });
+          allPoints.push(...points);
+        });
+
+        this._powerChartPoints = allPoints;
+        this._powerChartPadding = padding;
+      });
+  },
+
+  // 实体电表功率曲线滤波：先按 5 分钟聚合，再做 5 点滑动平均
+  getFilteredPowerPoints(rawPoints) {
+    const bucketMinutes = 5;
+    const windowSize = 5;
+    const buckets = new Map();
+
+    rawPoints.forEach(point => {
+      const timeParts = String(point.time || '00:00').split(':');
+      const hour = Number(timeParts[0]) || 0;
+      const minute = Number(timeParts[1]) || 0;
+      const minutes = Math.max(0, Math.min(1439, hour * 60 + minute));
+      const value = Number(point.power_kw || 0);
+      if (!Number.isFinite(value)) return;
+
+      const bucket = Math.round(minutes / bucketMinutes) * bucketMinutes;
+      if (!buckets.has(bucket)) {
+        buckets.set(bucket, { minutes: bucket, total: 0, count: 0 });
+      }
+      const item = buckets.get(bucket);
+      item.total += value;
+      item.count += 1;
+    });
+
+    const averaged = Array.from(buckets.values())
+      .sort((a, b) => a.minutes - b.minutes)
+      .map(item => ({
+        minutes: item.minutes,
+        power_kw: item.count ? item.total / item.count : 0
+      }));
+
+    return averaged.map((point, index) => {
+      const start = Math.max(0, index - Math.floor(windowSize / 2));
+      const end = Math.min(averaged.length, index + Math.floor(windowSize / 2) + 1);
+      const slice = averaged.slice(start, end);
+      const smoothed = slice.reduce((sum, item) => sum + item.power_kw, 0) / slice.length;
+      const hour = Math.floor(point.minutes / 60);
+      const minute = point.minutes % 60;
+      return {
+        minutes: point.minutes,
+        power_kw: Number(smoothed.toFixed(3)),
+        time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+      };
+    });
+  },
+
   /**
    * 绘制图表（Canvas 2D接口）
    */
@@ -739,10 +1116,11 @@ Page({
         console.log('drawChart - 日期范围:', { allDates: allDates.length, minDate, maxDate, maxUsage });
 
         // 绘制马卡龙风格坐标轴
-        this.drawMacaronAxes(ctx, padding, chartWidth, chartHeight, minDate, maxDate, minUsage, maxUsage, this._chartColors);
+        const colors = this.getChartColors();
+        this.drawMacaronAxes(ctx, padding, chartWidth, chartHeight, minDate, maxDate, minUsage, maxUsage, colors);
 
         // 马卡龙配色数组
-        const macaronColors = [this._chartColors.peach, this._chartColors.mint, this._chartColors.pink, this._chartColors.lavender, this._chartColors.blue, this._chartColors.yellow];
+        const macaronColors = this.getChartLineColors();
 
         // 收集所有点的坐标用于触摸交互
         const allPoints = [];
@@ -750,7 +1128,7 @@ Page({
         // 绘制各户号的曲线（马卡龙风格）
         Object.entries(chartData).forEach(([roomName, roomData], index) => {
           const color = (chartLegend[index] ? chartLegend[index].color : undefined) || macaronColors[index % macaronColors.length];
-          const points = this.drawMacaronLine(ctx, canvas, roomData, padding, chartWidth, chartHeight, minDate, maxDate, minUsage, maxUsage, color, this._chartColors);
+          const points = this.drawMacaronLine(ctx, canvas, roomData, padding, chartWidth, chartHeight, minDate, maxDate, minUsage, maxUsage, color, colors);
           if (points) {
             allPoints.push(...points);
           }
@@ -1015,9 +1393,12 @@ Page({
    * Canvas触摸开始事件 - 显示tooltip
    */
   onChartTouchStart(e) {
+    if (!e || !Array.isArray(e.touches) || !e.touches[0]) return;
     const touch = e.touches[0];
-    const points = this._chartPoints;
-    const padding = this._chartPadding;
+    const canvasId = e.currentTarget && e.currentTarget.id;
+    const isPowerChart = canvasId === 'powerCurveChart';
+    const points = isPowerChart ? this._powerChartPoints : this._chartPoints;
+    const padding = isPowerChart ? this._powerChartPadding : this._chartPadding;
     
     if (!points || points.length === 0) return;
     
@@ -1072,14 +1453,14 @@ Page({
       }
       
       this.setData({
-        chartTooltip: {
+        [isPowerChart ? 'powerTooltip' : 'chartTooltip']: {
           show: true,
           x: tooltipX,
           y: tooltipY,
           date: nearestPoint.date,
           value: valueStr,
-          unit: '度',
-          label: '日用电量'
+          unit: isPowerChart ? 'kW' : '度',
+          label: isPowerChart ? '用电功率' : '日用电量'
         }
       });
     }
@@ -1097,10 +1478,12 @@ Page({
    * Canvas触摸结束事件 - 隐藏tooltip
    */
   onChartTouchEnd(e) {
+    const canvasId = e.currentTarget.id;
+    const tooltipKey = canvasId === 'powerCurveChart' ? 'powerTooltip' : 'chartTooltip';
     // 延迟隐藏，让用户能看清数据
     setTimeout(() => {
       this.setData({
-        'chartTooltip.show': false
+        [`${tooltipKey}.show`]: false
       });
     }, 1500);
   },
@@ -1161,7 +1544,7 @@ Page({
     });
 
     // 如果是管理员，加载管理员选项
-    if (isAdmin) {
+    if (isAdmin && this.data.source !== 'physical') {
       this.loadAdminAccountOptions();
     }
 
@@ -1289,7 +1672,8 @@ Page({
    * 管理员账号选择变化
    */
   onAdminAccountChange(e) {
-    const index = parseInt(e.detail.value);
+    const rawIndex = e && e.detail ? parseInt(e.detail.value) : 0;
+    const index = Number.isInteger(rawIndex) && rawIndex >= 0 && rawIndex < this.data.adminAccountData.length ? rawIndex : 0;
     const selectedData = this.data.adminAccountData[index];
     
     console.log('管理员账号选择变化:', { index, selectedData });
@@ -1350,7 +1734,8 @@ Page({
    * 管理员户号选择变化
    */
   onAdminRoomChange(e) {
-    const index = parseInt(e.detail.value);
+    const rawIndex = e && e.detail ? parseInt(e.detail.value) : 0;
+    const index = Number.isInteger(rawIndex) && rawIndex >= 0 && rawIndex < this.data.adminRoomData.length ? rawIndex : 0;
     const selectedData = this.data.adminRoomData[index];
     
     console.log('管理员户号选择变化:', { index, selectedData });
@@ -1385,7 +1770,8 @@ Page({
    * 数据条数选择变化
    */
   onLimitChange(e) {
-    const index = parseInt(e.detail.value);
+    const rawIndex = e && e.detail ? parseInt(e.detail.value) : 1;
+    const index = Number.isInteger(rawIndex) && rawIndex >= 0 ? rawIndex : 1;
     const limitMap = { 0: 10, 1: 20, 2: 50, 3: 100 };
     const newLimit = limitMap[index] || 20;
     
@@ -1450,7 +1836,8 @@ Page({
    * 普通用户户号选择变化
    */
   onUserAccountChange(e) {
-    const index = parseInt(e.detail.value);
+    const rawIndex = e && e.detail ? parseInt(e.detail.value) : 0;
+    const index = Number.isInteger(rawIndex) && rawIndex >= 0 ? rawIndex : 0;
     // 这里可以根据需要实现普通用户户号选择逻辑
     this.setData({
       userAccountIndex: index

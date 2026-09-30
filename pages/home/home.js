@@ -3,13 +3,14 @@ const { setupPageShare } = require('../../utils/share');
 const { miniprogramInfo } = require('../../utils/miniprogram-info');
 const { diagnoseShare } = require('../../utils/share-debug');
 const { isDevtools } = require('../../utils/system-info');
-const mockData = require('../../utils/mock-data'); // �新增
+const mockData = require('../../utils/mock-data'); // 新增
+const { testModeManager } = require('../../utils/testMode');
 
 Page({
   data: {
     userInfo: null,
     isLoggedIn: false,
-    isGuest: false, // �新增：游客模式标识
+    isGuest: false, // 新增：游客模式标识
     functionList: [
       {
         id: 'electric',
@@ -34,19 +35,10 @@ Page({
         name: '报销管理',
         icon: '💰',
         desc: '报销申请处理',
-        url: '',  // 页面暂未创建
+        url: '/pages/expense/index',
         permission: '',  // 移除权限检查，所有用户可用
         hasPermission: true
       },
-      {
-        id: 'weather',
-        name: '天气服务',
-        icon: '🌤️',
-        desc: '天气预报与预警通知',
-        url: '/pages/admin/weather-settings/index',  // 添加跳转地址
-        permission: '',  // 移除权限检查，所有用户可用
-        hasPermission: true
-      }
     ],
     systemConfig: null,
     pageLoading: true,
@@ -57,13 +49,13 @@ Page({
   },
 
   onShow() {
-    // 安全地初始�TabBar
+    // 安全地初始化 TabBar
     const tabBar = this.getTabBar();
     if (tabBar && typeof tabBar.init === 'function') {
       tabBar.init();
     }
     
-    // �检查游客模式变化
+    // 检查游客模式变化
     const oldGuestMode = this.data.isGuest || false;
     const newGuestMode = mockData.isGuestMode();
     const guestModeChanged = oldGuestMode !== newGuestMode;
@@ -91,20 +83,20 @@ Page({
     this.checkLoginAndLoadData();
     
     // 显示分享菜单（包含朋友圈分享）
-    // 注意：只要定义�onShareTimeline，就会自动显示"分享到朋友圈"选项
-    // 不需要�showShareMenu 中指�menus 参数
+    // 注意：只要定义 onShareTimeline，就会自动显示"分享到朋友圈"选项
+    // 不需要在 showShareMenu 中指定 menus 参数
     wx.showShareMenu({
       withShareTicket: true,
       success: (res) => {
-        console.log('�分享菜单显示成功:', res);
+        console.log('分享菜单显示成功:', res);
       },
       fail: (err) => {
-        console.warn('⚠�分享菜单显示失败:', err);
+        console.warn('⚠ 分享菜单显示失败:', err);
         // 即使失败，onShareTimeline 仍然有效
       }
     });
     
-    // �调试：如需诊断分享功能，请在控制台执行：
+    // 调试：如需诊断分享功能，请在控制台执行：
     // require('../../utils/share-debug').diagnoseShare();
   },
   
@@ -149,12 +141,12 @@ Page({
     const openid = wx.getStorageSync('openid');
     const userInfo = wx.getStorageSync('userInfo');
     
-    // �修改：支持游客模式
+    // 修改：支持游客模式
     if (!openid) {
       // 检查是否为游客模式
       const isGuest = mockData.isGuestMode();
       if (isGuest) {
-        console.log('�首页-游客模式：不使用mock用户数据');
+        console.log('首页-游客模式：不使用 mock 用户数据');
         this.setData({
           isLoggedIn: false,
           isGuest: true,
@@ -212,7 +204,7 @@ Page({
    */
   loadUserInfo() {
     // 检查是否为测试模式
-    const isTestMode = wx.getStorageSync('isTestMode');
+    const isTestMode = testModeManager.isTestMode();
     
     if (isTestMode) {
       // 测试模式：直接使用本地存储的用户信息
@@ -470,7 +462,7 @@ Page({
    */
   loadSystemConfig() {
     // 检查是否为测试模式
-    const isTestMode = wx.getStorageSync('isTestMode');
+    const isTestMode = testModeManager.isTestMode();
     
     // 获取小程序版本信息
     const miniProgramInfo = this.getMiniProgramVersionInfo();
@@ -529,14 +521,14 @@ Page({
         // 更新小程序信息（名称、描述等）
         if (backendConfig) {
           miniprogramInfo.setSystemConfig(backendConfig);
-          console.log('�小程序信息已更新:', {
+          console.log('小程序信息已更新:', {
             appName: backendConfig.app_name,
             appDescription: backendConfig.app_description
           });
         }
         console.log('首页：后端系统配置', backendConfig);
         
-        // 合并配置：微信版本信�+ 后端配置
+        // 合并配置：微信版本信息 + 后端配置
         const mergedConfig = Object.assign({}, initialConfig, {
           // 后端配置补充
           app_name: backendConfig.app_name,
@@ -570,14 +562,14 @@ Page({
    * 功能点击处理
    */
   onFunctionTap(e) {
-    console.log('�===== 功能卡片点击事件 =====');
-    console.log('�事件对象:', e);
-    console.log('�currentTarget:', e.currentTarget);
-    console.log('�dataset:', e.currentTarget.dataset);
+    console.log('===== 功能卡片点击事件 =====');
+    console.log('事件对象:', e);
+    console.log('currentTarget:', e.currentTarget);
+    console.log('dataset:', e.currentTarget.dataset);
     
     const { item } = e.currentTarget.dataset;
     
-    console.log('�点击的功能项:', item);
+    console.log('点击的功能项:', item);
     console.log('- ID:', item.id);
     console.log('- 名称:', item.name);
     console.log('- URL:', item.url);
@@ -586,7 +578,7 @@ Page({
 
     // 检查权限
     if (item.permission && !item.hasPermission) {
-      console.log('�权限检查失败，显示权限不足提示');
+      console.log('权限检查失败，显示权限不足提示');
       wx.showModal({
         title: '权限不足',
         content: `您还没有${item.name}的使用权限，请联系管理员或绑定Web账号。`,
@@ -604,7 +596,7 @@ Page({
       return;
     }
 
-    console.log('�权限检查通过，准备跳转');
+    console.log('权限检查通过，准备跳转');
     this.navigateToFunction(item);
   },
 
@@ -612,17 +604,17 @@ Page({
    * 导航到功能页面
    */
   navigateToFunction(item) {
-    console.log('�===== 开始导�=====');
-    console.log('�功能项:', item);
-    console.log('�目标URL:', item.url);
+    console.log('===== 开始导航 =====');
+    console.log('功能项:', item);
+    console.log('目标 URL:', item.url);
     
     if (!item.url) {
-      console.log('�URL为空，无法跳转');
+      console.log('URL 为空，无法跳转');
       showError('功能暂未开放');
       return;
     }
     
-    // TabBar 页面列表（需要使�switchTab 跳转）
+    // TabBar 页面列表（需要使用 switchTab 跳转）
     const tabBarPages = [
       'pages/home/home',
       'pages/electric/index',
@@ -634,28 +626,28 @@ Page({
     const isTabBarPage = tabBarPages.some(page => item.url.includes(page));
     
     if (isTabBarPage) {
-      console.log('�TabBar页面，使�switchTab 跳转');
+      console.log('TabBar 页面，使用 switchTab 跳转');
       wx.switchTab({
         url: item.url,
         success: () => {
-          console.log('�TabBar页面跳转成功:', item.url);
+          console.log('TabBar 页面跳转成功:', item.url);
         },
         fail: (err) => {
-          console.error('�TabBar页面跳转失败:', err);
+          console.error('TabBar 页面跳转失败:', err);
           console.error('- 错误信息:', err.errMsg);
           console.error('- 目标URL:', item.url);
           showError(`页面跳转失败: ${err.errMsg || '未知错误'}`);
         }
       });
     } else {
-      console.log('📄 普通页面，使�navigateTo 跳转');
+      console.log('普通页面，使用 navigateTo 跳转');
       wx.navigateTo({
         url: item.url,
         success: () => {
-          console.log('�页面跳转成功:', item.url);
+          console.log('页面跳转成功:', item.url);
         },
         fail: (err) => {
-          console.error('�页面跳转失败:', err);
+          console.error('页面跳转失败:', err);
           console.error('- 错误信息:', err.errMsg);
           console.error('- 目标URL:', item.url);
           showError(`页面跳转失败: ${err.errMsg || '未知错误'}`);
@@ -673,14 +665,20 @@ Page({
     });
   },
 
+  goToExpense() {
+    wx.navigateTo({
+      url: '/pages/expense/index'
+    });
+  },
+
   /**
    * 加载公告列表
    */
   loadAnnouncements() {
     this.setData({ announcementsLoading: true });
     
-    // �修改：只在测试模式使用mock公告，游客模式正常获取
-    const isTestMode = wx.getStorageSync('isTestMode');
+    // 修改：只在测试模式使用 mock 公告，游客模式正常获取
+    const isTestMode = testModeManager.isTestMode();
     
     if (isTestMode) {
       // 测试模式：使用mock公告数据
@@ -787,7 +785,7 @@ Page({
   },
 
   /**
-   * 显示公告弹窗 - 使�notice-modal 组件
+   * 显示公告弹窗 - 使用 notice-modal 组件
    */
   showAnnouncementPopup(announcement) {
     // 将所有需要弹窗的公告转换为 notice-modal 格式
@@ -827,7 +825,7 @@ Page({
   },
 
   /**
-   * 查看公告详�- 使�notice-modal 组件
+   * 查看公告详情 - 使用 notice-modal 组件
    */
   onAnnouncementTap(e) {
     const { item } = e.currentTarget.dataset;
@@ -858,7 +856,7 @@ Page({
   },
 
   /**
-   * �新增：跳转到登录页面
+   * 新增：跳转到登录页面
    */
   goToLogin() {
     wx.removeStorageSync('isGuestMode');

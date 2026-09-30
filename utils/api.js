@@ -8,6 +8,10 @@ const { environmentManager, getEnvironmentInfo } = require('./environment');
 const SignatureUtil = require('./signature');
 // 导入mock数据工具（用于检查游客模式）
 const mockData = require('./mock-data');
+const {
+  normalizeAuthResponse,
+  normalizeUserInfoResponse
+} = require('./mini-program-role');
 
 // 调试日志工具（统一控制所有API日志输出）
 // 在 app.js 中设置 globalData.enableApiDebug = true 开启调试日志
@@ -37,6 +41,49 @@ const getTimeout = (isLongTimeout = false) => {
   return environmentManager.getTimeout(isLongTimeout);
 };
 
+// 构建与签名完全一致的排序查询字符串
+const buildSortedQueryString = (data = {}) => {
+  return SignatureUtil.buildSortedQueryString(data);
+};
+
+// 处理认证失败（支持业务401和HTTP 401）
+function handleUnauthorized(message = '请先登录') {
+  const isGuest = mockData.isGuestMode();
+  if (isGuest) {
+    apiLog.log('未登录请求被拒绝，引导用户登录');
+    mockData.promptLogin(message || '该操作需要先登录。');
+    return new Error(message || '该功能需要登录');
+  }
+
+  apiLog.log('❌ 用户身份认证失败，跳转登录页');
+  wx.removeStorageSync('openid');
+  wx.removeStorageSync('userInfo');
+  wx.reLaunch({
+    url: '/pages/login/index'
+  });
+  return new Error(message || '请先登录');
+}
+
+// 处理权限不足（支持业务403和HTTP 403）
+function handleForbidden(message = '权限不足') {
+  const errorMsg = message || '权限不足';
+  wx.showModal({
+    title: '权限提示',
+    content: `${errorMsg}\n\n如需使用此功能，请：\n1. 绑定管理员账号\n2. 联系管理员授权`,
+    showCancel: true,
+    cancelText: '知道了',
+    confirmText: '去绑定',
+    success(res) {
+      if (res.confirm) {
+        wx.navigateTo({
+          url: '/pages/user/bind/index'
+        });
+      }
+    }
+  });
+  return new Error(errorMsg);
+}
+
 /**
  * 通用请求方法
  * @param {string} url 接口地址
@@ -64,11 +111,10 @@ function request(url, method = 'GET', data = {}, needAuth = true) {
     // ✅ 对于GET请求，将data参数构建到URL中
     let finalUrl = url;
     let requestData = data;
-    
+
     if (method === 'GET' && data && Object.keys(data).length > 0) {
-      // 构建查询字符串（按key排序）
-      const keys = Object.keys(data).sort();
-      const queryString = keys.map(key => `${key}=${encodeURIComponent(data[key])}`).join('&');
+      // 构建与签名一致的查询字符串（按key排序 + 按后端规则编码value）
+      const queryString = buildSortedQueryString(data);
       finalUrl = `${url}?${queryString}`;
       requestData = {};  // GET请求不需要body
     }
@@ -132,48 +178,16 @@ function request(url, method = 'GET', data = {}, needAuth = true) {
             // 检查是否是网盘认证失败，而不是用户身份认证失败
             apiLog.log('🔍 401错误调试 - responseData:', responseData);
             apiLog.log('🔍 401错误调试 - need_netdisk_update:', responseData ? responseData.need_netdisk_update : 'responseData is null');
-            
+
             if (responseData && responseData.need_netdisk_update) {
               // 这是网盘认证失败，不是用户身份认证失败，正常返回给业务层处理
               apiLog.log('⚠️ 网盘账号认证失败，由业务层处理');
               resolve({ code, msg, data: responseData });
             } else {
-              // ⭐ 检查是否为游客模式
-              const isGuest = mockData.isGuestMode();
-              if (isGuest) {
-                // 游客模式下，不跳转登录页，只是返回错误
-                apiLog.log('🎭 游客模式：401错误，不跳转登录页');
-                reject(new Error(msg || '该功能需要登录'));
-              } else {
-                // 用户身份认证失败，跳转到登录页
-                apiLog.log('❌ 用户身份认证失败，跳转登录页');
-                wx.removeStorageSync('openid');
-                wx.removeStorageSync('userInfo');
-                wx.reLaunch({
-                  url: '/pages/login/index'
-                });
-                reject(new Error(msg || '请先登录'));
-              }
+              reject(handleUnauthorized(msg || '请先登录'));
             }
           } else if (code === 403) {
-            // 权限不足，显示友好提示
-            const errorMsg = msg || '权限不足';
-            wx.showModal({
-              title: '权限提示',
-              content: `${errorMsg}\n\n如需使用此功能，请：\n1. 绑定管理员账号\n2. 联系管理员授权`,
-              showCancel: true,
-              cancelText: '知道了',
-              confirmText: '去绑定',
-              success(res) {
-                if (res.confirm) {
-                  // 跳转到绑定页面
-                  wx.navigateTo({
-                    url: '/pages/user/bind/index'
-                  });
-                }
-              }
-            });
-            reject(new Error(errorMsg));
+            reject(handleForbidden(msg || '权限不足'));
           } else if (code === 404) {
             // 404错误，特殊处理（如姓名未完善等）
             const error = new Error(msg || '资源未找到');
@@ -188,6 +202,15 @@ function request(url, method = 'GET', data = {}, needAuth = true) {
             apiLog.log('⚠️ API业务错误');
             resolve({ code, msg, data: responseData });
           }
+        } else if (res.statusCode === 401) {
+          apiLog.log('❌ HTTP 401 未授权');
+          reject(handleUnauthorized((res.data && res.data.msg) || '请先登录'));
+        } else if (res.statusCode === 403) {
+          apiLog.log('❌ HTTP 403 权限不足');
+          reject(handleForbidden((res.data && res.data.msg) || '权限不足'));
+        } else if (res.statusCode === 429) {
+          apiLog.log('❌ HTTP 429 请求过于频繁');
+          reject(new Error((res.data && res.data.msg) || '操作过于频繁，请稍后重试'));
         } else {
           reject(new Error(`网络错误: ${res.statusCode}`));
         }
@@ -234,11 +257,10 @@ function requestWithLongTimeout(url, method = 'GET', data = {}, needAuth = true)
     // ✅ 对于GET请求，将data参数构建到URL中
     let finalUrl = url;
     let requestData = data;
-    
+
     if (method === 'GET' && data && Object.keys(data).length > 0) {
-      // 构建查询字符串（按key排序）
-      const keys = Object.keys(data).sort();
-      const queryString = keys.map(key => `${key}=${encodeURIComponent(data[key])}`).join('&');
+      // 构建与签名一致的查询字符串（按key排序 + 按后端规则编码value）
+      const queryString = buildSortedQueryString(data);
       finalUrl = `${url}?${queryString}`;
       requestData = {};  // GET请求不需要body
     }
@@ -300,48 +322,16 @@ function requestWithLongTimeout(url, method = 'GET', data = {}, needAuth = true)
             // 检查是否是网盘认证失败，而不是用户身份认证失败
             apiLog.log('🔍 401错误调试 - responseData:', responseData);
             apiLog.log('🔍 401错误调试 - need_netdisk_update:', responseData ? responseData.need_netdisk_update : 'responseData is null');
-            
+
             if (responseData && responseData.need_netdisk_update) {
               // 这是网盘认证失败，不是用户身份认证失败，正常返回给业务层处理
               apiLog.log('⚠️ 网盘账号认证失败，由业务层处理');
               resolve({ code, msg, data: responseData });
             } else {
-              // ⭐ 检查是否为游客模式
-              const isGuest = mockData.isGuestMode();
-              if (isGuest) {
-                // 游客模式下，不跳转登录页，只是返回错误
-                apiLog.log('🎭 游客模式：401错误，不跳转登录页');
-                reject(new Error(msg || '该功能需要登录'));
-              } else {
-                // 用户身份认证失败，跳转到登录页
-                apiLog.log('❌ 用户身份认证失败，跳转登录页');
-                wx.removeStorageSync('openid');
-                wx.removeStorageSync('userInfo');
-                wx.reLaunch({
-                  url: '/pages/login/index'
-                });
-                reject(new Error(msg || '请先登录'));
-              }
+              reject(handleUnauthorized(msg || '请先登录'));
             }
           } else if (code === 403) {
-            // 权限不足，显示友好提示
-            const errorMsg = msg || '权限不足';
-            wx.showModal({
-              title: '权限提示',
-              content: `${errorMsg}\n\n如需使用此功能，请：\n1. 绑定管理员账号\n2. 联系管理员授权`,
-              showCancel: true,
-              cancelText: '知道了',
-              confirmText: '去绑定',
-              success(res) {
-                if (res.confirm) {
-                  // 跳转到绑定页面
-                  wx.navigateTo({
-                    url: '/pages/user/bind/index'
-                  });
-                }
-              }
-            });
-            reject(new Error(errorMsg));
+            reject(handleForbidden(msg || '权限不足'));
           } else if (code === 404) {
             // 404错误，特殊处理（如姓名未完善等）
             const error = new Error(msg || '资源未找到');
@@ -356,6 +346,15 @@ function requestWithLongTimeout(url, method = 'GET', data = {}, needAuth = true)
             apiLog.log('⚠️ 长超时API业务错误');
             resolve({ code, msg, data: responseData });
           }
+        } else if (res.statusCode === 401) {
+          apiLog.log('❌ 长超时API HTTP 401 未授权');
+          reject(handleUnauthorized((res.data && res.data.msg) || '请先登录'));
+        } else if (res.statusCode === 403) {
+          apiLog.log('❌ 长超时API HTTP 403 权限不足');
+          reject(handleForbidden((res.data && res.data.msg) || '权限不足'));
+        } else if (res.statusCode === 429) {
+          apiLog.log('❌ 长超时API HTTP 429 请求过于频繁');
+          reject(new Error((res.data && res.data.msg) || '操作过于频繁，请稍后重试'));
         } else {
           reject(new Error(`网络错误: ${res.statusCode}`));
         }
@@ -429,7 +428,8 @@ const API = {
   auth: {
     // 微信登录
     login(code, userInfo) {
-      return request('/auth/login', 'POST', { code, userInfo }, false);
+      return request('/auth/login', 'POST', { code, userInfo }, false)
+        .then(normalizeAuthResponse);
     },
 
     // 账号密码登录（使用统一的request函数，自动添加签名）
@@ -438,7 +438,7 @@ const API = {
         username, 
         password,
         captcha_token: captchaToken 
-      }, false);  // false表示不需要openid认证（用户还未登录），但仍会生成签名
+      }, false).then(normalizeAuthResponse);  // false表示不需要openid认证（用户还未登录），但仍会生成签名
     },
 
     // 绑定Web用户
@@ -456,7 +456,7 @@ const API = {
   user: {
     // 获取用户信息
     getInfo() {
-      return request('/user/info', 'GET');
+      return request('/user/info', 'GET').then(normalizeUserInfoResponse);
     },
 
     // 调试用户权限信息
@@ -486,6 +486,16 @@ const API = {
     getHistory(params = {}) {
       // ✅ 将params作为data传递，让request函数处理查询参数和签名
       return request('/electric/history', 'GET', params);
+    },
+
+    // 获取实体电表历史统计
+    getPhysicalMeterStats(params = {}) {
+      return request('/physical-meters/stats', 'GET', params);
+    },
+
+    // 获取实体电表昨日功率曲线
+    getPhysicalMeterPowerCurve(params = {}) {
+      return request('/physical-meters/power-curve', 'GET', params);
     },
 
     // 获取账号统计信息（管理员功能）
@@ -561,6 +571,11 @@ const API = {
     // 检测电表IP是否在线并获取SN号码
     checkMeterIP(ip) {
       return request('/grid/check-meter-ip', 'POST', { ip });
+    },
+
+    // 获取实体电表主动推送接口地址
+    getPhysicalMeterPushEndpoint(params = {}) {
+      return request('/grid/physical-meter-push-endpoint', 'GET', params);
     }
   },
 
@@ -583,8 +598,8 @@ const API = {
     },
 
     // 获取WorkKaoQinUsers表中的考勤人员列表
-    getKaoqinUsers() {
-      return request('/attendance/kaoqin-users', 'GET');
+    getKaoqinUsers(params = {}) {
+      return request('/attendance/kaoqin-users', 'GET', params);
     },
 
     // 提交考勤
@@ -613,10 +628,133 @@ const API = {
       return request('/attendance/history', 'GET', params);
     },
 
+    // 获取考勤月历，包含钉钉打卡与节假日标记
+    getCalendar(params = {}) {
+      return request('/attendance/calendar', 'GET', params);
+    },
+
+    // 同步钉钉考勤
+    syncDingtalk(data = {}) {
+      return requestWithLongTimeout('/attendance/sync-dingtalk', 'POST', data);
+    },
+
+    // 获取钉钉考勤 OpenAPI 设置
+    getDingtalkSettings() {
+      return request('/attendance/dingtalk-settings', 'GET');
+    },
+
+    // 保存钉钉考勤 OpenAPI 设置
+    saveDingtalkSettings(data) {
+      return request('/attendance/dingtalk-settings', 'POST', data);
+    },
+
+    getRuleDocument() {
+      return request('/attendance/rules', 'GET');
+    },
+
+    saveRuleDraft(document) {
+      return request('/attendance/rules/draft', 'PUT', { document });
+    },
+
+    listRuleVersions() {
+      return request('/attendance/rules/versions', 'GET');
+    },
+
+    validateRule(document) {
+      return request('/attendance/rules/validate', 'POST', { document });
+    },
+
+    previewRule(document, input) {
+      return request('/attendance/rules/preview', 'POST', { document, input });
+    },
+
+    publishRule(document, effectiveFrom, confirmCurrentMonth = false) {
+      return request('/attendance/rules/publish', 'POST', { document, effective_from: effectiveFrom, confirm_current_month: confirmCurrentMonth });
+    },
+
+    restoreRule(version) {
+      return request('/attendance/rules/restore', 'POST', { version });
+    },
+
+    listOvertimeSessions(params = {}) {
+      return request('/attendance/overtime-sessions', 'GET', params);
+    },
+
+    createOvertimeSession(data) {
+      return request('/attendance/overtime-sessions', 'POST', data);
+    },
+
+    updateOvertimeSession(id, data) {
+      return request(`/attendance/overtime-sessions/${id}`, 'PUT', data);
+    },
+
+    deleteOvertimeSession(id) {
+      return request(`/attendance/overtime-sessions/${id}`, 'DELETE');
+    },
+
+    listDailyAllowances(params = {}) {
+      return request('/attendance/daily-allowances', 'GET', params);
+    },
+
+    createDailyAllowance(data) {
+      return request('/attendance/daily-allowances', 'POST', data);
+    },
+
+    updateDailyAllowance(id, data) {
+      return request(`/attendance/daily-allowances/${id}`, 'PUT', data);
+    },
+
+    deleteDailyAllowance(id) {
+      return request(`/attendance/daily-allowances/${id}`, 'DELETE');
+    },
+
+    listCompTimeLedger(params = {}) {
+      return request('/attendance/comp-time-ledger', 'GET', params);
+    },
+
+    getAutomaticAttendanceEntries(params = {}) {
+      return request('/attendance/entries/auto', 'GET', params);
+    },
+
+    createCompTimeEntry(data) {
+      return request('/attendance/comp-time-ledger', 'POST', data);
+    },
+
+    updateCompTimeEntry(id, data) {
+      return request(`/attendance/comp-time-ledger/${id}`, 'PUT', data);
+    },
+
+    deleteCompTimeEntry(id) {
+      return request(`/attendance/comp-time-ledger/${id}`, 'DELETE');
+    },
+
+    // 获取当月工资条
+    getSalarySheet(params = {}) {
+      return request('/attendance/salary-sheet', 'GET', params);
+    },
+
+    // 保存当月工资条
+    saveSalarySheet(data) {
+      return request('/attendance/salary-sheet', 'POST', data);
+    },
+
+    // 获取工资条生成记录
+    getSalarySheetRecords(params = {}) {
+      return request('/attendance/salary-sheet-records', 'GET', params);
+    },
+
+    // 工资条记录对账检查
+    reconcileSalarySheetRecords(params = {}) {
+      return request('/attendance/salary-sheet-records/reconcile', 'GET', params);
+    },
+
     // 获取用户网盘账号信息
-    getNetdiskInfo(userName = '') {
-      const query = userName ? `?user_name=${encodeURIComponent(userName)}` : '';
-      return request(`/attendance/netdisk-info${query}`, 'GET');
+    getNetdiskInfo(userName = '', options = {}) {
+      const data = userName ? { user_name: userName } : {};
+      if (options.salaryOnly) {
+        data.salary_only = true;
+      }
+      return request('/attendance/netdisk-info', 'GET', data);
     },
 
     // 更新用户网盘账号信息
@@ -632,6 +770,79 @@ const API = {
     // ⭐ 批量补打卡完成后，统一上传到公盘
     uploadToNetdisk(data) {
       return request('/attendance/upload-to-netdisk', 'POST', data);
+    }
+  },
+
+  reimbursement: {
+    list(params = {}) {
+      return request('/reimbursements', 'GET', params);
+    },
+
+    create(data) {
+      return request('/reimbursements', 'POST', data);
+    },
+
+    update(id, data) {
+      return request(`/reimbursements/${id}`, 'PUT', data);
+    },
+
+    delete(id) {
+      return request(`/reimbursements/${id}`, 'DELETE');
+    },
+
+    export(data) {
+      return request('/reimbursements/export', 'POST', data);
+    },
+
+    getProjectOptions(params = {}) {
+      return request('/reimbursements/project-options', 'GET', params);
+    }
+  },
+
+  // 工作日志相关
+  workLog: {
+    getToday(params = {}) {
+      return request('/work-logs/today', 'GET', params);
+    },
+
+    getList(params = {}) {
+      return request('/work-logs', 'GET', params);
+    },
+
+    create(data) {
+      return request('/work-logs', 'POST', data);
+    },
+
+    update(id, data) {
+      return request(`/work-logs/${id}`, 'PUT', data);
+    },
+
+    delete(id) {
+      return request(`/work-logs/${id}`, 'DELETE');
+    },
+
+    getSummary(params = {}) {
+      return request('/work-logs/summary', 'GET', params);
+    },
+
+    sendSummary(data = {}) {
+      return request('/work-logs/summary/send', 'POST', data);
+    },
+
+    getPlans(params = {}) {
+      return request('/work-plans', 'GET', params);
+    },
+
+    createPlan(data) {
+      return request('/work-plans', 'POST', data);
+    },
+
+    updatePlan(id, data) {
+      return request(`/work-plans/${id}`, 'PUT', data);
+    },
+
+    deletePlan(id) {
+      return request(`/work-plans/${id}`, 'DELETE');
     }
   },
 
@@ -837,6 +1048,26 @@ const API = {
     // 删除使用记录
     deleteUsageRecord(id) {
       return request(`/admin/usage-records/${id}`, 'DELETE');
+    },
+
+    // 获取 .env 配置项（按分组）
+    getEnvConfig() {
+      return request('/admin/env-config', 'GET');
+    },
+
+    // 批量更新 .env 配置项
+    updateEnvConfig(data) {
+      return request('/admin/env-config', 'PUT', data);
+    },
+
+    // 从后端本机 lark-cli 同步飞书配置
+    syncFeishuConfigFromCli() {
+      return request('/admin/feishu-config/sync-cli', 'POST', {});
+    },
+
+    // 发送飞书测试通知
+    testFeishuNotification() {
+      return request('/admin/feishu-config/test-notify', 'POST', {});
     }
   },
 

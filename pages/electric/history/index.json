@@ -5,6 +5,7 @@
   "backgroundColor": "#FFF9F2",
   "enablePullDownRefresh": true,
   "usingComponents": {
+    "guest-banner": "/components/guest-banner/index",
     "t-toast": "tdesign-miniprogram/toast/toast"
   }
 }

@@ -10,6 +10,7 @@ Component({
     },
     onMaskTap() {
       this.triggerEvent('close');
-    }
+    },
+    onStopPropagation() {}
   }
 });

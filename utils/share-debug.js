@@ -9,7 +9,7 @@ const { getSystemInfo, isDevtools, getPlatform, getWechatVersion, getSDKVersion 
  * 检查分享功能环境
  */
 function checkShareEnvironment() {
-  console.log('\n========== 分享功能环境检�==========\n');
+  console.log('\n========== 分享功能环境检查==========\n');
   
   // 1. 检查系统信息
   try {
@@ -18,30 +18,30 @@ function checkShareEnvironment() {
     const sdkVersion = getSDKVersion();
     const platform = getPlatform();
     
-    console.log('�系统信息:');
+    console.log('系统信息:');
     console.log('  微信版本:', wechatVersion);
     console.log('  基础库版本:', sdkVersion);
     console.log('  平台:', platform);
     console.log('  品牌:', systemInfo.brand);
     console.log('  型号:', systemInfo.model);
     
-    // 微信版本需�>= 7.0.12
-    console.log('\n�版本检查:');
+    // 微信版本需要 >= 7.0.12
+    console.log('\n版本检查:');
     if (compareVersion(wechatVersion, '7.0.12') >= 0) {
-      console.log('  微信版本: �符合要求 (>= 7.0.12)');
+      console.log('  微信版本: 符合要求 (>= 7.0.12)');
     } else {
-      console.warn('  微信版本: ⚠�过低! 需�>= 7.0.12，当前:', wechatVersion);
+      console.warn('  微信版本: ⚠ 过低! 需要 >= 7.0.12，当前:', wechatVersion);
     }
     
-    // 基础库版本需�>= 2.11.3
+    // 基础库版本需要 >= 2.11.3
     if (compareVersion(sdkVersion, '2.11.3') >= 0) {
-      console.log('  基础库版本: �符合要求 (>= 2.11.3)');
+      console.log('  基础库版本: 符合要求 (>= 2.11.3)');
     } else {
-      console.warn('  基础库版本: ⚠�过低! 需�>= 2.11.3，当前:', sdkVersion);
+      console.warn('  基础库版本: ⚠ 过低! 需要 >= 2.11.3，当前:', sdkVersion);
     }
     
   } catch (error) {
-    console.error('�获取系统信息失败:', error);
+    console.error('获取系统信息失败:', error);
   }
   
   // 2. 检查账号信息
@@ -54,15 +54,15 @@ function checkShareEnvironment() {
     
     // 检查是否在开发者工具
     if (isDevtools()) {
-      console.warn('\n⚠�警告: 您正在开发者工具中！');
+      console.warn('\n⚠ 警告: 您正在开发者工具中！');
       console.warn('  朋友圈分享功能在开发者工具中不可用！');
       console.warn('  请使用真机预览测试！');
     } else {
-      console.log('\n�运行环境: 真机（支持朋友圈分享）');
+      console.log('\n运行环境: 真机（支持朋友圈分享）');
     }
     
   } catch (error) {
-    console.error('�获取账号信息失败:', error);
+    console.error('获取账号信息失败:', error);
   }
   
   console.log('\n======================================\n');
@@ -103,22 +103,22 @@ function compareVersion(v1, v2) {
 function testShowShareMenu() {
   console.log('\n========== 测试显示分享菜单 ==========\n');
   
-  console.log('�调�wx.showShareMenu（简化版）');
-  console.log('  注意：只要定义�onShareTimeline，就会自动显示"分享到朋友圈"');
-  console.log('  不需要指�menus 参数\n');
+  console.log('调用 wx.showShareMenu（简化版）');
+  console.log('  注意：只要定义 onShareTimeline，就会自动显示"分享到朋友圈"');
+  console.log('  不需要指定 menus 参数\n');
   
   wx.showShareMenu({
     withShareTicket: true,
     success: (res) => {
-      console.log('�wx.showShareMenu 调用成功');
+      console.log('wx.showShareMenu 调用成功');
       console.log('  返回值:', res);
       console.log('  分享菜单已启用');
     },
     fail: (err) => {
-      console.warn('⚠�wx.showShareMenu 调用失败');
+      console.warn('⚠ wx.showShareMenu 调用失败');
       console.warn('  错误信息:', err);
       console.warn('  但这不影响分享功能！');
-      console.warn('  只要定义�onShareTimeline，朋友圈分享仍然可用');
+      console.warn('  只要定义 onShareTimeline，朋友圈分享仍然可用');
     }
   });
   
@@ -135,7 +135,7 @@ function checkShareMethods(page) {
   const currentPage = page || pages[pages.length - 1];
   
   if (!currentPage) {
-    console.error('�无法获取当前页面');
+    console.error('无法获取当前页面');
     return;
   }
   
@@ -154,16 +154,16 @@ function checkShareMethods(page) {
   const shouldHaveShare = shareEnabledPages.includes(route);
   
   if (!shouldHaveShare) {
-    console.log('ℹ�此页面不需要分享功能（登录页、设置页等辅助页面）');
+    console.log('ℹ 此页面不需要分享功能（登录页、设置页等辅助页面）');
     console.log('\n======================================\n');
     return;
   }
   
-  console.log('�此页面应该支持分享功能\n');
+  console.log('此页面应该支持分享功能\n');
   
-  // 检�onShareAppMessage
+  // 检查 onShareAppMessage
   if (typeof currentPage.onShareAppMessage === 'function') {
-    console.log('�onShareAppMessage: 已定义');
+    console.log('onShareAppMessage: 已定义');
     
     // 尝试调用看返回值
     try {
@@ -173,12 +173,12 @@ function checkShareMethods(page) {
       console.error('  调用出错:', error);
     }
   } else {
-    console.warn('⚠�onShareAppMessage: 未定义');
+    console.warn('⚠ onShareAppMessage: 未定义');
   }
   
-  // 检�onShareTimeline
+  // 检查 onShareTimeline
   if (typeof currentPage.onShareTimeline === 'function') {
-    console.log('�onShareTimeline: 已定义');
+    console.log('onShareTimeline: 已定义');
     
     // 尝试调用看返回值
     try {
@@ -188,7 +188,7 @@ function checkShareMethods(page) {
       console.error('  调用出错:', error);
     }
   } else {
-    console.error('�onShareTimeline: 未定义（这是看不到朋友圈分享的主要原因！）');
+    console.error('onShareTimeline: 未定义（这是看不到朋友圈分享的主要原因！）');
   }
   
   console.log('\n======================================\n');
@@ -199,7 +199,7 @@ function checkShareMethods(page) {
  */
 function diagnoseShare() {
   console.log('\n\n');
-  console.log('🔍🔍�开始分享功能完整诊�🔍🔍🔍');
+  console.log('🔍🔍🔍开始分享功能完整诊断🔍🔍🔍');
   console.log('\n');
   
   // 步骤1：检查环境
@@ -215,12 +215,12 @@ function diagnoseShare() {
       checkShareMethods();
       
       // 最终建议
-      console.log('\n========== 诊断完�==========\n');
-      console.log('�如果还是看不到"分享到朋友圈"：\n');
+      console.log('\n========== 诊断完成==========\n');
+      console.log('如果还是看不到"分享到朋友圈"：\n');
       console.log('1. 确认是在真机上测试（不是开发者工具）');
-      console.log('2. 确认微信版�>= 7.0.12');
-      console.log('3. 确认基础库版�>= 2.11.3');
-      console.log('4. 确认页面定义�onShareTimeline 方法');
+      console.log('2. 确认微信版本 >= 7.0.12');
+      console.log('3. 确认基础库版本 >= 2.11.3');
+      console.log('4. 确认页面定义 onShareTimeline 方法');
       console.log('5. 尝试退出小程序重新进入');
       console.log('6. 尝试删除小程序重新扫码');
       console.log('\n======================================\n');

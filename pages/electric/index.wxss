@@ -319,6 +319,43 @@
   color: #b91c1c;
 }
 
+.account-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20rpx;
+  margin-bottom: 40rpx;
+}
+
+.metric-cell {
+  min-width: 0;
+  padding: 24rpx;
+  background-color: rgba(255, 255, 255, 0.55);
+  border: 3rpx solid rgba(94, 78, 62, 0.24);
+  border-radius: 24rpx;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.metric-label {
+  font-size: 20rpx;
+  font-weight: 900;
+  color: var(--muted-foreground);
+}
+
+.metric-value {
+  min-width: 0;
+  font-size: 30rpx;
+  font-weight: 900;
+  color: var(--foreground);
+  overflow-wrap: break-word;
+}
+
+.metric-date {
+  font-size: 26rpx;
+}
+
 /* Query Button */
 .query-button {
   width: 100%;
@@ -348,6 +385,33 @@
   font-size: 36rpx;
   font-weight: 900;
   color: var(--foreground);
+}
+
+.data-source-banner {
+  margin-top: 24rpx;
+  padding: 20rpx 24rpx;
+  border-radius: 24rpx;
+  background: rgba(185, 251, 192, 0.45);
+  border: 3rpx dashed var(--foreground);
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.data-source-banner.fallback {
+  background: rgba(255, 179, 186, 0.45);
+}
+
+.data-source-text {
+  font-size: 24rpx;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+.data-source-tip {
+  font-size: 22rpx;
+  color: #9a3412;
+  font-weight: 700;
 }
 
 /* ==================== Chart Section ==================== */
@@ -389,6 +453,52 @@
   width: 100%;
   height: 100%;
   display: block;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  padding: 0 12rpx 4rpx;
+}
+
+.chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  min-width: 0;
+  max-width: 100%;
+  padding: 10rpx 16rpx;
+  background-color: rgba(255, 255, 255, 0.72);
+  border: 2rpx solid rgba(94, 78, 62, 0.18);
+  border-radius: 999rpx;
+  box-sizing: border-box;
+}
+
+.chart-legend-dot {
+  width: 18rpx;
+  height: 18rpx;
+  border: 2rpx solid var(--foreground);
+  border-radius: 999rpx;
+  flex-shrink: 0;
+}
+
+.chart-legend-text {
+  min-width: 0;
+  max-width: 360rpx;
+  font-size: 24rpx;
+  font-weight: 900;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-legend-count {
+  font-size: 20rpx;
+  font-weight: 800;
+  color: var(--muted-foreground);
+  flex-shrink: 0;
 }
 
 /* Chart Tooltip - 与 Web 端一致的马卡龙风格 */
@@ -450,6 +560,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 0 16rpx;
+  gap: 24rpx;
 }
 
 .section-header-left {
@@ -468,6 +579,7 @@
   display: flex;
   align-items: center;
   gap: 8rpx;
+  flex-shrink: 0;
 }
 
 .view-all-text {
@@ -480,6 +592,46 @@
   font-size: 32rpx;
   font-weight: 900;
   color: var(--peach-macaron);
+}
+
+.source-switch-card {
+  display: flex;
+  gap: 8rpx;
+  padding: 8rpx;
+  background-color: white;
+  border: 4rpx solid var(--foreground);
+  border-radius: 28rpx;
+  box-shadow: 6rpx 6rpx 0 var(--foreground);
+  box-sizing: border-box;
+}
+
+.source-switch-item {
+  flex: 1;
+  min-width: 0;
+  min-height: 72rpx;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16rpx;
+  box-sizing: border-box;
+}
+
+.source-switch-item.active {
+  background-color: var(--yellow-macaron);
+  border: 3rpx solid var(--foreground);
+}
+
+.source-switch-item:active {
+  background-color: rgba(255, 217, 61, 0.45);
+}
+
+.source-switch-text {
+  font-size: 26rpx;
+  font-weight: 900;
+  color: var(--foreground);
+  text-align: center;
+  overflow-wrap: break-word;
 }
 
 /* Loading State */
@@ -528,6 +680,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24rpx;
+  gap: 16rpx;
 }
 
 .record-account {
@@ -552,7 +705,9 @@
   font-weight: 700;
   color: var(--muted-foreground);
   flex-shrink: 0;
-  margin-left: 16rpx;
+  text-align: right;
+  max-width: 42%;
+  overflow-wrap: break-word;
 }
 
 /* Row 2: 数据日期 */
@@ -581,6 +736,7 @@
   display: flex;
   flex-direction: column;
   gap: 8rpx;
+  min-width: 0;
 }
 
 .record-balance {
@@ -588,6 +744,8 @@
   flex-direction: column;
   gap: 8rpx;
   align-items: flex-end;
+  min-width: 0;
+  text-align: right;
 }
 
 .record-usage-row {
@@ -606,11 +764,13 @@
   font-size: 40rpx;
   font-weight: 900;
   color: var(--peach-macaron);
+  overflow-wrap: break-word;
 }
 
 .record-balance-value {
   font-size: 40rpx;
   font-weight: 900;
+  overflow-wrap: break-word;
 }
 
 .record-balance-value.positive {
@@ -635,6 +795,7 @@
   display: flex;
   align-items: center;
   gap: 8rpx;
+  min-width: 0;
 }
 
 .record-small-icon {
@@ -647,6 +808,9 @@
   font-size: 24rpx;
   font-weight: 700;
   color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Empty State */
@@ -722,6 +886,29 @@
   display: flex;
   align-items: center;
   gap: 12rpx;
+}
+
+.physical-history-entry {
+  margin-bottom: 24rpx;
+  padding: 20rpx 24rpx;
+  background: rgba(255, 255, 255, 0.7);
+  border: 3rpx solid var(--foreground);
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.physical-history-entry-text {
+  font-size: 26rpx;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+.physical-history-entry-arrow {
+  font-size: 36rpx;
+  font-weight: 900;
+  color: var(--peach-macaron);
 }
 
 .status-dot {
@@ -1086,4 +1273,3 @@
   font-weight: 700;
   color: var(--foreground);
 }
-

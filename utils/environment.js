@@ -1,6 +1,6 @@
 /**
  * 全局环境管理器
- * 统一处理开发/生产环境的判断和API地址配置
+ * 固定使用生产环境API地址
  */
 
 // 导入轻量级配置（不包含地区数据，提升性能）
@@ -11,73 +11,24 @@ const { config } = require('../config/config-lite');
  */
 class EnvironmentManager {
   constructor() {
-    this._isDev = null;
-    this._baseUrl = null;
-    this._lastCheckTime = 0;
-    this._checkInterval = 5000; // 5秒检查一次环境变化
+    this._isDev = false;
+    this._lastCheckTime = Date.now();
   }
 
   /**
-   * 检测当前是否为开发环境
+   * 当前小程序固定按生产环境运行
    * @returns {boolean}
    */
   isDevelopment() {
-    const now = Date.now();
-    
-    // 如果距离上次检查时间超过间隔，重新检查
-    if (this._isDev === null || (now - this._lastCheckTime) > this._checkInterval) {
-      this._isDev = this._detectEnvironment();
-      this._lastCheckTime = now;
-    }
-    
-    return this._isDev;
+    return false;
   }
 
   /**
-   * 检测环境的核心逻辑
+   * 保留兼容旧调用，固定返回生产环境
    * @private
    */
   _detectEnvironment() {
-    try {
-      // 使用多种方法检测开发环境
-      const appInfo = wx.getAppBaseInfo();
-      const deviceInfo = wx.getDeviceInfo();
-      
-      // 方法1：检查设备平台（登录页面使用的方法）
-      const isDevToolsPlatform = deviceInfo ? deviceInfo.platform === 'devtools' : false;
-      
-      // 方法2：检查host环境
-      const isDevToolsEnv = (appInfo && appInfo.host) ? appInfo.host.env === 'devtools' : false;
-      
-      // 方法3：检查是否为开发者工具环境
-      const isDevToolsHost = (appInfo && appInfo.host ? appInfo.host.env === 'WeChat' : false) && (deviceInfo ? deviceInfo.platform === 'devtools' : false);
-      
-      // 综合判断：只要有一种方法检测到是开发环境就认为是开发环境
-      const isDev = isDevToolsPlatform || isDevToolsEnv || isDevToolsHost;
-      
-      // 环境检测日志（仅在开启调试模式时打印）
-      try {
-        const app = getApp();
-        if (app && app.globalData && app.globalData.enableApiDebug) {
-          console.log('�环境检测:', {
-            timestamp: new Date().toLocaleTimeString(),
-            appInfo: appInfo,
-            deviceInfo: deviceInfo,
-            检测方法1_设备平台: isDevToolsPlatform,
-            检测方法2_host环境: isDevToolsEnv,
-            检测方法3_综合判断: isDevToolsHost,
-            最终结果: isDev
-          });
-        }
-      } catch (e) {
-        // 静默失败
-      }
-      
-      return isDev;
-    } catch (error) {
-      console.warn('�环境检测失败，默认使用生产环境:', error);
-      return false;
-    }
+    return false;
   }
 
   /**
@@ -85,8 +36,7 @@ class EnvironmentManager {
    * @returns {string}
    */
   getApiBaseUrl() {
-    const isDev = this.isDevelopment();
-    return isDev && config.api.devBaseUrl ? config.api.devBaseUrl : config.api.baseUrl;
+    return config.api.baseUrl;
   }
 
   /**
@@ -103,7 +53,7 @@ class EnvironmentManager {
       const app = getApp();
       if (app && app.globalData && app.globalData.enableApiDebug) {
         console.log('🔗 API地址:', {
-          isDev: this.isDevelopment(),
+          isDev: false,
           baseUrl: baseUrl,
           prefix: prefix,
           fullUrl: fullUrl
@@ -146,8 +96,8 @@ class EnvironmentManager {
    * 强制重新检测环境
    */
   forceRefresh() {
-    this._isDev = null;
-    this._lastCheckTime = 0;
+    this._isDev = false;
+    this._lastCheckTime = Date.now();
     
     // 刷新日志（仅在开启调试模式时打印）
     try {

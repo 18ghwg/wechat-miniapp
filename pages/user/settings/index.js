@@ -2,6 +2,8 @@
 // 需求 7.1, 7.2, 7.3: 设置页面转换为分组的 cartoon-card 列表样式
 import Toast from 'tdesign-miniprogram/toast/index';
 
+const { enableShareMenu } = require('../../../utils/share');
+
 Page({
   /**
    * 页面的初始数据
@@ -35,6 +37,7 @@ Page({
    * 生命周期函数--监听页面加载
    */
   onLoad(options) {
+    enableShareMenu('用户设置');
     this.loadSettings();
     this.getAppVersion();
   },
@@ -166,7 +169,8 @@ Page({
    * 选择主题
    */
   onThemeSelect(e) {
-    const index = e.currentTarget.dataset.index;
+    const index = e && e.currentTarget && e.currentTarget.dataset ? Number(e.currentTarget.dataset.index) : -1;
+    if (!this.data.themeOptions[index]) return;
     this.setData({ tempThemeIndex: index });
   },
 
@@ -175,6 +179,11 @@ Page({
    */
   confirmTheme() {
     const index = this.data.tempThemeIndex;
+    const themeName = this.data.themeOptions[index];
+    if (!themeName) {
+      this.setData({ showThemePicker: false });
+      return;
+    }
     this.setData({
       'settings.themeIndex': index,
       showThemePicker: false
@@ -184,7 +193,7 @@ Page({
     Toast({
       context: this,
       selector: '#t-toast',
-      message: `已切换为${this.data.themeOptions[index]}`,
+      message: `已切换为${themeName}`,
       theme: 'success',
       direction: 'column'
     });
@@ -211,7 +220,8 @@ Page({
    * 选择字体大小
    */
   onFontSizeSelect(e) {
-    const index = e.currentTarget.dataset.index;
+    const index = e && e.currentTarget && e.currentTarget.dataset ? Number(e.currentTarget.dataset.index) : -1;
+    if (!this.data.fontSizeOptions[index]) return;
     this.setData({ tempFontSizeIndex: index });
   },
 
@@ -220,6 +230,11 @@ Page({
    */
   confirmFontSize() {
     const index = this.data.tempFontSizeIndex;
+    const fontSizeName = this.data.fontSizeOptions[index];
+    if (!fontSizeName) {
+      this.setData({ showFontSizePicker: false });
+      return;
+    }
     this.setData({
       'settings.fontSizeIndex': index,
       showFontSizePicker: false
@@ -229,7 +244,7 @@ Page({
     Toast({
       context: this,
       selector: '#t-toast',
-      message: `字体大小已设为${this.data.fontSizeOptions[index]}`,
+      message: `字体大小已设为${fontSizeName}`,
       theme: 'success',
       direction: 'column'
     });
@@ -302,8 +317,15 @@ Page({
    */
   onShareAppMessage() {
     return {
-      title: '用户设置',
-      path: '/pages/user/settings/index'
+      title: '出差日历',
+      path: '/pages/attendance/index'
+    };
+  },
+
+  onShareTimeline() {
+    return {
+      title: '出差日历',
+      query: ''
     };
   }
 });

@@ -9,6 +9,9 @@
     "pages/attendance/history/index",
     "pages/attendance/missing-checkin/index",
     "pages/attendance/netdisk/index",
+    "pages/attendance/rules/index",
+    "pages/attendance/entries/index",
+    "pages/attendance/salary-records/index",
     "pages/user/bind/index",
     "pages/user/settings/index",
     "pages/usercenter/index",
@@ -16,7 +19,9 @@
     "pages/terms/index",
     "pages/privacy/index",
     "pages/announcement/manage",
-    "pages/feedback/index"
+    "pages/feedback/index",
+    "pages/work-log/index",
+    "pages/expense/index"
   ],
   "subpackages": [
     {
@@ -32,7 +37,9 @@
         "task-management/list/index",
         "task-management/edit/index",
         "task-management/logs/index",
-        "usage-records/index"
+        "usage-records/index",
+        "env-config/index",
+        "dingtalk-settings/index"
       ]
     }
   ],
@@ -64,12 +71,13 @@
     ]
   },
   "requiredPrivateInfos": [],
+  "__usePrivacyCheck__": true,
   "lazyCodeLoading": "requiredComponents",
   "usingComponents": {},
   "window": {
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#007AFF",
-    "navigationBarTitleText": "无感tool",
+    "navigationBarTitleText": "出差日历",
     "navigationBarTextStyle": "white",
     "pageOrientation": "portrait",
     "restartStrategy": "homePage"

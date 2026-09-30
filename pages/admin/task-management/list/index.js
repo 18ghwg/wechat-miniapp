@@ -102,6 +102,20 @@ Page({
     return false;
   },
 
+  getTaskEventData(e = {}) {
+    const dataset = e.currentTarget && e.currentTarget.dataset ? e.currentTarget.dataset : {};
+    const taskId = dataset.taskId;
+    const index = Number(dataset.index);
+    const tasks = Array.isArray(this.data.tasks) ? this.data.tasks : [];
+    const task = Number.isInteger(index) && index >= 0 ? tasks[index] : tasks.find(item => item.task_id === taskId);
+
+    return { dataset, taskId, index, task };
+  },
+
+  toDatasetBoolean(value) {
+    return value === true || value === 'true' || value === 1 || value === '1';
+  },
+
   /**
    * 加载任务列表
    */
@@ -173,8 +187,12 @@ Page({
    * 切换任务启用/禁用状态
    */
   async onToggleTask(e) {
-    const { taskId, index } = e.currentTarget.dataset;
-    const task = this.data.tasks[index];
+    const { taskId, task } = this.getTaskEventData(e);
+    if (!taskId || !task) {
+      console.warn('切换任务状态失败：事件数据无效', e && e.currentTarget && e.currentTarget.dataset);
+      showError('任务数据异常，请刷新后重试');
+      return;
+    }
     const newStatus = !task.is_enabled;
     
     console.log(`🔄 切换任务状态: ${taskId}, 新状态: ${newStatus}`);
@@ -206,7 +224,13 @@ Page({
    * 暂停/恢复任务
    */
   async onTogglePause(e) {
-    const { taskId, isPaused, index } = e.currentTarget.dataset;
+    const { dataset, taskId } = this.getTaskEventData(e);
+    if (!taskId) {
+      console.warn('暂停/恢复任务失败：缺少任务ID', e && e.currentTarget && e.currentTarget.dataset);
+      showError('任务数据异常，请刷新后重试');
+      return;
+    }
+    const isPaused = this.toDatasetBoolean(dataset.isPaused);
     const action = isPaused ? 'resume' : 'pause';
     const actionText = isPaused ? '恢复' : '暂停';
     
@@ -243,7 +267,12 @@ Page({
    * 立即执行任务
    */
   async onRunNow(e) {
-    const { taskId } = e.currentTarget.dataset;
+    const { taskId } = this.getTaskEventData(e);
+    if (!taskId) {
+      console.warn('立即执行任务失败：缺少任务ID', e && e.currentTarget && e.currentTarget.dataset);
+      showError('任务数据异常，请刷新后重试');
+      return;
+    }
     
     console.log(`🚀 立即执行任务: ${taskId}`);
     
@@ -429,7 +458,11 @@ Page({
    * 编辑任务
    */
   onEditTask(e) {
-    const { taskId } = e.currentTarget.dataset;
+    const { taskId } = this.getTaskEventData(e);
+    if (!taskId) {
+      showError('任务数据异常，请刷新后重试');
+      return;
+    }
     console.log(`📝 编辑任务: ${taskId}`);
     
     wx.navigateTo({
@@ -441,7 +474,12 @@ Page({
    * 查看任务日志
    */
   onViewLogs(e) {
-    const { taskId, taskName } = e.currentTarget.dataset;
+    const { dataset, taskId } = this.getTaskEventData(e);
+    const taskName = dataset.taskName || '';
+    if (!taskId) {
+      showError('任务数据异常，请刷新后重试');
+      return;
+    }
     console.log(`📋 查看任务日志: ${taskId}`);
     
     wx.navigateTo({
@@ -598,6 +636,7 @@ Page({
     // a-b/c 格式（范围+间隔）
     if (/^\d+-\d+\/\d+$/.test(value)) {
       const match = value.match(/^(\d+)-(\d+)\/(\d+)$/);
+      if (!match) return value;
       const start = parseInt(match[1]);
       const end = parseInt(match[2]);
       const step = parseInt(match[3]);

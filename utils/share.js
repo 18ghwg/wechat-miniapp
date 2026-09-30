@@ -5,6 +5,20 @@
 
 const { miniprogramInfo } = require('./miniprogram-info');
 
+const SHARE_MENUS = ['shareAppMessage', 'shareTimeline'];
+
+function splitSharePath(path = '') {
+  const queryIndex = path.indexOf('?');
+  if (queryIndex === -1) {
+    return { path, query: '' };
+  }
+
+  return {
+    path: path.slice(0, queryIndex),
+    query: path.slice(queryIndex + 1)
+  };
+}
+
 /**
  * 获取分享配置
  * @param {Object} options 配置选项
@@ -21,8 +35,8 @@ function getShareConfig(options = {}) {
   const defaultConfig = {
     title: appName,
     desc: appDesc,
-    path: '/pages/home/home',
-    imageUrl: '/images/share-cover.png' // 需要准备分享封面图
+    path: '/pages/attendance/index',
+    imageUrl: ''
   };
 
   return {
@@ -51,14 +65,14 @@ function getShareConfigs() {
     
     // 电费查询
     'pages/electric/index': {
-      title: `电费查�- ${appName}`,
+      title: `电费查询 - ${appName}`,
       desc: '实时查询电费余额，历史账单一目了然',
       path: '/pages/electric/index'
     },
     
     // 考勤管理
     'pages/attendance/index': {
-      title: `考勤管�- ${appName}`,
+      title: `考勤管理 - ${appName}`,
       desc: '快速打卡，考勤记录随时查看',
       path: '/pages/attendance/index'
     },
@@ -72,14 +86,14 @@ function getShareConfigs() {
     
     // 公告管理
     'pages/announcement/manage': {
-      title: `公告管�- ${appName}`,
+      title: `公告管理 - ${appName}`,
       desc: '重要通知及时发布，信息传达高效便捷',
       path: '/pages/announcement/manage'
     },
     
     // 反馈建议
     'pages/feedback/index': {
-      title: `反馈建�- ${appName}`,
+      title: `反馈建议 - ${appName}`,
       desc: '您的建议是我们进步的动力',
       path: '/pages/feedback/index'
     }
@@ -99,17 +113,18 @@ function setupPageShare(page, customConfig = {}) {
   
   // 获取页面默认配置（动态生成）
   const shareConfigs = getShareConfigs();
-  const defaultConfig = shareConfigs[route] || shareConfigs['pages/home/home'];
+  const defaultConfig = shareConfigs[route] || shareConfigs['pages/attendance/index'];
   
   // 合并配置
   const finalConfig = {
     ...defaultConfig,
     ...customConfig
   };
+  const timelineConfig = splitSharePath(finalConfig.path);
   
   // 分享给好友
   page.onShareAppMessage = function(res) {
-    console.log('�分享给好友:', finalConfig.title);
+    console.log('分享给好友:', finalConfig.title);
     
     return {
       title: finalConfig.title,
@@ -120,27 +135,50 @@ function setupPageShare(page, customConfig = {}) {
   
   // 分享到朋友圈
   page.onShareTimeline = function() {
-    console.log('�分享到朋友圈:', finalConfig.title);
+    console.log('分享到朋友圈:', finalConfig.title);
     
     return {
       title: finalConfig.title,
-      query: '', // 朋友圈不支持带参数
+      query: finalConfig.query || timelineConfig.query,
       imageUrl: finalConfig.imageUrl || undefined
     };
   };
+
+  enableShareMenu(route);
   
-  console.log('�页面分享功能已启用:', route);
+  console.log('页面分享功能已启用:', route);
 }
 
 /**
- * 主动触发分享（可选）
- * 可在页面中调用此方法打开分享面板
+ * 启用页面右上角的好友与朋友圈分享入口
+ * @param {String} pageName 页面名称，仅用于日志
+ * @returns {Boolean} 是否成功发起启用请求
  */
-function triggerShare() {
+function enableShareMenu(pageName = '当前页面') {
+  if (typeof wx === 'undefined' || typeof wx.showShareMenu !== 'function') {
+    console.warn(`${pageName}：当前环境不支持分享菜单`);
+    return false;
+  }
+
   wx.showShareMenu({
     withShareTicket: true,
-    menus: ['shareAppMessage', 'shareTimeline']
+    menus: SHARE_MENUS,
+    success() {
+      console.log(`${pageName}：好友与朋友圈分享已启用`);
+    },
+    fail(error) {
+      console.warn(`${pageName}：分享菜单启用失败`, error);
+    }
   });
+
+  return true;
+}
+
+/**
+ * 兼容旧调用名称。
+ */
+function triggerShare() {
+  return enableShareMenu();
 }
 
 /**
@@ -152,7 +190,7 @@ function updateShareConfig(newConfig) {
   wx.updateShareMenu({
     withShareTicket: true,
     success() {
-      console.log('�分享信息已更新');
+      console.log('分享信息已更新');
     }
   });
 }
@@ -161,7 +199,7 @@ module.exports = {
   getShareConfig,
   getShareConfigs,
   setupPageShare,
+  enableShareMenu,
   triggerShare,
   updateShareConfig
 };
-

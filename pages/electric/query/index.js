@@ -1,4 +1,7 @@
 // pages/electric/query/index.js
+const { enableShareMenu } = require('../../../utils/share');
+const { miniprogramInfo } = require('../../../utils/miniprogram-info');
+
 Page({
 
   /**
@@ -12,7 +15,7 @@ Page({
    * 生命周期函数--监听页面加载
    */
   onLoad(options) {
-
+    enableShareMenu('电费查询');
   },
 
   /**
@@ -61,6 +64,16 @@ Page({
    * 用户点击右上角分享
    */
   onShareAppMessage() {
+    return {
+      title: `电费查询 - ${miniprogramInfo.getAppName()}`,
+      path: '/pages/electric/query/index'
+    };
+  },
 
+  onShareTimeline() {
+    return {
+      title: `电费查询 - ${miniprogramInfo.getAppName()}`,
+      query: ''
+    };
   }
 })

@@ -1,18 +1,24 @@
 <!--电费历史记录页面 - 马卡龙风格-->
 <view class="history-container">
+  <guest-banner
+    show="{{isGuest}}"
+    message="预览模式：当前不展示任何用户电费数据"
+    showLoginBtn="{{true}}"
+  />
+
   <!-- Header -->
   <view class="page-header">
     <view class="back-btn cartoon-card" bindtap="goBack">
       <image class="back-icon" src="/assets/icons/chevron-left.png" mode="aspectFit"/>
     </view>
-    <text class="page-title">电费历史记录</text>
+    <text class="page-title">{{source === 'physical' ? '实体电表记录' : '电费历史记录'}}</text>
   </view>
 
   <!-- Filter Card -->
   <view class="filter-card cartoon-card">
     <view class="filter-header">
       <image class="filter-icon" src="/assets/icons/filter.png" mode="aspectFit"/>
-      <text class="filter-title">筛选电网账号</text>
+      <text class="filter-title">{{source === 'physical' ? '筛选实体电表' : '筛选电网账号'}}</text>
     </view>
     
     <!-- Account Filter Buttons -->
@@ -38,17 +44,61 @@
     <!-- Stats Row -->
     <view class="stats-row">
       <view class="stat-box stat-orange">
-        <text class="stat-label">查询次数</text>
-        <text class="stat-value">{{stats.totalQueries}}次</text>
+        <text class="stat-label">{{source === 'physical' ? '记录天数' : '查询次数'}}</text>
+        <text class="stat-value">{{stats.totalQueries}}{{source === 'physical' ? '天' : '次'}}</text>
       </view>
       <view class="stat-box stat-blue">
-        <text class="stat-label">日均用电</text>
+        <text class="stat-label">{{source === 'physical' ? '日均电量' : '日均用电'}}</text>
         <text class="stat-value">{{stats.avgUsage}}度</text>
       </view>
       <view class="stat-box {{stats.latestBalance < 0 ? 'stat-red' : 'stat-green'}}">
-        <text class="stat-label">上月电费</text>
-        <text class="stat-value">¥{{stats.latestBalance}}</text>
+        <text class="stat-label">{{source === 'physical' ? '月用电量' : '上月电费'}}</text>
+        <text class="stat-value">{{source === 'physical' ? stats.latestBalance : ('¥' + stats.latestBalance)}}</text>
       </view>
+    </view>
+  </view>
+
+  <!-- Physical Meter Power Curve -->
+  <view class="chart-section" wx:if="{{source === 'physical' && (showPowerCurve || powerCurveLoading || powerCurveLoaded)}}">
+    <view class="section-header">
+      <image class="section-icon" src="/assets/icons/trending-up.png" mode="aspectFit"/>
+      <view class="section-title-stack">
+        <text class="section-title">昨日实体电表功率曲线</text>
+        <text class="section-subtitle" wx:if="{{powerCurve.date}}">{{powerCurve.date}} · 单位：kW · {{powerCurve.summary.point_count || 0}} 个采样点</text>
+      </view>
+    </view>
+    <view class="chart-card cartoon-card power-chart-card" wx:if="{{showPowerCurve}}">
+      <canvas
+        class="chart-canvas power-chart-canvas"
+        type="2d"
+        id="powerCurveChart"
+        bindtouchstart="onChartTouchStart"
+        bindtouchmove="onChartTouchMove"
+        bindtouchend="onChartTouchEnd"
+      ></canvas>
+      <view
+        class="chart-tooltip {{powerTooltip.show ? 'show' : ''}}"
+        style="left: {{powerTooltip.x}}px; top: {{powerTooltip.y}}px; transform: translateX(-50%);"
+        wx:if="{{powerTooltip.show}}"
+      >
+        <view class="tooltip-content">
+          <text class="tooltip-date">{{powerTooltip.date}}</text>
+          <text class="tooltip-value">{{powerTooltip.label}}：{{powerTooltip.value}} {{powerTooltip.unit}}</text>
+        </view>
+      </view>
+      <view class="chart-legend-list" wx:if="{{powerCurve.series.length > 0}}">
+        <view class="chart-legend-item" wx:for="{{powerCurve.series}}" wx:key="location">
+          <view class="chart-legend-dot {{item.colorClass}}"></view>
+          <text class="chart-legend-text">{{item.location}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="power-empty-card cartoon-card" wx:elif="{{powerCurveLoading}}">
+      <text class="power-empty-title">加载昨日功率曲线...</text>
+    </view>
+    <view class="power-empty-card cartoon-card" wx:else>
+      <text class="power-empty-title">昨日暂无功率曲线数据</text>
+      <text class="power-empty-subtitle">电表采样恢复后会自动显示曲线</text>
     </view>
   </view>
 
@@ -56,7 +106,7 @@
   <view class="chart-section" wx:if="{{!loading && historyData.length > 0}}">
     <view class="section-header">
       <image class="section-icon" src="/assets/icons/trending-up.png" mode="aspectFit"/>
-      <text class="section-title">本月用电趋势</text>
+      <text class="section-title">{{source === 'physical' ? '当月实体电表趋势' : '本月用电趋势'}}</text>
     </view>
     <view class="chart-card cartoon-card">
       <canvas 
@@ -78,6 +128,12 @@
           <text class="tooltip-value">{{chartTooltip.label}}：{{chartTooltip.value}} {{chartTooltip.unit}}</text>
         </view>
       </view>
+      <view class="chart-legend-list" wx:if="{{chartLegend.length > 0}}">
+        <view class="chart-legend-item" wx:for="{{chartLegend}}" wx:key="roomName">
+          <view class="chart-legend-dot" style="background-color: {{item.color}};"></view>
+          <text class="chart-legend-text">{{source === 'physical' ? (item.roomName + ' 电表') : item.roomName}}</text>
+        </view>
+      </view>
     </view>
   </view>
 
@@ -85,7 +141,7 @@
   <view class="records-section">
     <view class="section-header">
       <image class="section-icon" src="/assets/icons/zap.png" mode="aspectFit"/>
-      <text class="section-title">查询记录明细</text>
+      <text class="section-title">{{source === 'physical' ? '实体电表记录明细' : '查询记录明细'}}</text>
     </view>
 
     <!-- Loading State -->
@@ -119,15 +175,15 @@
         <!-- Row 3: Usage + Balance -->
         <view class="record-row-3">
           <view class="record-usage">
-            <text class="record-label">日用电量</text>
+            <text class="record-label">{{source === 'physical' ? '当日电量' : '日用电量'}}</text>
             <view class="record-value-row">
               <text class="record-usage-value">{{item.daily_usage_display}}</text>
               <text class="record-unit">度</text>
             </view>
           </view>
           <view class="record-balance">
-            <text class="record-label">账户余额</text>
-            <text class="record-balance-value {{item.balance_num < 0 ? 'negative' : 'positive'}}">¥{{item.balance}}</text>
+            <text class="record-label">{{source === 'physical' ? '月用电量' : '账户余额'}}</text>
+            <text class="record-balance-value {{item.balance_num < 0 ? 'negative' : 'positive'}}">{{source === 'physical' ? item.balance : ('¥' + item.balance)}}</text>
           </view>
         </view>
 
@@ -150,7 +206,7 @@
       <view class="empty-icon-wrapper">
         <image class="empty-icon" src="/assets/icons/zap.png" mode="aspectFit"/>
       </view>
-      <text class="empty-text">暂无查询记录</text>
+      <text class="empty-text">{{isGuest ? '登录后可查看本人电费记录' : '暂无查询记录'}}</text>
     </view>
   </view>
 

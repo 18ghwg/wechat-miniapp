@@ -15,7 +15,8 @@ Page({
       show_popup: false,
       is_active: true
     },
-    editingId: null
+    editingId: null,
+    priorityOptions: [0, 1, 2, 3, 4, 5]
   },
 
   onLoad() {

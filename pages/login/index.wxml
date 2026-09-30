@@ -12,12 +12,55 @@
         <view class="logo-shine"></view>
         <image class="logo-icon" src="/assets/icons/user.png" mode="aspectFit"/>
       </view>
-      <text class="app-title">无感家居助手</text>
-      <text class="app-subtitle">Cartoon Style Assistant</text>
+      <text class="app-title">出差日历</text>
+      <text class="app-subtitle">Trip Calendar Assistant</text>
     </view>
 
-    <!-- 登录表单 -->
-    <view class="login-form" wx:if="{{loginMode === 'account'}}">
+    <!-- 用户协议勾选框 - 两种登录方式共用 -->
+    <view class="agreement-section">
+      <view class="agreement-checkbox" bindtap="onAgreeToggle">
+        <checkbox class="agreement-checkbox-input" checked="{{agreed}}" color="#FF9F43"/>
+        <view class="agreement-text">
+          <text class="agreement-prefix">请勾选并同意</text>
+          <text class="agreement-link" catchtap="goToTerms">《用户服务协议》</text>
+          <text class="agreement-separator">和</text>
+          <text class="agreement-link" catchtap="goToPrivacy">《隐私政策》</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 微信一键登录是主要入口 -->
+    <view class="wechat-login-form">
+      <button
+        class="wechat-login-primary"
+        bindtap="getUserProfile"
+        disabled="{{loginLoading}}"
+        loading="{{loginLoading}}"
+      >
+        <text class="btn-text">{{loginLoading ? '正在登录...' : '微信一键登录'}}</text>
+      </button>
+      <text class="wechat-login-hint">授权后即可使用出差日历</text>
+    </view>
+
+    <!-- 次要入口 -->
+    <view class="separator">
+      <view class="separator-line"></view>
+      <text class="separator-text">其他方式</text>
+      <view class="separator-line"></view>
+    </view>
+
+    <view class="secondary-actions">
+      <button class="secondary-action" wx:if="{{loginMode !== 'account'}}" bindtap="switchToAccount">
+        账号密码登录
+      </button>
+      <button class="secondary-action" wx:else bindtap="switchToWechat">
+        收起账号登录
+      </button>
+      <button class="secondary-action" bindtap="skipLogin">免登录预览</button>
+    </view>
+
+    <!-- 账号密码登录在当前页次级展开 -->
+    <view class="login-form account-login-form" wx:if="{{loginMode === 'account'}}">
       <!-- 用户名输入 -->
       <view class="input-wrapper">
         <view class="input-icon">
@@ -60,19 +103,6 @@
          <text class="forgot-password" bindtap="onForgotPassword">忘记密码？</text>
        </view>
 
-         <!-- 用户协议勾选框 - 微信色审核要求 -->
-         <view class="agreement-section">
-           <view class="agreement-checkbox" bindtap="onAgreeToggle">
-             <checkbox class="agreement-checkbox-input" checked="{{agreed}}" color="#FF9F43"/>
-             <view class="agreement-text">
-               <text class="agreement-prefix">请勾选并同意</text>
-               <text class="agreement-link" catchtap="goToTerms">《用户服务协议》</text>
-               <text class="agreement-separator">和</text>
-               <text class="agreement-link" catchtap="goToPrivacy">《隐私政策》</text>
-             </view>
-           </view>
-         </view>
-
        <!-- 登录按钮 -->
        <button 
          class="login-btn-main" 
@@ -80,68 +110,8 @@
          disabled="{{loginLoading || !username || !password || !agreed}}"
          loading="{{loginLoading}}"
        >
-         <text class="btn-text">{{loginLoading ? '正在登录...' : '立即登录'}}</text>
+         <text class="btn-text">{{loginLoading ? '正在登录...' : '账号登录'}}</text>
        </button>
-    </view>
-
-    <!-- 微信登录模式 -->
-    <view class="wechat-login-form" wx:if="{{loginMode === 'wechat'}}">
-      <!-- 用户信息展示 -->
-      <view class="user-info-display" wx:if="{{hasUserInfo}}">
-        <image class="user-avatar" src="{{userInfo.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill"></image>
-        <text class="user-nickname">{{userInfo.nickName || '微信用户'}}</text>
-      </view>
-
-       <!-- 微信登录按钮 -->
-       <button 
-         wx:if="{{!hasUserInfo}}"
-         class="login-btn-main" 
-         bindtap="getUserProfile"
-         disabled="{{loginLoading || !agreed}}"
-       >
-         <text class="btn-text">获取微信信息</text>
-       </button>
-
-       <button 
-         wx:if="{{hasUserInfo}}"
-         class="login-btn-main" 
-         bindtap="onWechatLogin"
-         disabled="{{loginLoading || !agreed}}"
-         loading="{{loginLoading}}"
-       >
-         <text class="btn-text">{{loginLoading ? '正在登录...' : '确认登录'}}</text>
-       </button>
-    </view>
-
-    <!-- 分隔线 -->
-    <view class="separator">
-      <view class="separator-line"></view>
-      <text class="separator-text">其他登录方式</text>
-      <view class="separator-line"></view>
-    </view>
-
-    <!-- 其他登录方式 -->
-    <view class="alternative-login">
-      <view class="alt-login-btn wechat-btn" bindtap="switchToWechat" wx:if="{{loginMode === 'account'}}">
-        <view class="alt-btn-icon">
-          <image class="alt-icon-img" src="/assets/icons/home.png" mode="aspectFit"/>
-        </view>
-        <text class="alt-btn-text">微信一键登录</text>
-      </view>
-
-      <view class="alt-login-btn account-btn" bindtap="switchToAccount" wx:if="{{loginMode === 'wechat'}}">
-        <view class="alt-btn-icon">
-          <image class="alt-icon-img" src="/assets/icons/user.png" mode="aspectFit"/>
-        </view>
-        <text class="alt-btn-text">账号密码登录</text>
-      </view>
-
-      <view class="alt-login-btn preview-btn" bindtap="skipLogin">
-        <view class="alt-btn-icon">
-          <image class="alt-icon-img" src="/assets/icons/eye.png" mode="aspectFit"/>
-        </view>
-        <text class="alt-btn-text">免登录预览</text>
-      </view>
     </view>
 
   </view>

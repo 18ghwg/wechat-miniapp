@@ -61,9 +61,11 @@ Page({
   },
 
   onToggleDate(e) {
-    const idx = e.currentTarget.dataset.index;
+    const idx = e && e.currentTarget && e.currentTarget.dataset ? Number(e.currentTarget.dataset.index) : -1;
+    const item = this.data.missedDateList[idx];
+    if (!item) return;
     const key = `missedDateList[${idx}].selected`;
-    const newVal = !this.data.missedDateList[idx].selected;
+    const newVal = !item.selected;
     this.setData({ [key]: newVal });
     const selectedCount = this.data.missedDateList.filter(d => d.selected).length;
     this.setData({ selectedCount });
@@ -207,6 +209,8 @@ Page({
 
     return Promise.all(uploadPromises);
   },
+
+  onStopPropagation() {},
 
   onCloseResult() {
     this.setData({ showResult: false });

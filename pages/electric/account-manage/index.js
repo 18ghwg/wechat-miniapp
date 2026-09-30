@@ -18,6 +18,7 @@ Page({
     formErrors: {},
     submitting: false,
     statusPickerIndex: 0,  // 状态选择器索引
+    statusOptions: ['正常', '禁用', '异常'],
     // 统计数据
     totalAccounts: 0,      // 总账号数
     activeAccounts: 0,     // 使用中的账号数
@@ -25,7 +26,7 @@ Page({
     // 实体电表弹窗
     showMeterModal: false,
     meterAccountId: null,
-    meterFormData: { area: '', ip: '' },
+    meterFormData: { area: '', ip: '', pushEndpoint: '', mqttHost: '', mqttPort: '', mqttTopic: '' },
     meterFormErrors: {},
     meterSubmitting: false,
     // 添加电表 - IP检测状态
@@ -35,7 +36,7 @@ Page({
     // 编辑电表弹窗
     showEditMeterModal: false,
     editingMeter: null,
-    editMeterFormData: { area: '', ip: '' },
+    editMeterFormData: { area: '', ip: '', pushEndpoint: '', mqttHost: '', mqttPort: '', mqttTopic: '' },
     // 编辑电表 - IP检测状态
     editMeterCheckingIP: false,
     editMeterIPStatus: 'idle',  // 'idle' | 'success' | 'error'
@@ -91,7 +92,8 @@ Page({
       PhysicalMeters: Array.isArray(account.PhysicalMeters)
         ? account.PhysicalMeters.map(meter => ({
             ...meter,
-            displayIP: this.extractIP(meter.url)
+            displayIP: this.extractIP(meter.url),
+            pushEndpoint: meter.push_endpoint || meter.pushEndpoint || 'https://wechat.blog18.cn/ha/physical_meter_push'
           }))
         : []
     }));
@@ -111,6 +113,65 @@ Page({
     if (!url) return '';
     const match = url.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
     return match ? match[1] : url;
+  },
+
+  /**
+   * 加载实体电表推送接口地址
+   */
+  async loadMeterPushEndpoint() {
+    try {
+      await apiCall(
+        () => API.grid.getPhysicalMeterPushEndpoint(),
+        null,
+        (resp) => {
+          const data = resp && resp.data ? resp.data : resp;
+          const endpoint = data && data.endpoint ? data.endpoint : '';
+          const mqtt = data && data.mqtt ? data.mqtt : {};
+          this.setData({
+            'meterFormData.pushEndpoint': endpoint,
+            'meterFormData.mqttHost': mqtt.host || '',
+            'meterFormData.mqttPort': mqtt.port || 1883,
+            'meterFormData.mqttTopic': mqtt.example_topic || mqtt.topic || ''
+          });
+        },
+        () => {
+          this.setData({
+            'meterFormData.pushEndpoint': 'https://wechat.blog18.cn/ha/physical_meter_push'
+          });
+        }
+      );
+    } catch (e) {
+      this.setData({
+        'meterFormData.pushEndpoint': 'https://wechat.blog18.cn/ha/physical_meter_push',
+        'meterFormData.mqttHost': 'wechat.blog18.cn',
+        'meterFormData.mqttPort': 1883,
+        'meterFormData.mqttTopic': 'SPM01/{SerialNumber}/data'
+      });
+    }
+  },
+
+  copyMeterPushEndpoint(e) {
+    const endpoint = e.currentTarget.dataset.endpoint || this.data.meterFormData.pushEndpoint || this.data.editMeterFormData.pushEndpoint;
+    if (!endpoint) {
+      showError('暂无可复制的推送接口');
+      return;
+    }
+    wx.setClipboardData({
+      data: endpoint,
+      success: () => showSuccess('推送接口已复制')
+    });
+  },
+
+  copyText(e) {
+    const text = e.currentTarget.dataset.text || '';
+    if (!text) {
+      showError('暂无可复制内容');
+      return;
+    }
+    wx.setClipboardData({
+      data: String(text),
+      success: () => showSuccess('已复制')
+    });
   },
 
   onShow() {
@@ -283,8 +344,7 @@ Page({
   showEditAccount(e) {
     const account = e.currentTarget.dataset.account;
     const status = account.Status || '正常';
-    const statusOptions = ['正常', '禁用', '异常'];
-    const statusIndex = statusOptions.indexOf(status);
+    const statusIndex = this.data.statusOptions.indexOf(status);
     
     this.setData({
       showEditModal: true,
@@ -334,9 +394,9 @@ Page({
    * 状态选择器改变事件
    */
   onStatusChange(e) {
-    const statusOptions = ['正常', '禁用', '异常'];
-    const selectedIndex = parseInt(e.detail.value);
-    const selectedStatus = statusOptions[selectedIndex];
+    const selectedIndex = e && e.detail ? parseInt(e.detail.value) : NaN;
+    const selectedStatus = this.data.statusOptions[selectedIndex];
+    if (!selectedStatus) return;
     
     this.setData({
       'formData.status': selectedStatus,
@@ -611,10 +671,11 @@ Page({
     this.setData({
       showMeterModal: true,
       meterAccountId: account.id,
-      meterFormData: { area: '', ip: '' },
+      meterFormData: { area: '', ip: '', pushEndpoint: '', mqttHost: '', mqttPort: '', mqttTopic: '' },
       meterFormErrors: {},
       meterSubmitting: false
     });
+    this.loadMeterPushEndpoint();
   },
 
   /**
@@ -631,7 +692,7 @@ Page({
     this.setData({
       showMeterModal: false,
       meterAccountId: null,
-      meterFormData: { area: '', ip: '' },
+      meterFormData: { area: '', ip: '', pushEndpoint: '', mqttHost: '', mqttPort: '', mqttTopic: '' },
       meterFormErrors: {},
       meterCheckingIP: false,
       meterDetectedSN: null,
@@ -761,7 +822,11 @@ Page({
       const newMeter = {
         location: area.trim(),
         url: ipUrl,
-        sn: meterDetectedSN
+        sn: meterDetectedSN,
+        push_endpoint: this.data.meterFormData.pushEndpoint || '',
+        mqtt_host: this.data.meterFormData.mqttHost || '',
+        mqtt_port: this.data.meterFormData.mqttPort || 1883,
+        mqtt_topic: this.data.meterFormData.mqttTopic || ''
       };
       currentMeters.push(newMeter);
 
@@ -806,11 +871,50 @@ Page({
       editingMeter: { accountId, meterIndex, meter },
       editMeterFormData: {
         area: meter.location || '',
-        ip: meter.url ? this.extractIP(meter.url) : ''
+        ip: meter.url ? this.extractIP(meter.url) : '',
+        pushEndpoint: meter.push_endpoint || meter.pushEndpoint || '',
+        mqttHost: meter.mqtt_host || meter.mqttHost || '',
+        mqttPort: meter.mqtt_port || meter.mqttPort || '',
+        mqttTopic: meter.mqtt_topic || meter.mqttTopic || ''
       }
     }, () => {
       console.log('setData 完成，showEditMeterModal:', this.data.showEditMeterModal);
+      if (!this.data.editMeterFormData.pushEndpoint) {
+        this.loadEditMeterPushEndpoint();
+      }
     });
+  },
+
+  async loadEditMeterPushEndpoint() {
+    try {
+      await apiCall(
+        () => API.grid.getPhysicalMeterPushEndpoint(),
+        null,
+        (resp) => {
+          const data = resp && resp.data ? resp.data : resp;
+          const endpoint = data && data.endpoint ? data.endpoint : '';
+          const mqtt = data && data.mqtt ? data.mqtt : {};
+          this.setData({
+            'editMeterFormData.pushEndpoint': endpoint,
+            'editMeterFormData.mqttHost': mqtt.host || '',
+            'editMeterFormData.mqttPort': mqtt.port || 1883,
+            'editMeterFormData.mqttTopic': mqtt.example_topic || mqtt.topic || ''
+          });
+        },
+        () => {
+          this.setData({
+            'editMeterFormData.pushEndpoint': 'https://wechat.blog18.cn/ha/physical_meter_push'
+          });
+        }
+      );
+    } catch (e) {
+      this.setData({
+        'editMeterFormData.pushEndpoint': 'https://wechat.blog18.cn/ha/physical_meter_push',
+        'editMeterFormData.mqttHost': 'wechat.blog18.cn',
+        'editMeterFormData.mqttPort': 1883,
+        'editMeterFormData.mqttTopic': 'SPM01/{SerialNumber}/data'
+      });
+    }
   },
 
   /**
@@ -884,7 +988,11 @@ Page({
         const updated = {
           ...m,
           location: editMeterFormData.area,
-          url: `http://${editMeterFormData.ip}/data`
+          url: `http://${editMeterFormData.ip}/data`,
+          push_endpoint: editMeterFormData.pushEndpoint || '',
+          mqtt_host: editMeterFormData.mqttHost || '',
+          mqtt_port: editMeterFormData.mqttPort || 1883,
+          mqtt_topic: editMeterFormData.mqttTopic || ''
         };
         // 如果 editingMeter.meter 中有 sn（可能是检测后更新的），也一并保存
         if (editingMeter.meter && editingMeter.meter.sn) {

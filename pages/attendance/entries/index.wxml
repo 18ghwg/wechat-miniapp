@@ -1,0 +1,98 @@
+<view class="page">
+  <view class="page-head">
+    <view class="head-copy">
+      <text class="title">加班、补贴与调休</text>
+      <text class="subtitle">根据本月考勤记录和已发布规则自动计算，页面仅展示结果</text>
+    </view>
+  </view>
+
+  <view class="month-bar">
+    <button class="icon-button" aria-label="上个月" data-offset="-1" bindtap="changeMonth">‹</button>
+    <text>{{year}}年{{month}}月</text>
+    <button class="icon-button" aria-label="下个月" data-offset="1" bindtap="changeMonth">›</button>
+  </view>
+
+  <view class="segments">
+    <view class="segment {{activeTab === 'overtime' ? 'segment-active' : ''}}" data-tab="overtime" bindtap="switchTab">加班明细</view>
+    <view class="segment {{activeTab === 'allowance' ? 'segment-active' : ''}}" data-tab="allowance" bindtap="switchTab">每日补贴</view>
+    <view class="segment {{activeTab === 'comp_time' ? 'segment-active' : ''}}" data-tab="comp_time" bindtap="switchTab">调休流水</view>
+  </view>
+
+  <view class="summary-band" wx:if="{{activeTab === 'overtime'}}">
+    <view><text class="summary-value">{{sessions.length}}</text><text class="summary-label">个加班日</text></view>
+    <view><text class="summary-value">{{overtimeHours}}</text><text class="summary-label">有效小时</text></view>
+    <view><text class="summary-value">¥{{overtimeTotal}}</text><text class="summary-label">加班费</text></view>
+  </view>
+  <view class="summary-band allowance-summary" wx:elif="{{activeTab === 'allowance'}}">
+    <view><text class="summary-value">{{allowances.length}}</text><text class="summary-label">项</text></view>
+    <view><text class="summary-value">¥{{allowanceTotal}}</text><text class="summary-label">本月补贴</text></view>
+  </view>
+  <view class="summary-band comp-summary" wx:else>
+    <view><text class="summary-value">{{compTimeEntries.length}}</text><text class="summary-label">条流水</text></view>
+    <view><text class="summary-value">{{compTimeBalance < 0 ? '-' : ''}}{{compTimeBalanceText}}</text><text class="summary-label">当前余额</text></view>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">正在读取本月记录...</view>
+  <view class="empty" wx:elif="{{activeTab === 'overtime' && !sessions.length}}"><image src="/assets/icons/clock.png" mode="aspectFit" /><text>本月没有达到起算条件的有效加班</text></view>
+  <view class="empty" wx:elif="{{activeTab === 'allowance' && !allowances.length}}"><image src="/assets/icons/dollar.png" mode="aspectFit" /><text>本月考勤规则未计算出补贴</text></view>
+  <view class="empty" wx:elif="{{activeTab === 'comp_time' && !compTimeEntries.length}}"><image src="/assets/icons/clock.png" mode="aspectFit" /><text>本月考勤规则未计算出调休</text></view>
+
+  <view class="record-list" wx:if="{{!loading && activeTab === 'overtime'}}">
+    <view class="record-card" wx:for="{{sessions}}" wx:key="id">
+      <view class="record-head"><view class="record-date"><text>{{item.work_date}}</text><text class="tag">{{item.sceneText}}</text></view><text class="auto-tag">自动计算</text></view>
+      <view class="settlement-tags"><text class="settlement-tag {{tag.className}}" wx:for="{{item.settlementTags}}" wx:for-item="tag" wx:key="label">{{tag.label}}</text></view>
+      <view class="overtime-result"><view><text class="result-label">有效加班</text><text class="result-value">{{item.recognizedText}}</text></view><view><text class="result-label">加班费</text><text class="result-value money-value">¥{{item.amountText}}</text></view></view>
+      <view class="record-meta"><text>{{item.dayTypeText}}</text><text>{{item.settlementText}}</text></view>
+      <view class="band-list" wx:if="{{item.bands.length}}"><view class="band-row" wx:for="{{item.bands}}" wx:for-item="band" wx:key="name"><text>{{band.name}}</text><text>{{band.hoursText}} × ¥{{band.rateText}}/小时</text><text>¥{{band.amountText}}</text></view></view>
+      <text class="record-remark" wx:if="{{item.remark}}">{{item.remark}}</text>
+    </view>
+  </view>
+
+  <view class="record-list" wx:if="{{!loading && activeTab === 'comp_time'}}">
+    <view class="record-card comp-card" wx:for="{{compTimeEntries}}" wx:key="id">
+      <view class="record-head"><view class="record-date"><text>{{item.typeText}}</text><text class="tag comp-tag">{{item.work_date}}</text></view><text class="auto-tag">自动计算</text></view>
+      <view class="comp-amount {{item.credit ? 'comp-credit' : 'comp-debit'}}"><text>{{item.signedText}}</text><text wx:if="{{item.source_session_id}}">来自加班场次 #{{item.source_session_id}}</text></view>
+      <text class="record-remark" wx:if="{{item.remark}}">{{item.remark}}</text>
+    </view>
+  </view>
+
+  <view class="record-list" wx:if="{{!loading && activeTab === 'allowance'}}">
+    <view class="record-card allowance-card" wx:for="{{allowances}}" wx:key="id">
+      <view class="record-head"><view class="record-date"><text>{{item.item_name}}</text><text class="tag allowance-tag">{{item.work_date}}</text></view><text class="auto-tag">自动计算</text></view>
+      <view class="allowance-amount"><text>¥{{item.amountText}}</text><text>{{item.quantity}} {{item.unitLabel}} × ¥{{item.unitAmountText}}</text></view>
+    </view>
+  </view>
+
+  <view class="mask" wx:if="{{false}}" bindtap="closeOvertimeForm"><view class="sheet" catchtap="noop"><view class="sheet-head"><view><text class="sheet-title">{{overtimeForm.id ? '编辑加班场次' : '添加加班场次'}}</text><text class="sheet-subtitle">一日可登记多个独立时段</text></view><button class="close-button" aria-label="关闭" bindtap="closeOvertimeForm">×</button></view>
+    <scroll-view scroll-y class="sheet-body">
+      <view class="field"><text class="field-label">归属日期</text><picker mode="date" value="{{overtimeForm.workDate}}" data-field="workDate" bindchange="onOvertimeDate"><view class="field-control">{{overtimeForm.workDate}}<text>›</text></view></picker></view>
+      <view class="field-grid"><view class="field"><text class="field-label">开始时间</text><picker mode="time" value="{{overtimeForm.startTime}}" data-field="startTime" bindchange="onOvertimeTime"><view class="field-control">{{overtimeForm.startTime}}<text>›</text></view></picker></view><view class="field"><text class="field-label">结束日期</text><picker mode="date" value="{{overtimeForm.endDate}}" data-field="endDate" bindchange="onOvertimeDate"><view class="field-control">{{overtimeForm.endDate}}<text>›</text></view></picker></view></view>
+      <view class="field"><text class="field-label">结束时间</text><picker mode="time" value="{{overtimeForm.endTime}}" data-field="endTime" bindchange="onOvertimeTime"><view class="field-control">{{overtimeForm.endTime}}<text>›</text></view></picker></view>
+      <view class="field-grid"><view class="field"><text class="field-label">工作场景</text><picker mode="selector" range="{{scenes}}" range-key="label" value="{{overtimeForm.sceneIndex}}" data-field="sceneIndex" bindchange="onOvertimePicker"><view class="field-control">{{scenes[overtimeForm.sceneIndex].label}}<text>›</text></view></picker></view><view class="field"><text class="field-label">日期类型</text><picker mode="selector" range="{{dayTypes}}" range-key="label" value="{{overtimeForm.dayTypeIndex}}" data-field="dayTypeIndex" bindchange="onOvertimePicker"><view class="field-control">{{dayTypes[overtimeForm.dayTypeIndex].label}}<text>›</text></view></picker></view></view>
+      <view class="field"><text class="field-label">备注</text><textarea maxlength="500" value="{{overtimeForm.remark}}" bindinput="onOvertimeRemark" placeholder="可选，例如项目收尾" /></view>
+    </scroll-view>
+    <button class="save-button" loading="{{saving}}" disabled="{{saving}}" bindtap="saveOvertime">保存场次</button>
+  </view></view>
+
+  <view class="mask" wx:if="{{false}}" bindtap="closeAllowanceForm"><view class="sheet" catchtap="noop"><view class="sheet-head"><view><text class="sheet-title">{{allowanceForm.id ? '编辑补贴记录' : '添加补贴记录'}}</text><text class="sheet-subtitle">金额只汇总到月度工资条</text></view><button class="close-button" aria-label="关闭" bindtap="closeAllowanceForm">×</button></view>
+    <scroll-view scroll-y class="sheet-body">
+      <view class="field"><text class="field-label">补贴日期</text><picker mode="date" value="{{allowanceForm.workDate}}" bindchange="onAllowanceDate"><view class="field-control">{{allowanceForm.workDate}}<text>›</text></view></picker></view>
+      <view class="field"><text class="field-label">工资项目</text><picker mode="selector" range="{{allowanceItems}}" range-key="name" value="{{allowanceForm.itemIndex}}" bindchange="onAllowanceItem"><view class="field-control">{{allowanceItems[allowanceForm.itemIndex].name}}<text>›</text></view></picker></view>
+      <view class="field" wx:if="{{allowanceForm.custom}}"><text class="field-label">自定义项目名称</text><input data-field="itemName" value="{{allowanceForm.itemName}}" maxlength="100" bindinput="onAllowanceInput" placeholder="例如夜班津贴" /></view>
+      <view class="field-grid"><view class="field"><text class="field-label">数量</text><input type="digit" data-field="quantity" value="{{allowanceForm.quantity}}" bindinput="onAllowanceInput" /></view><view class="field"><text class="field-label">单位</text><picker mode="selector" range="{{units}}" range-key="label" value="{{allowanceForm.unitIndex}}" bindchange="onAllowanceUnit"><view class="field-control">{{units[allowanceForm.unitIndex].label}}<text>›</text></view></picker></view></view>
+      <view class="field"><text class="field-label">单价（元）</text><input type="digit" data-field="unitAmount" value="{{allowanceForm.unitAmount}}" bindinput="onAllowanceInput" placeholder="0.00" /></view>
+      <view class="amount-preview"><text>本条计入税前工资</text><text>¥{{allowancePreviewText}}</text></view>
+    </scroll-view>
+    <button class="save-button allowance-save" loading="{{saving}}" disabled="{{saving}}" bindtap="saveAllowance">保存补贴</button>
+  </view></view>
+
+  <view class="mask" wx:if="{{false}}" bindtap="closeCompTimeForm"><view class="sheet" catchtap="noop"><view class="sheet-head"><view><text class="sheet-title">{{compTimeForm.id ? '编辑调休流水' : '登记调休流水'}}</text><text class="sheet-subtitle">加班所得调休由工资结算自动入账</text></view><button class="close-button" aria-label="关闭" bindtap="closeCompTimeForm">×</button></view>
+    <scroll-view scroll-y class="sheet-body">
+      <view class="field"><text class="field-label">发生日期</text><picker mode="date" value="{{compTimeForm.workDate}}" bindchange="onCompTimeDate"><view class="field-control">{{compTimeForm.workDate}}<text>›</text></view></picker></view>
+      <view class="field"><text class="field-label">流水类型</text><picker mode="selector" range="{{compTimeTypes}}" range-key="label" value="{{compTimeForm.entryTypeIndex}}" bindchange="onCompTimeType"><view class="field-control">{{compTimeTypes[compTimeForm.entryTypeIndex].label}}<text>›</text></view></picker></view>
+      <view class="field"><text class="field-label">调休时长（小时）</text><input type="digit" data-field="hours" value="{{compTimeForm.hours}}" bindinput="onCompTimeInput" placeholder="1" /></view>
+      <view class="field"><text class="field-label">备注</text><textarea maxlength="500" data-field="remark" value="{{compTimeForm.remark}}" bindinput="onCompTimeInput" placeholder="例如 9 月 25 日下午调休" /></view>
+    </scroll-view>
+    <button class="save-button comp-save" loading="{{saving}}" disabled="{{saving}}" bindtap="saveCompTime">保存流水</button>
+  </view></view>
+</view>

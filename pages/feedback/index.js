@@ -115,10 +115,12 @@ Page({
    * 反馈类型选择 (picker方式 - 保留兼容)
    */
   onTypeChange(e) {
-    const index = e.detail.value;
+    const index = e && e.detail ? Number(e.detail.value) : -1;
+    const type = this.data.feedbackTypes[index];
+    if (!type) return;
     this.setData({
       typeIndex: index,
-      'formData.feedback_type': this.data.feedbackTypes[index].value
+      'formData.feedback_type': type.value
     });
   },
 

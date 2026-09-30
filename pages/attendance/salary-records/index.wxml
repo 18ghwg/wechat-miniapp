@@ -1,0 +1,242 @@
+<view class="salary-records-page">
+  <view class="history-header">
+    <view class="header-back-btn" bindtap="goBack">
+      <image class="header-icon" src="/assets/icons/chevron-left.png" mode="aspectFit"/>
+    </view>
+    <text class="header-title">工资条生成记录</text>
+    <view class="header-placeholder"></view>
+  </view>
+
+  <view class="filter-card">
+    <view class="filter-card-title-row">
+      <image class="filter-title-icon" src="/assets/icons/history.png" mode="aspectFit"/>
+      <text class="filter-card-title">生成记录</text>
+    </view>
+
+    <!-- 管理员跨用户筛选暂不在用户小程序展示。 -->
+    <view class="filter-input-wrap filter-picker-wrap" wx:if="{{false && isAdmin}}">
+      <image class="input-icon" src="/assets/icons/users.png" mode="aspectFit"/>
+      <picker mode="selector" range="{{allUsers}}" range-key="name" value="{{selectedUserIndex}}" bindchange="onUserChange">
+        <text class="filter-input-text">{{selectedUserDisplayText}}</text>
+      </picker>
+    </view>
+
+    <view class="filter-input-wrap filter-picker-wrap">
+      <image class="input-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
+      <picker mode="selector" range="{{yearOptions}}" value="{{yearIndex}}" bindchange="onYearChange">
+        <text class="filter-input-text">{{yearOptions[yearIndex]}}</text>
+      </picker>
+    </view>
+
+    <view class="filter-input-wrap filter-picker-wrap">
+      <image class="input-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
+      <picker mode="selector" range="{{monthOptions}}" value="{{monthIndex}}" bindchange="onMonthChange">
+        <text class="filter-input-text">{{monthOptions[monthIndex]}}</text>
+      </picker>
+    </view>
+
+    <view class="filter-input-wrap filter-picker-wrap">
+      <image class="input-icon" src="/assets/icons/filter.png" mode="aspectFit"/>
+      <picker mode="selector" range="{{filterOptions}}" value="{{filterIndex}}" bindchange="onFilterChange">
+        <text class="filter-input-text">{{filterOptions[filterIndex]}}</text>
+      </picker>
+    </view>
+
+    <view class="filter-input-wrap filter-picker-wrap">
+      <image class="input-icon" src="/assets/icons/settings.png" mode="aspectFit"/>
+      <picker mode="selector" range="{{sourceOptions}}" value="{{sourceIndex}}" bindchange="onSourceChange">
+        <text class="filter-input-text">{{sourceOptions[sourceIndex]}}</text>
+      </picker>
+    </view>
+
+    <view class="filter-input-wrap filter-picker-wrap">
+      <image class="input-icon" src="/assets/icons/filter.png" mode="aspectFit"/>
+      <picker mode="selector" range="{{syncStatusOptions}}" value="{{syncStatusIndex}}" bindchange="onSyncStatusChange">
+        <text class="filter-input-text">{{syncStatusOptions[syncStatusIndex]}}</text>
+      </picker>
+    </view>
+
+    <view class="stats-strip">
+      <view class="stats-strip-item stats-orange">
+        <text class="stats-strip-label">记录总数</text>
+        <text class="stats-strip-value">{{filteredRecords.length}}</text>
+      </view>
+      <view class="stats-strip-item stats-blue">
+        <text class="stats-strip-label">{{scopeLabelText}}</text>
+        <text class="stats-strip-value">{{scopeDisplayText}}</text>
+      </view>
+      <view class="stats-strip-item stats-mint">
+        <text class="stats-strip-label">年月筛选</text>
+        <text class="stats-strip-value">{{yearOptions[yearIndex]}} / {{monthOptions[monthIndex]}}</text>
+      </view>
+    </view>
+
+    <view class="reconcile-action-row" wx:if="{{false && isAdmin}}">
+      <view class="reconcile-btn-group">
+        <view class="reconcile-btn {{reconcileBtnDisabledClass}}" bindtap="onReconcileTap">
+          {{reconcileCheckButtonText}}
+        </view>
+        <view class="reconcile-btn reconcile-btn-warn {{reconcileBtnDisabledClass}}" bindtap="onAutoRepairTap">
+          {{reconcileAutoRepairButtonText}}
+        </view>
+      </view>
+      <view class="reconcile-summary" wx:if="{{reconcileSummary}}">
+        <text class="reconcile-summary-text">{{reconcileSummaryText}}</text>
+      </view>
+      <view class="reconcile-issue-box" wx:if="{{reconcileIssueSummaryText}}">
+        <text class="reconcile-issue-title">异常类型</text>
+        <text class="reconcile-issue-text">{{reconcileIssueSummaryText}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">正在加载记录...</text>
+  </view>
+
+  <view class="records-list" wx:elif="{{hasRecords}}">
+    <view class="record-card" wx:for="{{filteredRecords}}" wx:key="id">
+      <view class="record-top">
+        <view class="record-avatar salary-avatar">
+          <image class="salary-avatar-icon" src="/assets/icons/dollar.png" mode="aspectFit"/>
+        </view>
+        <view class="record-info">
+          <text class="record-name">{{item.title}}</text>
+          <text class="record-datetime">{{item.employee_name}} · {{item.generated_at}}</text>
+          <text class="record-datetime" wx:if="{{item.operator_name}}">{{item.operatorTimeText}}</text>
+          <text class="record-datetime" wx:if="{{item.last_source}}">来源：{{item.last_source}}</text>
+        </view>
+        <view class="record-top-right">
+          <view class="record-badge badge-{{item.badgeType}}">
+            <text class="record-badge-text">{{item.status}}</text>
+          </view>
+          <view class="record-btn-edit salary-edit-btn" bindtap="openEditPopup" data-record="{{item}}">
+            <image class="action-btn-icon" src="/assets/icons/edit.png" mode="aspectFit"/>
+          </view>
+        </view>
+      </view>
+
+      <view class="salary-summary-grid">
+        <view class="salary-summary-chip">
+          <text class="summary-label">实发工资</text>
+          <text class="summary-value">¥{{item.summary.total_amount_display}}</text>
+        </view>
+        <view class="salary-summary-chip">
+          <text class="summary-label">周六日加班小时</text>
+          <text class="summary-value">{{item.summary.weekend_overtime_days}} 小时</text>
+        </view>
+        <view class="salary-summary-chip">
+          <text class="summary-label">出差天数</text>
+          <text class="summary-value">{{item.summary.trip_days}} 天</text>
+        </view>
+      </view>
+
+      <view class="record-detail salary-detail-box">
+        <view class="record-detail-left">
+          <image class="detail-icon" src="/assets/icons/briefcase.png" mode="aspectFit"/>
+          <text class="record-base-name">{{item.status_description}}</text>
+        </view>
+      </view>
+
+      <view class="record-detail salary-detail-box">
+        <view class="record-detail-left">
+          <image class="detail-icon" src="/assets/icons/history.png" mode="aspectFit"/>
+          <text class="record-base-name">{{item.syncStatusDisplayText}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="pagination-wrap" wx:if="{{showPagination}}">
+    <view class="{{prevPageButtonClass}}" data-page="{{currentPage - 1}}" bindtap="onPageChange">上一页</view>
+    <text class="pagination-text">{{paginationText}}</text>
+    <view class="{{nextPageButtonClass}}" data-page="{{currentPage + 1}}" bindtap="onPageChange">下一页</view>
+  </view>
+
+  <view class="empty-state" wx:if="{{showEmptyState}}">
+    <view class="empty-icon-wrap">
+      <image class="empty-icon" src="/assets/icons/clipboard.png" mode="aspectFit"/>
+    </view>
+    <text class="empty-text">暂无工资条生成记录</text>
+    <view class="empty-reset-btn" bindtap="onPullDownRefresh">重新加载</view>
+  </view>
+
+  <view class="bottom-spacer"></view>
+</view>
+
+<view class="edit-modal-mask" wx:if="{{showEditPopup}}" bindtap="closeEditPopup">
+  <view class="edit-popup" catchtap="stopPropagation">
+    <view class="edit-popup-header">
+      <text class="edit-popup-title">编辑工资条</text>
+      <view class="edit-popup-close" bindtap="closeEditPopup">
+        <image class="close-icon" src="/assets/icons/close.png" mode="aspectFit"/>
+      </view>
+    </view>
+
+    <view class="salary-record-title">
+      <text class="salary-record-title-text">{{editingRecordTitle}}</text>
+    </view>
+
+    <view class="salary-total-card" wx:if="{{editingSummary}}">
+      <view class="salary-total-main">
+        <text class="salary-total-label">工资合计</text>
+        <text class="salary-total-value">¥{{editingSummary.total_amount_display}}</text>
+      </view>
+      <view class="salary-total-breakdown">
+        <text class="salary-total-breakdown-item">底薪 ¥{{editingSummary.base_salary_display}}</text>
+        <text class="salary-total-breakdown-item">加班 ¥{{editingSummary.overtime_amount_display}}</text>
+        <text class="salary-total-breakdown-item">节假日加班费 ¥{{editingSummary.holiday_overtime_pay_display}}</text>
+        <text class="salary-total-breakdown-item">节假日 {{editingSummary.holiday_overtime_days_display}} 天，双倍 {{editingSummary.holiday_double_hours_display}} 小时，三倍 {{editingSummary.holiday_triple_hours_display}} 小时</text>
+        <text class="salary-total-breakdown-item">节假日2/3倍内 {{editingSummary.holiday_double_base_hours_display}} + {{editingSummary.holiday_triple_base_hours_display}} 小时，超8小时外 {{editingSummary.holiday_extra_hours_display}} 小时</text>
+        <text class="salary-total-breakdown-item">周六日加班 {{editingSummary.weekend_overtime_day_count_display}} 天</text>
+        <text class="salary-total-breakdown-item">周六日加班 {{editingSummary.weekend_overtime_days_display}} 小时</text>
+        <text class="salary-total-breakdown-item">周六日2倍 {{editingSummary.weekend_base_hours_display}} 小时，超8小时外 {{editingSummary.weekend_extra_hours_display}} 小时</text>
+        <text class="salary-total-breakdown-item">非周六日加班 {{editingSummary.workday_overtime_hours_display}} 小时</text>
+        <text class="salary-total-breakdown-item">餐补 ¥{{editingSummary.meal_allowance_amount_display}}</text>
+        <text class="salary-total-breakdown-item">国外补助 ¥{{editingSummary.abroad_allowance_display}}</text>
+        <text class="salary-total-breakdown-item">国内补助 ¥{{editingSummary.domestic_allowance_display}}</text>
+      </view>
+    </view>
+
+    <view class="edit-form-list">
+      <view class="edit-section" wx:for="{{editingFields}}" wx:key="key">
+        <text class="edit-label">{{item.label}}</text>
+        <view class="edit-input-wrap">
+          <image class="edit-input-icon" src="/assets/icons/dollar.png" mode="aspectFit"/>
+          <input
+            class="edit-input"
+            type="digit"
+            placeholder="{{item.placeholder}}"
+            value="{{editForm[item.key]}}"
+            data-field="{{item.key}}"
+            bindinput="onEditInput"
+          />
+        </view>
+      </view>
+    </view>
+
+    <view class="edit-form-list edit-form-list-readonly" wx:if="{{readonlyFields && readonlyFields.length > 0}}">
+      <view class="edit-section" wx:for="{{readonlyFields}}" wx:key="key">
+        <text class="edit-label">{{item.label}}</text>
+        <view class="edit-input-wrap edit-input-wrap-readonly">
+          <image class="edit-input-icon" src="/assets/icons/history.png" mode="aspectFit"/>
+          <text class="edit-input edit-input-readonly">{{item.value}}</text>
+        </view>
+        <text class="edit-helper" wx:if="{{item.helper}}">{{item.helper}}</text>
+      </view>
+    </view>
+
+    <view class="edit-section">
+      <text class="edit-label">加班费</text>
+      <view class="edit-input-wrap edit-input-wrap-readonly">
+        <image class="edit-input-icon" src="/assets/icons/dollar.png" mode="aspectFit"/>
+        <text class="edit-input edit-input-readonly">¥{{editingSummary ? editingSummary.overtime_pay_display : '%N%'}}</text>
+      </view>
+      <text class="edit-helper">法定节假日/周六日每天最多8小时按2倍或3倍，超出8小时外和平常加班均按固定小时单价计算</text>
+    </view>
+
+    <view class="edit-save-btn" bindtap="saveEdit">{{saveButtonText}}</view>
+    <view class="edit-save-spacer"></view>
+  </view>
+</view>

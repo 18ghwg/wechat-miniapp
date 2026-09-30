@@ -12,7 +12,7 @@ Component({
     // 提示消息
     message: {
       type: String,
-      value: '当前显示演示数据'
+      value: '预览模式：登录后可查看本人数据'
     },
     // 是否显示登录按钮
     showLoginBtn: {
@@ -56,4 +56,3 @@ Component({
     }
   }
 });
-

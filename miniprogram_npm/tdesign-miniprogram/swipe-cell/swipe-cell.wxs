@@ -175,6 +175,7 @@ var endDrag = function (event, ownerInstance) {
 };
 
 module.exports = {
+  noop: function () {},
   initLeftWidth: initLeftWidth,
   initRightWidth: initRightWidth,
   startDrag: startDrag,

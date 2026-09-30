@@ -280,7 +280,9 @@ Page({
     
     if (availableDates.length === 0) return;
     
-    const date = availableDates[selectedDateIndex].date;
+    const selectedDate = availableDates[selectedDateIndex];
+    if (!selectedDate) return;
+    const date = selectedDate.date;
     const level = selectedLevelIndex > 0 ? levelOptions[selectedLevelIndex] : '';
     
     try {
@@ -328,8 +330,9 @@ Page({
    * 日期切换
    */
   onDateChange(e) {
-    const index = parseInt(e.detail.value);
+    const index = e && e.detail ? parseInt(e.detail.value) : NaN;
     const date = this.data.availableDates[index];
+    if (!date) return;
     
     this.setData({
       selectedDateIndex: index,
@@ -347,17 +350,19 @@ Page({
    * 级别过滤
    */
   onLevelChange(e) {
-    const index = parseInt(e.detail.value);
+    const index = e && e.detail ? parseInt(e.detail.value) : NaN;
+    const selectedLevelText = this.data.levelOptions[index];
+    if (!selectedLevelText) return;
     
     this.setData({
       selectedLevelIndex: index,
-      selectedLevelText: this.data.levelOptions[index],
+      selectedLevelText,
       'pagination.page': 1,
       logs: [],
       lastTimestamp: ''
     });
     
-    console.log(`🎯 级别过滤: ${this.data.levelOptions[index]}`);
+    console.log(`🎯 级别过滤: ${selectedLevelText}`);
     this.loadLogs(true);  // 切换级别时跳转到最后一页
   },
 
@@ -365,7 +370,7 @@ Page({
    * 关键词输入
    */
   onKeywordInput(e) {
-    this.setData({ keyword: e.detail.value });
+    this.setData({ keyword: e && e.detail ? e.detail.value : '' });
   },
 
   /**

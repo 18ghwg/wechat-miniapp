@@ -235,15 +235,17 @@ Page({
   
   // 切换分类展开状态
   toggleCategory(e) {
-    const index = e.currentTarget.dataset.index;
-    const categories = this.data.weatherCategories;
+    const index = e && e.currentTarget && e.currentTarget.dataset ? Number(e.currentTarget.dataset.index) : -1;
+    const categories = Array.isArray(this.data.weatherCategories) ? this.data.weatherCategories : [];
+    if (!categories[index]) return;
     categories[index].expanded = !categories[index].expanded;
     this.setData({ weatherCategories: categories });
   },
   
   // 修改天气严重程度
   onSeverityChange(e) {
-    const weather = e.currentTarget.dataset.weather;
+    const weather = e && e.currentTarget && e.currentTarget.dataset ? e.currentTarget.dataset.weather : '';
+    if (!weather) return;
     const currentSeverity = this.data.currentConfig[weather] || 0;
     
     wx.showActionSheet({

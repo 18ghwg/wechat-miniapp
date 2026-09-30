@@ -159,7 +159,8 @@
   </view>
 
   <!-- 管理员功能 -->
-  <view class="admin-section" wx:if="{{isAdmin}}">
+  <!-- 管理员反馈入口暂不在用户小程序展示。 -->
+  <view class="admin-section" wx:if="{{false && isAdmin}}">
     <button class="macaron-btn macaron-btn-lavender admin-btn" bindtap="onManageFeedbacks">
       <image class="admin-btn-icon-img" src="/assets/icons/settings.png" mode="aspectFit" />
       <text>管理所有反馈</text>

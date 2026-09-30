@@ -1,0 +1,321 @@
+<wxs module="durationUnit">
+function hours(minutes) {
+  var value = (minutes || 0) / 60;
+  return Math.round(value * 100) / 100;
+}
+function optionalHours(minutes) {
+  if (minutes === null || minutes === undefined || minutes === '') return '';
+  return hours(minutes);
+}
+module.exports = { hours: hours, optionalHours: optionalHours };
+</wxs>
+
+<view class="page">
+  <view class="hero">
+    <view>
+      <text class="title">考勤与工资规则</text>
+      <text class="subtitle">只计算税前工资，规则由你自己维护</text>
+    </view>
+    <view class="status">{{ruleStatusText}}<text wx:if="{{meta.version}}"> · v{{meta.version}}</text></view>
+  </view>
+
+  <view class="panel load-state" wx:if="{{loading}}"><text>正在读取规则...</text></view>
+  <view class="panel load-state error-state" wx:if="{{!loading && !document}}">
+    <text class="panel-title">规则暂时无法加载</text>
+    <text class="hint">{{loadError || '请检查网络连接后重试'}}</text>
+    <button class="secondary add-item" bindtap="loadRule">重新加载</button>
+  </view>
+
+  <view class="panel quick-setup" wx:if="{{!loading && document && quickSetupVisible}}">
+    <view class="quick-setup-heading">
+      <view>
+        <text class="quick-setup-eyebrow">快速开始</text>
+        <text class="panel-title">选择一种常用考勤方案</text>
+        <text class="section-help">方案只会生成班次和每周安排，不会改动你的工资、补贴和加班单价。生成后仍需检查并发布。</text>
+      </view>
+      <view class="quick-setup-state">{{meta.setup_state === 'draft_unpublished' ? '已有未发布草稿' : '尚未配置'}}</view>
+    </view>
+    <view class="plan-grid">
+      <view class="plan-card {{selectedPlanKey === item.key ? 'plan-card-selected' : ''}}" wx:for="{{attendancePlanOptions}}" wx:key="key">
+        <view class="plan-card-head">
+          <text class="plan-name">{{item.name}}</text>
+          <text class="plan-recommended" wx:if="{{item.recommended}}">推荐</text>
+        </view>
+        <text class="plan-description">{{item.description}}</text>
+        <text class="plan-summary">{{item.summary}}</text>
+        <button class="plan-action" data-key="{{item.key}}" loading="{{applyingPlanKey === item.key}}" disabled="{{applyingPlanKey || selectedPlanKey === item.key}}" bindtap="applyAttendancePlan">{{selectedPlanKey === item.key ? '已生成草稿' : '使用此方案'}}</button>
+      </view>
+    </view>
+    <view class="plan-ready" wx:if="{{quickSetupApplied}}">
+      <view class="plan-ready-copy"><text class="plan-ready-title">基础考勤已配置</text><text class="plan-ready-desc">接下来检查加班、工资和试算结果，然后确认发布时间。</text></view>
+      <button class="primary plan-ready-action" bindtap="goToPublishStep">检查并发布</button>
+    </view>
+  </view>
+
+  <view class="wizard-shell" wx:if="{{!loading && document}}">
+    <view class="wizard-summary"><view><text class="wizard-eyebrow">步骤 {{currentStep + 1}} / {{wizardSteps.length}}</text><text class="wizard-title">{{currentStepTitle}}</text><text class="wizard-description">{{currentStepDescription}}</text></view><button class="guide-replay" bindtap="replayStepGuide">查看本步引导</button></view>
+    <scroll-view class="wizard-steps" scroll-x enhanced show-scrollbar="{{false}}" scroll-with-animation="{{true}}" scroll-into-view="{{wizardScrollIntoView}}"><view class="wizard-step-row"><view wx:for="{{wizardSteps}}" wx:key="key" id="wizard-step-{{index}}" class="wizard-step {{currentStep === index ? 'wizard-step-active' : ''}} {{currentStep > index ? 'wizard-step-done' : ''}}" data-index="{{index}}" bindtap="onWizardStepTap"><text class="wizard-step-number">{{currentStep > index ? '✓' : index + 1}}</text><text>{{item.title}}</text></view></view></scroll-view>
+  </view>
+
+  <view class="panel" wx:if="{{!loading && document && currentStep === 0}}">
+    <view class="panel-title">你平时怎么上班？</view>
+    <text class="section-help">公司上班和出差可以分别回答，后面的加班计算也会分别使用。</text>
+    <view id="guide-sceneTabs" class="scene-tabs guide-target {{guideOpen && guideItem.target === 'sceneTabs' ? 'guide-target-active' : ''}}" role="tablist" aria-label="考勤场景">
+      <view wx:for="{{scenes}}" wx:key="key" role="tab" aria-selected="{{selectedScene === item.key}}" class="scene-tab {{selectedScene === item.key ? 'scene-tab-active' : ''}}" data-scene="{{item.key}}" bindtap="onSceneTab"><text>{{item.label}}</text><text wx:if="{{sceneStatuses[item.key]}}" class="attention-dot" aria-label="尚未完成">!</text></view>
+    </view>
+    <view class="coach-inline" wx:if="{{guideOpen && guideItem.target === 'sceneTabs'}}"><text class="coach-progress">引导 {{guideIndex + 1}} / {{guideCount}}</text><text class="coach-title">{{guideItem.title}}</text><text class="coach-body">{{guideItem.body}}</text><view class="coach-actions"><button class="coach-skip" bindtap="skipGuide">跳过</button><button class="coach-next" bindtap="nextGuide">{{guideIndex + 1 >= guideCount ? '知道了' : '下一条'}}</button></view></view>
+    <view class="setting-block">
+      <text class="setting-label">你的上下班时间固定吗？</text>
+      <view class="mode-segments compact-segments" role="tablist" aria-label="工时制度"><view wx:for="{{attendanceModeOptions}}" wx:key="value" class="mode-segment {{document.attendance.scenes[selectedScene].mode === item.value ? 'mode-segment-active' : ''}}" data-mode="{{item.value}}" bindtap="onSceneModeTab">{{item.label}}</view></view>
+    </view>
+    <view id="guide-standardHours" class="row emphasis-row guide-target {{guideOpen && guideItem.target === 'standardHours' ? 'guide-target-active' : ''}}"><text>你一天通常工作多久？</text><input type="digit" value="{{document.attendance.scenes[selectedScene].standard_minutes / 60}}" bindinput="onSceneNumberInput" /><text>小时</text></view>
+    <view class="coach-inline" wx:if="{{guideOpen && guideItem.target === 'standardHours'}}"><text class="coach-progress">引导 {{guideIndex + 1}} / {{guideCount}}</text><text class="coach-title">{{guideItem.title}}</text><text class="coach-body">{{guideItem.body}}</text><view class="coach-actions"><button class="coach-skip" bindtap="skipGuide">跳过</button><button class="coach-next" bindtap="nextGuide">{{guideIndex + 1 >= guideCount ? '知道了' : '下一条'}}</button></view></view>
+    <button class="advanced-toggle" data-section="basics" bindtap="toggleAdvanced"><text>{{advancedOpen.basics ? '收起更多选项' : '还有其他情况？'}}</text><text class="advanced-toggle-note">{{advancedOpen.basics ? '' : '工时怎么统计、缺卡怎么办'}}</text></button>
+    <view class="advanced-block" wx:if="{{advancedOpen.basics}}">
+    <block wx:if="{{document.attendance.scenes[selectedScene].mode === 'flexible'}}">
+      <picker mode="selector" range="{{flexibleMetricOptions}}" range-key="label" data-field="flexible_metric" bindchange="onScenePicker"><view class="picker">一天有多次打卡时，工时怎么算？{{document.attendance.scenes[selectedScene].flexible_metric === 'first_last_span' ? '从第一次算到最后一次' : '把每段时间加起来'}} <text>›</text></view></picker>
+      <picker mode="selector" range="{{shortfallPolicyOptions}}" range-key="label" data-field="shortfall_policy" bindchange="onScenePicker"><view class="picker">当天不足标准工时时怎么办？{{document.attendance.scenes[selectedScene].shortfall_policy === 'normal' ? '仍按正常上班' : '不提醒早退'}} <text>›</text></view></picker>
+    </block>
+    <picker mode="selector" range="{{missingPunchPolicyOptions}}" range-key="label" data-field="missing_punch_policy" bindchange="onScenePicker"><view class="picker">缺卡处理：{{document.attendance.scenes[selectedScene].missing_punch_policy === 'ignore' ? '忽略缺卡' : '标记待补卡'}} <text>›</text></view></picker>
+    <picker mode="selector" range="{{shiftTemplateOptions}}" range-key="label" bindchange="onSceneDefaultShift"><view class="picker">未单独排班时：{{document.attendance.scenes[selectedScene].default_shift_template ? document.attendance.shift_templates[document.attendance.scenes[selectedScene].default_shift_template].name : '沿用本场景时间'}} <text>›</text></view></picker>
+    </view>
+    <view class="subsection" wx:if="{{document.attendance.scenes[selectedScene].mode === 'fixed'}}">
+      <view class="subsection-head"><view><text>你通常几点上班、几点下班？</text><text class="subsection-note">上班和下班时间都由你直接选择</text></view><button class="tiny" wx:if="{{advancedOpen.basics}}" bindtap="addWorkPeriod">添加特殊时段</button></view>
+      <block wx:for="{{document.attendance.scenes[selectedScene].normal_work_periods}}" wx:key="id">
+      <view class="config-item" wx:if="{{index === 0 || advancedOpen.basics}}">
+        <view class="item-head" wx:if="{{index > 0}}"><input class="item-name" data-index="{{index}}" value="{{item.name}}" bindinput="onWorkPeriodInput" placeholder="特殊时段名称" /><button class="tiny danger" data-index="{{index}}" bindtap="removeWorkPeriod">删除</button></view>
+        <view id="{{index === 0 ? 'guide-primaryStart' : ''}}" class="time-flow guide-target {{guideOpen && guideItem.target === 'primaryStart' && index === 0 ? 'guide-target-active' : ''}}"><view class="time-field"><text>上班时间</text><picker mode="time" value="{{item.start_text}}" data-index="{{index}}" data-field="start_minute" bindchange="onWorkPeriodTime"><view class="picker compact">{{item.start_text}} <text>›</text></view></picker></view><text class="time-arrow">→</text><view class="time-field"><text>下班时间{{item.ends_next_day ? '（次日）' : ''}}</text><picker mode="time" value="{{item.end_text}}" data-index="{{index}}" data-field="end_minute" bindchange="onWorkPeriodTime"><view class="picker compact">{{item.end_text}} <text>›</text></view></picker></view></view>
+        <view class="coach-inline" wx:if="{{guideOpen && guideItem.target === 'primaryStart' && index === 0}}"><text class="coach-progress">引导 {{guideIndex + 1}} / {{guideCount}}</text><text class="coach-title">{{guideItem.title}}</text><text class="coach-body">{{guideItem.body}}</text><view class="coach-actions"><button class="coach-skip" bindtap="skipGuide">跳过</button><button class="coach-next" bindtap="nextGuide">{{guideIndex + 1 >= guideCount ? '知道了' : '下一条'}}</button></view></view>
+        <view class="switch-row"><text>下班是在第二天</text><switch checked="{{item.ends_next_day}}" data-index="{{index}}" bindchange="onWorkPeriodNextDay" color="#4ECDC4" /></view>
+      </view>
+      </block>
+      <text class="hint">如果中间有午休或分段工作，直接添加第二段时间；不用再单独填写休息时长。</text>
+    </view>
+  </view>
+
+  <view id="guide-shiftTemplates" class="panel guide-target {{guideOpen && guideItem.target === 'shiftTemplates' ? 'guide-target-active' : ''}}" wx:if="{{!loading && document && currentStep === 1}}">
+    <view class="panel-title">每周安排</view>
+    <text class="section-help">一般只需选单休或双休，系统会直接使用第一步的上下班时间。只有多班次、倒班或特殊时间时，才需要添加特殊班次。</text>
+    <view class="coach-inline" wx:if="{{guideOpen && guideItem.target === 'shiftTemplates'}}"><text class="coach-progress">引导 {{guideIndex + 1}} / {{guideCount}}</text><text class="coach-title">{{guideItem.title}}</text><text class="coach-body">{{guideItem.body}}</text><view class="coach-actions"><button class="coach-skip" bindtap="skipGuide">跳过</button><button class="coach-next" bindtap="nextGuide">{{guideIndex + 1 >= guideCount ? '知道了' : '下一条'}}</button></view></view>
+    <button class="advanced-toggle" bindtap="toggleShiftTemplates"><text>{{shiftTemplatesOpen ? '收起特殊班次' : '有多班次或特殊时间？'}}</text><text class="advanced-toggle-note">{{shiftTemplatesOpen ? '' : '按需添加，一般不用设置'}}</text></button>
+    <view class="advanced-block" wx:if="{{shiftTemplatesOpen}}">
+    <view class="subsection-head"><view><text>特殊班次</text><text class="subsection-note">多班次或特殊时间才需要</text></view><button class="tiny" bindtap="addShiftTemplate">添加特殊班次</button></view>
+    <text class="hint" wx:if="{{!shiftTemplates.length}}">暂无特殊班次。选择下方的单休或双休后，系统会自动建立默认工作班次。</text>
+    <view class="config-item shift-template" wx:for="{{shiftTemplates}}" wx:key="id" wx:for-item="shift">
+      <view class="item-head"><input class="item-name" data-id="{{shift.id}}" data-field="name" value="{{shift.name}}" bindinput="onShiftTemplateInput" placeholder="班次名称" /><button class="tiny danger" data-id="{{shift.id}}" bindtap="removeShiftTemplate">删除</button></view>
+      <view class="labeled-control shift-scope-control"><text>使用范围</text><picker mode="selector" range="{{shiftScopeOptions}}" range-key="label" value="{{shift.sceneIndex}}" data-id="{{shift.id}}" data-field="scene" bindchange="onShiftTemplatePicker"><view class="picker compact">{{shift.sceneLabel}} <text>›</text></view></picker></view>
+      <view class="inheritance-note"><text class="inheritance-title">工作时长和上下班时间</text><text>当前班次的时间已独立保存。只有它和第一步不同时，才需要展开修改。</text><button class="tiny detail-toggle" data-id="{{shift.id}}" bindtap="toggleShiftDetails">{{shiftDetailsOpen[shift.id] ? '收起特殊班次设置' : '需要特殊时间？展开修改'}}</button></view>
+      <view wx:if="{{shiftDetailsOpen[shift.id]}}" class="shift-detail-editor"><picker mode="selector" range="{{attendanceModeOptions}}" range-key="label" value="{{shift.mode === 'flexible' ? 1 : 0}}" data-id="{{shift.id}}" data-field="mode" bindchange="onShiftTemplatePicker"><view class="picker">这个班次的工时制度：{{shift.mode === 'flexible' ? '自由工时' : '固定时间'}} <text>›</text></view></picker><view class="row"><text>这个班次每天工作多久？</text><input type="digit" data-id="{{shift.id}}" data-field="standard_minutes" value="{{shift.standard_minutes / 60}}" bindinput="onShiftTemplateInput" /><text>小时</text></view>
+      <block wx:if="{{shift.mode === 'fixed'}}">
+        <view class="subsection-head compact-head"><view><text>这班几点上班、几点下班？</text><text class="subsection-note">两个时间都由你直接选择</text></view><button class="tiny" data-id="{{shift.id}}" bindtap="addTemplatePeriod">添加特殊时段</button></view>
+        <view class="period-row" wx:for="{{shift.normal_work_periods}}" wx:key="id" wx:for-item="period" wx:for-index="periodIndex">
+          <view class="item-head" wx:if="{{periodIndex > 0}}"><input class="item-name" data-id="{{shift.id}}" data-index="{{periodIndex}}" value="{{period.name}}" bindinput="onTemplatePeriodInput" placeholder="特殊时段名称" /><button class="tiny danger" data-id="{{shift.id}}" data-index="{{periodIndex}}" bindtap="removeTemplatePeriod">删除</button></view>
+          <view class="time-flow"><view class="time-field"><text>上班时间</text><picker mode="time" value="{{period.start_text}}" data-id="{{shift.id}}" data-index="{{periodIndex}}" data-field="start_minute" bindchange="onTemplatePeriodTime"><view class="picker compact">{{period.start_text}} <text>›</text></view></picker></view><text class="time-arrow">→</text><view class="time-field"><text>下班时间{{period.ends_next_day ? '（次日）' : ''}}</text><picker mode="time" value="{{period.end_text}}" data-id="{{shift.id}}" data-index="{{periodIndex}}" data-field="end_minute" bindchange="onTemplatePeriodTime"><view class="picker compact">{{period.end_text}} <text>›</text></view></picker></view></view>
+          <view class="switch-row"><text>下班是在第二天</text><switch checked="{{period.ends_next_day}}" data-id="{{shift.id}}" data-index="{{periodIndex}}" bindchange="onTemplatePeriodNextDay" color="#4ECDC4" /></view>
+        </view>
+      </block>
+      </view>
+    </view>
+    </view>
+
+    <view id="guide-weeklySchedule" class="subsection guide-target {{guideOpen && guideItem.target === 'weeklySchedule' ? 'guide-target-active' : ''}}">
+      <view class="subsection-head"><view><text>每周排班</text><text class="subsection-note">先选单休或双休，也可以再逐天修改</text></view></view>
+      <view class="weekly-rest-control">
+        <view class="weekly-rest-copy"><text class="weekly-rest-question">你每周休息几天？</text><text class="weekly-rest-help">选好后会自动安排工作日；没有班次时会按第一步自动创建</text></view>
+        <view class="mode-segments weekly-rest-segments" role="tablist" aria-label="每周休息安排"><view wx:for="{{weeklyRestModeOptions}}" wx:key="value" class="mode-segment {{weeklyRestMode === item.value ? 'mode-segment-active' : ''}}" data-mode="{{item.value}}" bindtap="onWeeklyRestModeChange">{{item.label}}</view></view>
+      </view>
+      <view class="coach-inline" wx:if="{{guideOpen && guideItem.target === 'weeklySchedule'}}"><text class="coach-progress">引导 {{guideIndex + 1}} / {{guideCount}}</text><text class="coach-title">{{guideItem.title}}</text><text class="coach-body">{{guideItem.body}}</text><view class="coach-actions"><button class="coach-skip" bindtap="skipGuide">跳过</button><button class="coach-next" bindtap="nextGuide">{{guideIndex + 1 >= guideCount ? '知道了' : '下一条'}}</button></view></view>
+      <view class="schedule-row" wx:for="{{weeklyRows}}" wx:key="key">
+        <text>{{item.label}}</text><picker mode="selector" range="{{shiftTemplateOptions}}" range-key="label" value="{{item.templateIndex}}" data-index="{{index}}" bindchange="onWeeklyTemplate"><view class="picker compact">{{item.templateLabel}} <text>›</text></view></picker>
+      </view>
+    </view>
+
+    <button class="advanced-toggle" data-section="schedule" bindtap="toggleAdvanced"><text>{{advancedOpen.schedule ? '收起临时安排' : '某一天不一样？'}}</text><text class="advanced-toggle-note">{{advancedOpen.schedule ? '' : '单独修改某天的上班安排'}}</text></button>
+    <view class="advanced-block" wx:if="{{advancedOpen.schedule}}">
+    <view class="subsection">
+      <view class="subsection-head"><text>单独修改某一天</text><button class="tiny" bindtap="addDayOverride">添加日期</button></view>
+      <view class="config-item" wx:for="{{dayOverrides}}" wx:key="date">
+        <view class="item-head"><picker mode="date" value="{{item.date}}" data-index="{{index}}" bindchange="onDayOverrideDate"><view class="picker compact">{{item.date}} <text>›</text></view></picker><button class="tiny danger" data-index="{{index}}" bindtap="removeDayOverride">删除</button></view>
+        <picker mode="selector" range="{{shiftTemplateOptions}}" range-key="label" value="{{item.templateIndex}}" data-index="{{index}}" data-field="shift_template_id" bindchange="onDayOverridePicker"><view class="picker">班次：{{item.templateLabel}} <text>›</text></view></picker>
+        <view class="rule-grid"><picker mode="selector" range="{{optionalScenes}}" range-key="label" value="{{item.sceneIndex}}" data-index="{{index}}" data-field="scene" bindchange="onDayOverridePicker"><view class="picker compact">场景：{{item.sceneLabel}} <text>›</text></view></picker><picker mode="selector" range="{{optionalAttendanceModes}}" range-key="label" value="{{item.modeIndex}}" data-index="{{index}}" data-field="mode" bindchange="onDayOverridePicker"><view class="picker compact">模式：{{item.modeLabel}} <text>›</text></view></picker></view>
+        <picker mode="selector" range="{{optionalDayTypes}}" range-key="label" value="{{item.dayTypeIndex}}" data-index="{{index}}" data-field="day_type" bindchange="onDayOverridePicker"><view class="picker">日期类型：{{item.dayTypeLabel}} <text>›</text></view></picker>
+      </view>
+      <text class="hint">同一天只能单独设置一次。计算时，会先看你当天手动选择的是公司上班还是出差，再看这里的临时安排，然后才看每周安排和常用班次。</text>
+    </view>
+    </view>
+  </view>
+
+  <view class="panel" wx:if="{{!loading && document && currentStep === 2}}">
+    <view class="panel-title">你要设置哪一种日子？</view>
+    <view id="guide-dayTabs" class="day-tabs guide-target {{guideOpen && guideItem.target === 'dayTabs' ? 'guide-target-active' : ''}}" role="tablist" aria-label="日期类型"><view wx:for="{{dayTypes}}" wx:key="key" role="tab" aria-selected="{{selectedDayType === item.key}}" class="day-tab {{selectedDayType === item.key ? 'day-tab-active' : ''}}" data-day-type="{{item.key}}" bindtap="onDayTypeTab"><text>{{item.label}}</text><text wx:if="{{dayRuleStatuses[item.key]}}" class="attention-dot" aria-label="尚未完成">!</text></view></view>
+    <view class="coach-inline" wx:if="{{guideOpen && guideItem.target === 'dayTabs'}}"><text class="coach-progress">引导 {{guideIndex + 1}} / {{guideCount}}</text><text class="coach-title">{{guideItem.title}}</text><text class="coach-body">{{guideItem.body}}</text><view class="coach-actions"><button class="coach-skip" bindtap="skipGuide">跳过</button><button class="coach-next" bindtap="nextGuide">{{guideIndex + 1 >= guideCount ? '知道了' : '下一条'}}</button></view></view>
+    <text class="hint">工作日、休息日和法定节假日可以用不同的加班算法；日历上的节假日标签会优先使用节假日规则。</text>
+  </view>
+
+  <view id="guide-deductionRules" class="panel guide-target {{guideOpen && guideItem.target === 'deductionRules' ? 'guide-target-active' : ''}}" wx:if="{{!loading && document && currentStep === 2}}">
+    <view class="panel-title">什么时候要扣掉休息时间？</view>
+    <text class="section-help">不用填写午休时间。这里只看当天从上班打卡到下班打卡一共跨了多久，再按你的条件扣掉休息时长；不是看下班后又加班了多久。</text>
+    <view class="coach-inline" wx:if="{{guideOpen && guideItem.target === 'deductionRules'}}"><text class="coach-progress">引导 {{guideIndex + 1}} / {{guideCount}}</text><text class="coach-title">{{guideItem.title}}</text><text class="coach-body">{{guideItem.body}}</text><view class="coach-actions"><button class="coach-skip" bindtap="skipGuide">跳过</button><button class="coach-next" bindtap="nextGuide">{{guideIndex + 1 >= guideCount ? '知道了' : '下一条'}}</button></view></view>
+    <view class="config-item" wx:for="{{document.day_rules[selectedDayType].deductions}}" wx:key="id">
+      <view class="item-head"><text class="item-index">条件 {{index + 1}}</text><button class="tiny danger" data-index="{{index}}" bindtap="removeDeduction">删除</button></view>
+      <view class="deduction-sentence"><text>当</text><picker mode="selector" range="{{deductionMetricOptions}}" range-key="label" data-index="{{index}}" data-field="metric" bindchange="onDeductionPicker"><view class="sentence-choice">{{item.metric === 'attendance_span' ? '当天从上班打卡到下班打卡' : '当天加班本身'}} <text>›</text></view></picker><picker mode="selector" range="{{operatorOptions}}" data-index="{{index}}" data-field="operator" bindchange="onDeductionPicker"><view class="sentence-choice">{{item.operator === '<=' ? '不超过' : (item.operator === '>' ? '超过' : (item.operator === '>=' ? '不少于' : (item.operator === '<' ? '少于' : '等于')))}} <text>›</text></view></picker><view class="inline-number"><input type="digit" data-index="{{index}}" data-field="threshold_minutes" value="{{item.threshold_minutes / 60}}" bindinput="onDeductionHoursInput" /><text>小时</text></view><text>时，扣掉</text><view class="inline-number"><input type="digit" data-index="{{index}}" data-field="deduct_minutes" value="{{item.deduct_minutes / 60}}" bindinput="onDeductionHoursInput" /><text>小时休息</text></view></view>
+    </view>
+    <button class="secondary add-item" bindtap="addDeduction">添加扣除规则</button>
+    <text class="hint">如果同一天碰到多条条件，只按你排在最前面的那条来算。</text>
+  </view>
+
+  <button class="advanced-toggle" wx:if="{{!loading && document && currentStep === 2}}" data-section="overtime" bindtap="toggleAdvanced" aria-expanded="{{advancedOpen.overtime}}">
+    <view class="advanced-toggle-title"><text class="advanced-toggle-arrow {{advancedOpen.overtime ? 'advanced-toggle-arrow-open' : ''}}">›</text><text>{{advancedOpen.overtime ? '收起详细算法' : '继续设置怎么算加班'}}</text></view>
+    <text class="advanced-toggle-note">{{advancedOpen.overtime ? '' : '起算时长、取整、单日/月上限和跨夜归属'}}</text>
+  </button>
+  <view class="advanced-block" wx:if="{{advancedOpen.overtime}}">
+  <view class="panel" wx:if="{{!loading && document && currentStep === 2}}">
+    <view class="panel-title">有效加班的最低门槛</view>
+    <view class="row"><text>加班至少达到</text><input type="digit" data-field="minimum_minutes" value="{{durationUnit.hours(document.day_rules[selectedDayType].minimum.minutes)}}" bindinput="onNumberInput" /><text>小时</text></view>
+    <picker mode="selector" range="{{operatorOptions}}" value="{{operatorIndex}}" bindchange="onOperatorChange"><view class="picker">你希望用“{{document.day_rules[selectedDayType].minimum.operator}}”来判断 <text>›</text></view></picker>
+    <text class="hint">这里设置的是“有效加班”的最低门槛，不是要扣掉的时间。当前条件是：加班时长满足“{{document.day_rules[selectedDayType].minimum.operator}} {{durationUnit.hours(document.day_rules[selectedDayType].minimum.minutes)}} 小时”。不满足条件时，整段按 0 小时计算；满足后，实际加班时长不会因为这个门槛被扣掉，再按页面中配置的休息扣除、取整、上限和计费规则计算。例如选择“≥”并设置 1 小时：59 分钟算 0 小时，1 小时算 1 小时，1.5 小时算 1.5 小时。</text>
+  </view>
+
+  <view class="panel" wx:if="{{!loading && document && currentStep === 2}}">
+    <view class="panel-title">加班时长要不要取整、最多算多久？</view>
+	<view class="row"><text>每一档按多少小时算？</text><input type="digit" data-field="rounding_step" value="{{durationUnit.hours(document.day_rules[selectedDayType].rounding.step_minutes)}}" bindinput="onNumberInput" /><text>小时</text></view>
+	<picker mode="selector" range="{{roundingOptions}}" range-key="label" value="{{roundingIndex}}" bindchange="onRoundingChange"><view class="picker">不满一档时怎么处理？{{roundingOptions[roundingIndex].label}} <text>›</text></view></picker>
+	<picker mode="selector" range="{{roundingScopeOptions}}" range-key="label" value="{{document.day_rules[selectedDayType].rounding.scope === 'session' ? 1 : 0}}" bindchange="onRoundingScopeChange"><view class="picker">是每天一起算，还是每场分开算？{{document.day_rules[selectedDayType].rounding.scope === 'session' ? '每场分开' : '每天合计'}} <text>›</text></view></picker>
+    <picker mode="selector" range="{{capOrderOptions}}" range-key="label" data-field="cap_order" bindchange="onRulePicker"><view class="picker">先取整还是先限制最高时长？{{document.day_rules[selectedDayType].cap_order === 'cap_then_round' ? '先限制再取整' : '先取整再限制'}} <text>›</text></view></picker>
+    <view class="row"><text>一场最多算</text><input type="digit" data-field="session_cap" value="{{durationUnit.optionalHours(document.day_rules[selectedDayType].session_cap_minutes)}}" bindinput="onNumberInput" placeholder="不限制" /><text>小时</text></view>
+    <view class="row"><text>一天最多算</text><input type="digit" data-field="daily_cap" value="{{durationUnit.optionalHours(document.day_rules[selectedDayType].daily_cap_minutes)}}" bindinput="onNumberInput" placeholder="不限制" /><text>小时</text></view>
+    <view class="row"><text>一个月最多算</text><input type="digit" data-field="monthly_cap" value="{{durationUnit.optionalHours(document.day_rules[selectedDayType].monthly_cap_minutes)}}" bindinput="onNumberInput" placeholder="不限制" /><text>小时</text></view>
+    <picker mode="selector" range="{{nightBasisOptions}}" range-key="label" data-field="night_day_basis" bindchange="onRulePicker"><view class="picker">如果加班到凌晨，算哪一天？{{document.day_rules[selectedDayType].night_day_basis === 'shift_start' ? '都算到开始那天' : '按日期拆开'}} <text>›</text></view></picker>
+  </view>
+
+  </view>
+
+  <view id="guide-pricingBands" class="panel guide-target pricing-panel {{guideOpen && guideItem.target === 'pricingBands' ? 'guide-target-active' : ''}}" wx:if="{{!loading && document && currentStep === 2}}">
+    <view class="panel-title panel-title-with-status"><text>不同加班时段分别怎么算钱？</text><text wx:if="{{pricingNeedsAttention}}" class="attention-badge">未设置小时单价</text></view>
+    <text class="section-help">这里就是加班单价设置。你可以按累计时长、钟点时段或当天第几场加班分别填写每小时多少钱。</text>
+    <view class="pricing-alert" wx:if="{{pricingNeedsAttention}}"><text class="pricing-alert-title">请先设置加班小时单价</text><text class="pricing-alert-body">当前分类还没有可用的加班小时单价。请先填写“每小时多少钱”；如果确定暂时不计算加班费，可以直接跳过。</text><view class="pricing-alert-actions"><button class="tiny pricing-set-button" bindtap="startPricingSetup">现在设置单价</button><button class="tiny pricing-skip-button" bindtap="skipPricingSetupAndContinue">暂不设置，继续下一步</button></view></view>
+    <view class="pricing-skipped" wx:elif="{{pricingSkipConfirmed}}"><text class="pricing-skipped-title">已确认暂不设置小时单价</text><text class="hint">这一类加班仍可统计时长，但加班费会按 0 元处理。之后可以点击“现在设置单价”补充。</text><button class="tiny pricing-set-button" bindtap="startPricingSetup">现在设置单价</button></view>
+    <view class="empty-pricing" wx:if="{{!document.day_rules[selectedDayType].bands.length && !pricingSkipConfirmed}}"><text class="empty-pricing-title">还没有设置这一类日子的加班单价</text><text class="hint">点击上面的“现在设置单价”，会直接展开第一段小时单价输入；工作日、休息日和法定节假日要分别设置。</text></view>
+    <view class="coach-inline" wx:if="{{guideOpen && guideItem.target === 'pricingBands'}}"><text class="coach-progress">引导 {{guideIndex + 1}} / {{guideCount}}</text><text class="coach-title">{{guideItem.title}}</text><text class="coach-body">{{guideItem.body}}</text><view class="coach-actions"><button class="coach-skip" bindtap="skipGuide">跳过</button><button class="coach-next" bindtap="nextGuide">{{guideIndex + 1 >= guideCount ? '知道了' : '下一条'}}</button></view></view>
+    <picker mode="selector" range="{{pricingModeOptions}}" range-key="label" data-field="pricing_mode" bindchange="onRulePicker"><view class="picker question-picker"><text class="picker-question">同一天符合多段时怎么计算？</text><view class="picker-answer"><text>{{document.day_rules[selectedDayType].pricing_mode === 'single_tier' ? '只用排在最前的一段' : '每段分别计算'}}</text><text class="picker-chevron">›</text></view></view></picker>
+    <view class="config-item" wx:for="{{document.day_rules[selectedDayType].bands}}" wx:key="id" wx:for-item="band" wx:for-index="bandIndex">
+      <view class="item-head"><input class="item-name" data-index="{{bandIndex}}" data-field="name" value="{{band.name}}" bindinput="onBandInput" placeholder="分段名称" /><button class="tiny danger" data-index="{{bandIndex}}" bindtap="removePricingBand">删除</button></view>
+      <view class="pricing-rate-block" wx:if="{{band.settlement !== 'comp_time'}}"><text class="pricing-rate-label">优先填写：加班小时单价</text><picker mode="selector" range="{{rateModeOptions}}" range-key="label" value="{{band.rate.mode === 'formula' ? 1 : 0}}" data-index="{{bandIndex}}" bindchange="onBandRateMode"><view class="picker question-picker"><text class="picker-question">每小时多少钱？</text><view class="picker-answer"><text>{{band.rate.mode === 'formula' ? '根据工资自动计算' : '我直接填写金额'}}</text><text class="picker-chevron">›</text></view></view></picker><view class="mini-field rate-input-field" wx:if="{{band.rate.mode !== 'formula'}}"><text>这段每小时多少钱？</text><view class="input-with-unit"><input type="digit" data-index="{{bandIndex}}" data-field="rate" value="{{band.rate.cents_per_hour / 100}}" bindinput="onBandInput" /><text>元</text></view></view></view>
+      <view class="formula-box" wx:if="{{band.settlement !== 'comp_time' && band.rate.mode === 'formula'}}">
+        <picker mode="selector" range="{{formulaVariableOptions}}" range-key="label" data-target="band_rate" data-owner-index="{{bandIndex}}" bindchange="onFormulaStartPicker"><view class="picker">先从哪项金额开始算？{{band.rate.formula.start_label}} <text>›</text></view></picker>
+        <view class="formula-step" wx:for="{{band.rate.formula.steps}}" wx:for-item="step" wx:for-index="stepIndex">
+          <picker mode="selector" range="{{formulaOperatorOptions}}" data-target="band_rate" data-owner-index="{{bandIndex}}" data-step-index="{{stepIndex}}" data-field="operator" bindchange="onFormulaStepPicker"><view class="picker compact">{{step.operator}} <text>›</text></view></picker>
+          <picker mode="selector" range="{{formulaOperandOptions}}" range-key="label" data-target="band_rate" data-owner-index="{{bandIndex}}" data-step-index="{{stepIndex}}" data-field="operand_kind" bindchange="onFormulaStepPicker"><view class="picker compact">{{step.operand_kind_label}} <text>›</text></view></picker>
+          <picker wx:if="{{step.operand.kind === 'variable'}}" mode="selector" range="{{formulaVariableOptions}}" range-key="label" data-target="band_rate" data-owner-index="{{bandIndex}}" data-step-index="{{stepIndex}}" data-field="operand_variable" bindchange="onFormulaStepPicker"><view class="picker formula-value">{{step.operand_label}} <text>›</text></view></picker>
+          <input wx:else class="formula-value" type="digit" value="{{step.operand.value}}" data-target="band_rate" data-owner-index="{{bandIndex}}" data-step-index="{{stepIndex}}" bindinput="onFormulaStepNumber" />
+          <button class="icon-button danger" aria-label="删除公式步骤" data-target="band_rate" data-owner-index="{{bandIndex}}" data-step-index="{{stepIndex}}" bindtap="removeFormulaStep">×</button>
+        </view>
+        <button class="formula-add" data-target="band_rate" data-owner-index="{{bandIndex}}" bindtap="addFormulaStep">添加运算步骤</button>
+        <text class="hint">算出的结果就是每小时的加班单价。例如：加班工资基数 ÷ 月标准出勤天数 ÷ 每日标准工时。</text>
+      </view>
+      <picker mode="selector" range="{{pricingSelectorOptions}}" range-key="label" data-index="{{bandIndex}}" bindchange="onBandSelector"><view class="picker question-picker"><text class="picker-question">这一段按什么条件判断？</text><view class="picker-answer"><text>{{band.selector_label}}</text><text class="picker-chevron">›</text></view></view></picker>
+      <block wx:if="{{band.selector === 'cumulative_range'}}">
+        <view class="rule-grid"><view class="mini-field"><text>从累计第几小时开始？</text><input type="digit" data-index="{{bandIndex}}" data-field="min_minutes" value="{{durationUnit.optionalHours(band.min_minutes)}}" bindinput="onBandInput" /></view><view class="mini-field"><text>到累计第几小时结束？</text><input type="digit" data-index="{{bandIndex}}" data-field="max_minutes" value="{{durationUnit.optionalHours(band.max_minutes)}}" bindinput="onBandInput" placeholder="不封顶" /></view></view>
+      </block>
+      <block wx:elif="{{band.selector === 'clock_window'}}">
+        <view class="time-grid"><picker mode="time" value="{{band.clock_start_text}}" data-index="{{bandIndex}}" data-field="clock_start_minute" bindchange="onBandClockTime"><view class="picker compact">开始 {{band.clock_start_text}} <text>›</text></view></picker><picker mode="time" value="{{band.clock_end_text}}" data-index="{{bandIndex}}" data-field="clock_end_minute" bindchange="onBandClockTime"><view class="picker compact">结束 {{band.clock_end_text}} <text>›</text></view></picker></view>
+        <text class="hint">例如 22:00 到 02:00，会自动理解为跨到第二天。</text>
+      </block>
+      <block wx:else>
+        <view class="rule-grid"><view class="mini-field"><text>起始场次</text><input type="number" data-index="{{bandIndex}}" data-field="min_session" value="{{band.min_session || 1}}" bindinput="onBandInput" /></view><view class="mini-field"><text>结束场次</text><input type="number" data-index="{{bandIndex}}" data-field="max_session" value="{{band.max_session === null ? '' : band.max_session}}" bindinput="onBandInput" placeholder="不封顶" /></view></view>
+      </block>
+      <view class="rule-grid" wx:if="{{band.selector !== 'clock_window'}}"><view class="switch-mini"><text>含起点</text><switch checked="{{band.min_inclusive}}" data-index="{{bandIndex}}" data-field="min_inclusive" bindchange="onBandSwitch" color="#4ECDC4" /></view><view class="switch-mini"><text>含终点</text><switch checked="{{band.max_inclusive}}" data-index="{{bandIndex}}" data-field="max_inclusive" bindchange="onBandSwitch" color="#4ECDC4" /></view></view>
+      <view class="rule-grid"><view class="mini-field"><text>这一段最多算几小时？</text><input type="digit" data-index="{{bandIndex}}" data-field="band_cap_minutes" value="{{durationUnit.optionalHours(band.band_cap_minutes)}}" bindinput="onBandInput" placeholder="不限制" /></view><view class="mini-field"><text>同时符合多段时，先用哪段？数字越大越靠前</text><input type="number" data-index="{{bandIndex}}" data-field="priority" value="{{band.priority}}" bindinput="onBandInput" /></view></view>
+      <picker mode="selector" range="{{settlementModeOptions}}" range-key="label" data-index="{{bandIndex}}" bindchange="onBandSettlement"><view class="picker question-picker"><text class="picker-question">这段加班怎么结算？</text><view class="picker-answer"><text>{{band.settlement_label}}</text><text class="picker-chevron">›</text></view></view></picker>
+      <view class="row" wx:if="{{band.settlement === 'comp_time'}}"><text>1 小时换多少小时调休？</text><input type="digit" data-index="{{bandIndex}}" data-field="comp_time_ratio" value="{{band.comp_time_ratio}}" bindinput="onBandInput" /><text>小时</text></view>
+    </view>
+    <button class="secondary add-item" bindtap="addPricingBand">{{document.day_rules[selectedDayType].bands.length ? '再添加一段加班单价' : '添加第一段加班单价'}}</button>
+    <view class="switch-row"><text>确认分段空档固定按 0 元</text><switch checked="{{document.day_rules[selectedDayType].gap_confirmed}}" bindchange="onGapConfirmedChange" color="#4ECDC4" /></view>
+    <text class="hint">同一种判断方式不能互相重叠；如果中间故意留空，确认后那段时间按 0 元算。</text>
+  </view>
+
+  <view class="panel copy-panel" wx:if="{{!loading && document && currentStep === 2}}">
+    <view class="panel-title">要不要从另一种日子照抄设置？</view>
+    <picker mode="selector" range="{{dayTypes}}" range-key="label" value="{{copySourceIndex}}" bindchange="onCopySource"><view class="picker">复制来源：{{dayTypes[copySourceIndex].label}} <text>›</text></view></picker>
+    <view class="copy-grid"><view class="copy-option"><text>最低门槛</text><switch checked="{{copyParts.minimum}}" data-field="minimum" bindchange="onCopyPart" color="#4ECDC4" /></view><view class="copy-option"><text>休息扣除</text><switch checked="{{copyParts.deductions}}" data-field="deductions" bindchange="onCopyPart" color="#4ECDC4" /></view><view class="copy-option"><text>取整方式</text><switch checked="{{copyParts.rounding}}" data-field="rounding" bindchange="onCopyPart" color="#4ECDC4" /></view><view class="copy-option"><text>小时上限</text><switch checked="{{copyParts.limits}}" data-field="limits" bindchange="onCopyPart" color="#4ECDC4" /></view><view class="copy-option"><text>计费分段</text><switch checked="{{copyParts.pricing}}" data-field="pricing" bindchange="onCopyPart" color="#4ECDC4" /></view><view class="copy-option"><text>跨夜归属</text><switch checked="{{copyParts.night}}" data-field="night" bindchange="onCopyPart" color="#4ECDC4" /></view></view>
+    <button class="secondary add-item" bindtap="copySelectedParts">把选中的设置复制过来</button>
+  </view>
+  <view class="panel" wx:if="{{!loading && document && currentStep === 3}}">
+	<view class="panel-title">你每月拿多少税前工资？</view>
+	<view id="guide-baseSalary" class="row guide-target {{guideOpen && guideItem.target === 'baseSalary' ? 'guide-target-active' : ''}}"><text>每月税前基本工资</text><input type="number" data-field="base_salary_cents" value="{{document.payroll.base_salary_cents / 100}}" bindinput="onNumberInput" /><text>元</text></view>
+	<view class="coach-inline" wx:if="{{guideOpen && guideItem.target === 'baseSalary'}}"><text class="coach-progress">引导 {{guideIndex + 1}} / {{guideCount}}</text><text class="coach-title">{{guideItem.title}}</text><text class="coach-body">{{guideItem.body}}</text><view class="coach-actions"><button class="coach-skip" bindtap="skipGuide">跳过</button><button class="coach-next" bindtap="nextGuide">{{guideIndex + 1 >= guideCount ? '知道了' : '下一条'}}</button></view></view>
+	<view id="guide-salaryItems" class="subsection guide-target {{guideOpen && guideItem.target === 'salaryItems' ? 'guide-target-active' : ''}}"><view class="subsection-head"><text>你还需要哪些补贴？</text></view><view class="preset-actions"><picker mode="selector" range="{{salaryPresetOptions}}" range-key="label" value="{{salaryPresetIndex}}" bindchange="onSalaryPresetChange"><view class="picker compact">{{salaryPresetOptions[salaryPresetIndex].label}} <text>›</text></view></picker><button class="tiny preset-add-button {{salaryPresetAlreadyAdded ? 'preset-add-button-disabled' : ''}}" disabled="{{salaryPresetAlreadyAdded}}" bindtap="addSalaryPreset">{{salaryPresetAlreadyAdded ? '已添加' : '添加这个项目'}}</button></view><text class="hint">选一个你会拿到的补贴，再填写金额和什么时候生效。</text></view>
+	<view class="coach-inline" wx:if="{{guideOpen && guideItem.target === 'salaryItems'}}"><text class="coach-progress">引导 {{guideIndex + 1}} / {{guideCount}}</text><text class="coach-title">{{guideItem.title}}</text><text class="coach-body">{{guideItem.body}}</text><view class="coach-actions"><button class="coach-skip" bindtap="skipGuide">跳过</button><button class="coach-next" bindtap="nextGuide">{{guideIndex + 1 >= guideCount ? '知道了' : '下一条'}}</button></view></view>
+	<text class="hint" wx:if="{{document.payroll.custom_items.length}}">已添加 {{document.payroll.custom_items.length}} 个工资项目。打开下面的详细设置，可以修改金额、按多少来算和使用日期。</text>
+    <button class="advanced-toggle" data-section="payroll" bindtap="toggleAdvanced"><text>{{advancedOpen.payroll ? '收起详细设置' : '还要调整补贴怎么算？'}}</text><text class="advanced-toggle-note">{{advancedOpen.payroll ? '' : '金额、按几天算、何时生效'}}</text></button>
+	<view class="advanced-block" wx:if="{{advancedOpen.payroll}}">
+	<view class="item" wx:for="{{document.payroll.custom_items}}" wx:key="id" wx:for-item="salaryItem" wx:for-index="salaryIndex">
+      <view class="item-head"><input class="item-name" data-index="{{salaryIndex}}" data-field="name" value="{{salaryItem.name}}" bindinput="onItemInput" placeholder="工资项目名称" /><button class="tiny danger" data-index="{{salaryIndex}}" bindtap="removeCustomItem">删除</button></view>
+      <picker mode="selector" range="{{unitOptions}}" range-key="label" value="{{salaryItem.unit === 'month' ? 0 : (salaryItem.unit === 'day' ? 1 : (salaryItem.unit === 'hour' ? 2 : 3))}}" data-index="{{salaryIndex}}" data-field="unit" bindchange="onItemPicker"><view class="picker question-picker"><text class="picker-question">这个项目按什么单位算？</text><view class="picker-answer"><text>{{salaryItem.unit_label}}</text><text class="picker-chevron">›</text></view></view></picker>
+      <picker mode="selector" range="{{legacyComponentOptions}}" range-key="label" value="{{salaryItem.legacy_component === 'meal_allowance' ? 1 : (salaryItem.legacy_component === 'domestic_allowance' ? 2 : (salaryItem.legacy_component === 'abroad_allowance' ? 3 : 0))}}" data-index="{{salaryIndex}}" data-field="legacy_component" bindchange="onItemPicker"><view class="picker question-picker"><text class="picker-question">要不要接着以前的项目？</text><view class="picker-answer"><text>{{salaryItem.legacy_component_label}}</text><text class="picker-chevron">›</text></view></view></picker>
+      <picker mode="selector" range="{{valueModeOptions}}" range-key="label" value="{{salaryItem.value_mode === 'formula' ? 1 : 0}}" data-index="{{salaryIndex}}" data-field="value_mode" bindchange="onItemPicker"><view class="picker question-picker"><text class="picker-question">这个金额怎么来？</text><view class="picker-answer"><text>{{salaryItem.value_mode_label}}</text><text class="picker-chevron">›</text></view></view></picker>
+      <view class="row" wx:if="{{salaryItem.value_mode !== 'formula'}}"><text>单价</text><input type="digit" data-index="{{salaryIndex}}" data-field="fixed_cents" value="{{salaryItem.fixed_cents / 100}}" bindinput="onItemInput" /><text>元/{{salaryItem.unit_label}}</text></view>
+      <view wx:if="{{salaryItem.value_mode === 'formula'}}" class="formula-box">
+        <picker mode="selector" range="{{formulaVariableOptions}}" range-key="label" data-target="item_amount" data-owner-index="{{salaryIndex}}" bindchange="onFormulaStartPicker"><view class="picker question-picker"><text class="picker-question">先从哪项金额开始算？</text><view class="picker-answer"><text>{{salaryItem.formula.start_label}}</text><text class="picker-chevron">›</text></view></view></picker>
+        <view class="formula-step" wx:for="{{salaryItem.formula.steps}}" wx:for-item="step" wx:for-index="stepIndex">
+          <picker mode="selector" range="{{formulaOperatorOptions}}" data-target="item_amount" data-owner-index="{{salaryIndex}}" data-step-index="{{stepIndex}}" data-field="operator" bindchange="onFormulaStepPicker"><view class="picker compact">{{step.operator}} <text>›</text></view></picker>
+          <picker mode="selector" range="{{formulaOperandOptions}}" range-key="label" data-target="item_amount" data-owner-index="{{salaryIndex}}" data-step-index="{{stepIndex}}" data-field="operand_kind" bindchange="onFormulaStepPicker"><view class="picker compact">{{step.operand_kind_label}} <text>›</text></view></picker>
+          <picker wx:if="{{step.operand.kind === 'variable'}}" mode="selector" range="{{formulaVariableOptions}}" range-key="label" data-target="item_amount" data-owner-index="{{salaryIndex}}" data-step-index="{{stepIndex}}" data-field="operand_variable" bindchange="onFormulaStepPicker"><view class="picker formula-value">{{step.operand_label}} <text>›</text></view></picker>
+          <input wx:else class="formula-value" type="digit" value="{{step.operand.value}}" data-target="item_amount" data-owner-index="{{salaryIndex}}" data-step-index="{{stepIndex}}" bindinput="onFormulaStepNumber" />
+          <button class="icon-button danger" aria-label="删除公式步骤" data-target="item_amount" data-owner-index="{{salaryIndex}}" data-step-index="{{stepIndex}}" bindtap="removeFormulaStep">×</button>
+        </view>
+        <button class="formula-add" data-target="item_amount" data-owner-index="{{salaryIndex}}" bindtap="addFormulaStep">添加运算步骤</button>
+      </view>
+      <picker mode="selector" range="{{quantitySourceOptions}}" range-key="label" data-index="{{salaryIndex}}" data-field="quantity_source" bindchange="onItemPicker"><view class="picker question-picker"><text class="picker-question">这个项目按多少来算？</text><view class="picker-answer"><text>{{salaryItem.quantity_source === 'automatic' ? '按打卡记录自动统计' : (salaryItem.quantity_source === 'formula' ? '按我选择的条件计算' : '我自己填写数量')}}</text><text class="picker-chevron">›</text></view></view></picker>
+      <view class="row" wx:if="{{salaryItem.quantity_source === 'manual'}}"><text>数量</text><input type="digit" data-index="{{salaryIndex}}" data-field="manual_quantity" value="{{salaryItem.manual_quantity}}" bindinput="onItemInput" /><text>{{salaryItem.unit_label}}</text></view>
+      <picker wx:if="{{salaryItem.quantity_source === 'automatic'}}" mode="selector" range="{{quantityVariableOptions}}" range-key="label" data-index="{{salaryIndex}}" data-field="quantity_variable" bindchange="onItemPicker"><view class="picker question-picker"><text class="picker-question">你希望按哪种记录统计？</text><view class="picker-answer"><text>{{salaryItem.quantity_variable_label}}</text><text class="picker-chevron">›</text></view></view></picker>
+      <view wx:if="{{salaryItem.quantity_source === 'formula'}}" class="formula-box">
+        <picker mode="selector" range="{{formulaVariableOptions}}" range-key="label" data-target="item_quantity" data-owner-index="{{salaryIndex}}" bindchange="onFormulaStartPicker"><view class="picker question-picker"><text class="picker-question">先从哪项数据开始算？</text><view class="picker-answer"><text>{{salaryItem.quantity_formula.start_label}}</text><text class="picker-chevron">›</text></view></view></picker>
+        <view class="formula-step" wx:for="{{salaryItem.quantity_formula.steps}}" wx:for-item="step" wx:for-index="stepIndex">
+          <picker mode="selector" range="{{formulaOperatorOptions}}" data-target="item_quantity" data-owner-index="{{salaryIndex}}" data-step-index="{{stepIndex}}" data-field="operator" bindchange="onFormulaStepPicker"><view class="picker compact">{{step.operator}} <text>›</text></view></picker>
+          <picker mode="selector" range="{{formulaOperandOptions}}" range-key="label" data-target="item_quantity" data-owner-index="{{salaryIndex}}" data-step-index="{{stepIndex}}" data-field="operand_kind" bindchange="onFormulaStepPicker"><view class="picker compact">{{step.operand_kind_label}} <text>›</text></view></picker>
+          <picker wx:if="{{step.operand.kind === 'variable'}}" mode="selector" range="{{formulaVariableOptions}}" range-key="label" data-target="item_quantity" data-owner-index="{{salaryIndex}}" data-step-index="{{stepIndex}}" data-field="operand_variable" bindchange="onFormulaStepPicker"><view class="picker formula-value">{{step.operand_label}} <text>›</text></view></picker>
+          <input wx:else class="formula-value" type="digit" value="{{step.operand.value}}" data-target="item_quantity" data-owner-index="{{salaryIndex}}" data-step-index="{{stepIndex}}" bindinput="onFormulaStepNumber" />
+          <button class="icon-button danger" aria-label="删除公式步骤" data-target="item_quantity" data-owner-index="{{salaryIndex}}" data-step-index="{{stepIndex}}" bindtap="removeFormulaStep">×</button>
+        </view>
+        <button class="formula-add" data-target="item_quantity" data-owner-index="{{salaryIndex}}" bindtap="addFormulaStep">添加运算步骤</button>
+      </view>
+      <view class="row"><text>从哪天开始算？</text><picker mode="date" data-index="{{salaryIndex}}" data-field="effective_from" value="{{salaryItem.effective_from}}" bindchange="onItemPicker"><view class="picker compact">{{salaryItem.effective_from || '选择日期'}}</view></picker></view>
+      <view class="row"><text>哪天之后不再算？</text><picker mode="date" data-index="{{salaryIndex}}" data-field="effective_to" value="{{salaryItem.effective_to}}" bindchange="onItemPicker"><view class="picker compact">{{salaryItem.effective_to || '一直有效'}}</view></picker><button wx:if="{{salaryItem.effective_to}}" class="tiny" data-index="{{salaryIndex}}" bindtap="clearItemEndDate">清除</button></view>
+      <view class="switch-row"><text>计入税前工资</text><switch checked="{{salaryItem.include_in_pretax}}" data-index="{{salaryIndex}}" data-field="include_in_pretax" bindchange="onItemSwitch" color="#4ECDC4" /></view>
+      <view class="switch-row"><text>计入加班工资基数</text><switch checked="{{salaryItem.include_in_overtime_base}}" data-index="{{salaryIndex}}" data-field="include_in_overtime_base" bindchange="onItemSwitch" color="#4ECDC4" /></view>
+    </view>
+	<button class="secondary add-item" bindtap="addCustomItem">添加自定义工资项目</button>
+    <text class="hint">岗位津贴可以按月，餐补和出差补助可以按天；特殊津贴也可以选择系统提供的条件来计算。</text>
+	</view>
+  </view>
+
+  <view id="guide-preview" class="panel preview-panel guide-target {{guideOpen && guideItem.target === 'preview' ? 'guide-target-active' : ''}}" wx:if="{{!loading && document && currentStep === 4}}">
+    <view class="panel-title">这样算出来对不对？</view>
+    <view class="coach-inline" wx:if="{{guideOpen && guideItem.target === 'preview'}}"><text class="coach-progress">引导 {{guideIndex + 1}} / {{guideCount}}</text><text class="coach-title">{{guideItem.title}}</text><text class="coach-body">{{guideItem.body}}</text><view class="coach-actions"><button class="coach-skip" bindtap="skipGuide">跳过</button><button class="coach-next" bindtap="nextGuide">{{guideIndex + 1 >= guideCount ? '知道了' : '下一条'}}</button></view></view>
+    <view class="row"><text>预览日期</text><picker mode="date" value="{{previewDate}}" bindchange="onPreviewDate"><view class="picker compact">{{previewDate}}</view></picker></view>
+    <view class="time-grid preview-times"><picker mode="time" value="{{previewAttendanceStart}}" data-field="previewAttendanceStart" bindchange="onPreviewTime"><view class="picker compact">上班 {{previewAttendanceStart}} <text>›</text></view></picker><picker mode="time" value="{{previewAttendanceEnd}}" data-field="previewAttendanceEnd" bindchange="onPreviewTime"><view class="picker compact">下班 {{previewAttendanceEnd}} <text>›</text></view></picker></view>
+	<view class="switch-row"><text>下班打卡在次日</text><switch checked="{{previewAttendanceEndsNextDay}}" bindchange="onPreviewAttendanceNextDay" color="#4ECDC4" /></view>
+	<view class="mode-segments" aria-label="试算加班来源"><view wx:for="{{previewOvertimeModes}}" wx:key="value" class="mode-segment {{previewOvertimeMode === item.value ? 'mode-segment-active' : ''}}" data-mode="{{item.value}}" bindtap="onPreviewOvertimeMode">{{item.label}}</view></view>
+	<view class="subsection-head preview-session-head" wx:if="{{previewOvertimeMode === 'manual'}}"><text>试算加班场次</text><button class="tiny" bindtap="addPreviewSession">添加场次</button></view>
+	<view class="config-item preview-session" wx:if="{{previewOvertimeMode === 'manual'}}" wx:for="{{previewSessions}}" wx:key="id">
+      <view class="item-head"><text class="item-index">第 {{index + 1}} 场</text><button class="tiny danger" data-index="{{index}}" bindtap="removePreviewSession">删除</button></view>
+      <view class="rule-grid"><picker mode="time" value="{{item.start}}" data-index="{{index}}" bindchange="onPreviewSessionTime"><view class="picker compact">开始 {{item.start}} <text>›</text></view></picker><view class="mini-field"><input type="digit" value="{{item.hours}}" data-index="{{index}}" bindinput="onPreviewSessionHours" /><text>时长（小时）</text></view></view>
+    </view>
+    <view class="row"><text>当月工作天数</text><input type="digit" data-field="previewWorkDays" value="{{previewWorkDays}}" bindinput="onPreviewVariable" /><text>天</text></view>
+    <view class="row"><text>当月出差天数</text><input type="digit" data-field="previewTripDays" value="{{previewTripDays}}" bindinput="onPreviewVariable" /><text>天</text></view>
+    <button class="secondary preview-button" loading="{{previewing}}" disabled="{{previewing}}" bindtap="previewRule">预览税前工资</button>
+	<view class="result" wx:if="{{preview}}"><text class="preview-total">预计税前合计 {{previewPretax}} 元</text><text>考勤判定：{{preview.attendance_status_text}}</text><text>实际工时 {{durationUnit.hours(preview.actual_work_minutes)}} 小时 · 不足 {{durationUnit.hours(preview.shortfall_minutes)}} 小时</text><text>加班来源：{{preview.overtime_source_text}}</text><text>首末打卡跨度 {{durationUnit.hours(preview.attendance_span_minutes)}} 小时</text><text>原始加班 {{durationUnit.hours(preview.raw_minutes)}} 小时 · 扣休 {{durationUnit.hours(preview.deduction_minutes)}} 小时</text><text>认可加班 {{durationUnit.hours(preview.recognized_minutes)}} 小时 · 计薪 {{durationUnit.hours(preview.paid_minutes)}} 小时</text><text>转调休 {{durationUnit.hours(preview.comp_minutes)}} 小时 · 获得调休 {{durationUnit.hours(preview.comp_credit_minutes)}} 小时</text><text>加班费 {{previewAmount}} 元</text><text wx:for="{{preview.salary_items}}" wx:key="id">{{item.name}}：{{item.quantity}} {{item.unit_label}} · {{item.amount_text}} 元</text><text class="warning-text" wx:for="{{preview.warnings}}" wx:key="*this">{{item}}</text><text class="hint" wx:if="{{!preview.warnings || !preview.warnings.length}}">未发现重叠或空档问题</text></view>
+  </view>
+
+  <view class="validation" wx:if="{{currentStep === 4 && validation && !validation.valid}}"><text wx:for="{{validation.issues}}" wx:key="path">{{item.message}}</text></view>
+  <view class="validation ok" wx:if="{{currentStep === 4 && validation && validation.valid}}">我检查过了，这套规则可以正常使用。</view>
+
+  <view id="guide-publish" class="panel guide-target {{guideOpen && guideItem.target === 'publish' ? 'guide-target-active' : ''}}" wx:if="{{!loading && document && currentStep === 4}}"><view class="panel-title">从哪个月开始用这套规则？</view><view class="coach-inline" wx:if="{{guideOpen && guideItem.target === 'publish'}}"><text class="coach-progress">引导 {{guideIndex + 1}} / {{guideCount}}</text><text class="coach-title">{{guideItem.title}}</text><text class="coach-body">{{guideItem.body}}</text><view class="coach-actions"><button class="coach-skip" bindtap="skipGuide">跳过</button><button class="coach-next" bindtap="nextGuide">{{guideIndex + 1 >= guideCount ? '知道了' : '下一条'}}</button></view></view><view class="row"><text>规则从哪个月生效？</text><picker mode="selector" range="{{effectiveMonthOptions}}" range-key="label" value="{{effectiveMonthIndex}}" bindchange="onEffectiveMonth"><view class="picker compact">{{effectiveMonthOptions[effectiveMonthIndex].label}} <text>›</text></view></picker></view><text class="hint">本月生效会按新规则重算本月全部考勤；下月生效则从下月 1 日开始。历史工资快照不会自动改写。</text></view>
+  <view class="actions" wx:if="{{!loading && document && currentStep === 4}}"><button class="secondary" loading="{{saving}}" disabled="{{saving || publishing}}" bindtap="saveDraft">先保存，稍后再用</button><button class="secondary" loading="{{validating}}" disabled="{{validating || saving || publishing}}" bindtap="validateRule">帮我检查一下</button><button class="secondary" loading="{{historyLoading}}" disabled="{{historyLoading || publishing}}" bindtap="openHistory">看看以前的版本</button><button class="primary" loading="{{publishing}}" disabled="{{publishing || saving || validating}}" bindtap="publishRule">从这天开始使用</button></view>
+
+  <view class="wizard-footer" wx:if="{{!loading && document}}"><button class="wizard-back" wx:if="{{currentStep > 0}}" bindtap="previousWizardStep">上一步</button><view class="wizard-footer-spacer"></view><button class="wizard-next" wx:if="{{currentStep < wizardSteps.length - 1}}" bindtap="nextWizardStep">下一步：{{wizardSteps[currentStep + 1].title}}</button></view>
+
+	<view class="mask" wx:if="{{showHistory}}" bindtap="closeHistory"><view class="history" catchtap="noop"><view class="panel-title">以前用过的规则</view><view class="history-item" wx:for="{{versions}}" wx:key="id"><view><text>第 {{item.version}} 版 · {{item.status}}</text><text class="hint">使用时间：{{item.effective_from || '还没开始使用'}} 至 {{item.effective_to || '一直有效'}}</text><text class="hint">{{item.updated_at || item.created_at || ''}}</text></view><view class="history-actions"><button class="tiny" data-version="{{item.version}}" bindtap="viewHistoryVersion">看看内容</button><button class="tiny" data-version="{{item.version}}" loading="{{restoringVersion === item.version}}" disabled="{{restoringVersion > 0}}" bindtap="restoreVersion">用回这版</button></view></view><view class="history-preview" wx:if="{{historyPreview}}"><text class="history-preview-title">第 {{historyPreview.version}} 版规则</text><text>使用时间：{{historyPreview.effectiveText}}</text><text>月基本工资：{{historyPreview.baseSalaryText}} 元</text><text>公司上班：{{historyPreview.companyText}}</text><text>出差：{{historyPreview.tripText}}</text><text>常用班次 {{historyPreview.shiftCount}} 个 · 单独修改日期 {{historyPreview.overrideCount}} 天 · 工资项目 {{historyPreview.salaryItemCount}} 个</text><view class="history-rule" wx:for="{{historyPreview.dayRules}}" wx:key="key"><text>{{item.label}}：加班至少 {{item.minimumText}} 才算</text><text>休息扣除 {{item.deductionCount}} 条 · 不同单价 {{item.bandCount}} 段</text><text>一天最多 {{item.dailyCapText}} · 一个月最多 {{item.monthlyCapText}}</text></view></view><button class="secondary" disabled="{{restoringVersion > 0}}" bindtap="closeHistory">关闭</button></view></view>
+
+</view>

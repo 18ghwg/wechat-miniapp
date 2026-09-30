@@ -25,6 +25,7 @@
         </view>
         
         <switch 
+          wx:if="{{item.source !== 'local'}}"
           class="macaron-switch"
           checked="{{item.is_enabled}}" 
           bindchange="onToggleTask"
@@ -58,6 +59,7 @@
       <!-- 操作按钮 -->
       <view class="task-actions">
         <view 
+          wx:if="{{item.source !== 'local'}}"
           class="macaron-btn macaron-btn-blue action-btn"
           bindtap="onEditTask"
           data-task-id="{{item.task_id}}"

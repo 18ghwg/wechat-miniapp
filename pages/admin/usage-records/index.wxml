@@ -170,7 +170,7 @@ module.exports = {
 
 <!-- 添加/编辑弹窗 -->
 <view class="popup-overlay" wx:if="{{showDialog}}" bindtap="hideDialog">
-  <view class="cartoon-card popup-container" catchtap="">
+  <view class="cartoon-card popup-container" catchtap="onStopPropagation">
     <view class="popup-header">
       <text class="popup-title">{{editingRecord ? '编辑记录' : '添加记录'}}</text>
       <view class="popup-close" bindtap="hideDialog">

@@ -4,7 +4,7 @@
   <!-- 游客模式横幅 -->
   <guest-banner
     show="{{isGuest}}"
-    message="所有数据仅供展示"
+    message="预览模式：当前不展示任何用户数据"
     showLoginBtn="{{true}}"
     bind:close="closeGuestBanner"
   />
@@ -27,12 +27,12 @@
 
     <!-- 两列布局：左员工选择，右年月选择 -->
     <view class="filter-inputs-row">
-      <view class="filter-input-wrap" bindtap="{{isAdmin ? 'onShowEmployeeSelector' : ''}}">
+      <view class="filter-input-wrap" bindtap="onShowEmployeeSelector">
         <image class="input-icon" src="/assets/icons/users.png" mode="aspectFit"/>
         <text class="filter-input-text" wx:if="{{!isAdmin}}">全部成员</text>
-        <text class="filter-input-text" wx:elif="{{selectedEmployees.length === 0}}">全部成员</text>
-        <text class="filter-input-text" wx:elif="{{selectedEmployees.length === 1}}">{{selectedEmployees[0]}}</text>
-        <text class="filter-input-text" wx:else>已选{{selectedEmployees.length}}人</text>
+        <text class="filter-input-text" wx:elif="{{selectedEmployeeCount === 0}}">全部成员</text>
+        <text class="filter-input-text" wx:elif="{{selectedEmployeeCount === 1}}">{{selectedEmployeeName}}</text>
+        <text class="filter-input-text" wx:else>已选{{selectedEmployeeCount}}人</text>
       </view>
       <view class="filter-input-wrap filter-date-wrap">
         <image class="input-icon" src="/assets/icons/calendar.png" mode="aspectFit"/>
@@ -60,22 +60,23 @@
     <!-- 统计条 -->
     <view class="stats-strip">
       <view class="stats-strip-item stats-orange">
-        <text class="stats-strip-label">总计补贴</text>
-        <text class="stats-strip-value">{{statisticsData.totalSubsidy}}</text>
+        <text class="stats-strip-label">出勤率</text>
+        <text class="stats-strip-value">{{statisticsData.attendanceRate}}%</text>
       </view>
       <view class="stats-strip-item stats-blue">
         <text class="stats-strip-label">打卡天数</text>
         <text class="stats-strip-value">{{statisticsData.attendanceDays}}天</text>
       </view>
       <view class="stats-strip-item stats-mint">
-        <text class="stats-strip-label">出差次数</text>
-        <text class="stats-strip-value">{{statisticsData.domesticTripDays + statisticsData.foreignTripDays}}次</text>
+        <text class="stats-strip-label">出差天数</text>
+        <text class="stats-strip-value">{{statisticsData.domesticTripDays + statisticsData.foreignTripDays}}天</text>
       </view>
       <view class="stats-strip-item stats-green" wx:if="{{statisticsData.compensatoryDays > 0}}">
         <text class="stats-strip-label">调休天数</text>
         <text class="stats-strip-value">{{statisticsData.compensatoryDays}}天</text>
       </view>
     </view>
+
   </view>
 
   <!-- 加载中 -->
@@ -90,10 +91,10 @@
       <!-- 卡片顶部：头像 + 姓名时间 + 状态徽章 + 编辑/删除按钮 -->
       <view class="record-top">
         <view class="record-avatar">
-          <text class="record-avatar-text">{{item.name ? item.name[0] : (item.real_name ? item.real_name[0] : '?')}}</text>
+          <text class="record-avatar-text">{{item.avatar_text || '?'}}</text>
         </view>
         <view class="record-info">
-          <text class="record-name">{{item.name || item.real_name || item.employee_name}}</text>
+          <text class="record-name">{{item.display_name || item.name || item.real_name || item.employee_name}}</text>
           <text class="record-datetime">{{item.work_date}} {{item.weekday}}</text>
         </view>
         <view class="record-top-right">
@@ -130,8 +131,8 @@
     <view class="empty-icon-wrap">
       <image class="empty-icon" src="/assets/icons/search.png" mode="aspectFit"/>
     </view>
-    <text class="empty-text">哎呀，这个月暂时没有记录哦</text>
-    <view class="empty-reset-btn" bindtap="onResetFilter">重置筛选条件</view>
+    <text class="empty-text">{{isGuest ? '登录后可查看本人考勤记录' : '哎呀，这个月暂时没有记录哦'}}</text>
+    <view class="empty-reset-btn" bindtap="onResetFilter">{{isGuest ? '微信登录' : '重置筛选条件'}}</view>
   </view>
 
   <view class="bottom-spacer"/>
@@ -162,7 +163,7 @@
       <text class="employee-empty-text">暂无员工数据</text>
     </view>
     <view class="employee-popup-footer">
-      <view class="employee-confirm-btn" bindtap="onConfirmEmployeeSelection">确定（已选{{selectedEmployees.length}}人）</view>
+      <view class="employee-confirm-btn" bindtap="onConfirmEmployeeSelection">确定（已选{{selectedEmployeeCount}}人）</view>
     </view>
   </view>
 </t-popup>
@@ -317,7 +318,7 @@
         <image class="result-icon-img" src="{{resultSuccess ? '/assets/icons/check.png' : '/assets/icons/x.png'}}" mode="aspectFit"/>
       </view>
     </view>
-    <text class="result-title">{{resultSuccess ? '更新成功！' : '更新失败'}}</text>
+    <text class="result-title">{{resultTitle || (resultSuccess ? '更新成功！' : '更新失败')}}</text>
     <text class="result-msg">接口返回：{{resultMsg}}</text>
     <view class="result-confirm-btn" bindtap="onCloseResultModal">确 定</view>
   </view>
@@ -325,7 +326,7 @@
 
 <!-- 删除进度弹窗 -->
 <view class="delete-progress-overlay" wx:if="{{isDeleting}}">
-  <view class="delete-progress-card" catchtap="">
+  <view class="delete-progress-card" catchtap="onStopPropagation">
     <text class="delete-progress-title">正在删除记录</text>
     <text class="delete-progress-desc">{{deleteCurrentStep}}</text>
     <view class="delete-progress-bar-wrap">
@@ -340,7 +341,7 @@
 
 <!-- 删除结果弹窗 -->
 <view class="delete-result-overlay" wx:if="{{showDeleteResult}}" bindtap="onCloseDeleteResult">
-  <view class="delete-result-card" catchtap="">
+  <view class="delete-result-card" catchtap="onStopPropagation">
     <view class="delete-result-close" catchtap="onCloseDeleteResult">
       <image class="close-icon" src="/assets/icons/close.png" mode="aspectFit"/>
     </view>

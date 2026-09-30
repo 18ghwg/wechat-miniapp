@@ -114,6 +114,9 @@
               <text class="meter-chip-ip">{{meter.displayIP}}</text>
             </view>
             <view class="meter-chip-actions">
+              <view class="meter-chip-edit" catchtap="copyMeterPushEndpoint" data-endpoint="{{meter.pushEndpoint}}">
+                <text class="meter-copy-text">接口</text>
+              </view>
               <view class="meter-chip-edit" catchtap="showEditMeter" data-account-id="{{item.id}}" data-meter-index="{{mIdx}}">
                 <image class="meter-action-icon" src="/assets/icons/edit.png" mode="aspectFit" />
               </view>
@@ -132,7 +135,7 @@
       <view class="card-actions">
         <view
           class="action-btn-circle {{item.IsActive ? 'btn-disabled' : ''}}"
-          bindtap="{{item.IsActive ? '' : 'switchAccount'}}"
+          bindtap="switchAccount"
           data-account="{{item}}"
         >
           <image class="action-icon-img" src="/assets/icons/{{item.IsActive ? 'check-circle' : 'zap'}}.png" mode="aspectFit" />
@@ -169,7 +172,7 @@
 
 <!-- 添加账号弹窗 -->
 <view class="popup-overlay" wx:if="{{showAddModal}}" bindtap="hideModal">
-  <view class="cartoon-card popup-container" catchtap="">
+  <view class="cartoon-card popup-container" catchtap="stopPropagation">
     <view class="popup-header">
       <text class="popup-title">添加国网账号</text>
       <view class="popup-close" catchtap="hideModal">
@@ -243,7 +246,7 @@
 
 <!-- 编辑账号弹窗 -->
 <view class="popup-overlay" wx:if="{{showEditModal}}" bindtap="hideModal">
-  <view class="cartoon-card popup-container" catchtap="">
+  <view class="cartoon-card popup-container" catchtap="stopPropagation">
     <view class="popup-header">
       <text class="popup-title">编辑账号信息</text>
       <view class="popup-close" catchtap="hideModal">
@@ -295,7 +298,7 @@
         <text class="form-label">账号状态</text>
         <picker 
           mode="selector" 
-          range="{{['正常', '禁用', '异常']}}" 
+          range="{{statusOptions}}" 
           value="{{statusPickerIndex}}"
           bindchange="onStatusChange"
         >
@@ -419,6 +422,39 @@
         />
         <text class="form-error" wx:if="{{meterFormErrors.area}}">{{meterFormErrors.area}}</text>
       </view>
+
+      <view class="push-endpoint-box" wx:if="{{meterFormData.pushEndpoint}}">
+        <view class="push-endpoint-header">
+          <text class="push-endpoint-title">HTTP 备用推送接口</text>
+          <view class="push-copy-btn" catchtap="copyMeterPushEndpoint" data-endpoint="{{meterFormData.pushEndpoint}}">复制</view>
+        </view>
+        <text class="push-endpoint-url">{{meterFormData.pushEndpoint}}</text>
+        <text class="push-endpoint-tip">HTTP 推送备用入口。优先建议使用下面的 MQTT 配置。</text>
+      </view>
+
+      <view class="push-endpoint-box" wx:if="{{meterFormData.mqttHost}}">
+        <view class="push-endpoint-header">
+          <text class="push-endpoint-title">MQTT 主动上传配置</text>
+          <view class="push-copy-btn" catchtap="copyText" data-text="{{meterFormData.mqttHost}}">复制服务器</view>
+        </view>
+        <view class="mqtt-config-row">
+          <text class="mqtt-config-label">服务器</text>
+          <text class="mqtt-config-value">{{meterFormData.mqttHost}}</text>
+        </view>
+        <view class="mqtt-config-row">
+          <text class="mqtt-config-label">端口</text>
+          <text class="mqtt-config-value">{{meterFormData.mqttPort}}</text>
+        </view>
+        <view class="mqtt-config-row">
+          <text class="mqtt-config-label">SSL</text>
+          <text class="mqtt-config-value">关闭</text>
+        </view>
+        <view class="mqtt-config-row">
+          <text class="mqtt-config-label">Topic</text>
+          <text class="mqtt-config-value mqtt-topic" catchtap="copyText" data-text="{{meterFormData.mqttTopic}}">{{meterFormData.mqttTopic}}</text>
+        </view>
+        <text class="push-endpoint-tip">电表选择 MQTT 输出，Payload 使用原始 JSON 数据；后端会按 SN 自动匹配当前电表。</text>
+      </view>
     </view>
     
     <view class="popup-footer">
@@ -499,6 +535,39 @@
       <view wx:elif="{{editMeterIPStatus === 'error'}}" class="sn-result-box sn-result-error">
         <image class="sn-result-icon" src="/assets/icons/warning.png" mode="aspectFit" />
         <text class="sn-result-error-text">连接超时：请确认该 IP 对应的电表已联网</text>
+      </view>
+
+      <view class="push-endpoint-box" wx:if="{{editMeterFormData.pushEndpoint}}">
+        <view class="push-endpoint-header">
+          <text class="push-endpoint-title">HTTP 备用推送接口</text>
+          <view class="push-copy-btn" catchtap="copyMeterPushEndpoint" data-endpoint="{{editMeterFormData.pushEndpoint}}">复制</view>
+        </view>
+        <text class="push-endpoint-url">{{editMeterFormData.pushEndpoint}}</text>
+        <text class="push-endpoint-tip">HTTP 推送备用入口。优先建议使用 MQTT。</text>
+      </view>
+
+      <view class="push-endpoint-box" wx:if="{{editMeterFormData.mqttHost}}">
+        <view class="push-endpoint-header">
+          <text class="push-endpoint-title">MQTT 主动上传配置</text>
+          <view class="push-copy-btn" catchtap="copyText" data-text="{{editMeterFormData.mqttHost}}">复制服务器</view>
+        </view>
+        <view class="mqtt-config-row">
+          <text class="mqtt-config-label">服务器</text>
+          <text class="mqtt-config-value">{{editMeterFormData.mqttHost}}</text>
+        </view>
+        <view class="mqtt-config-row">
+          <text class="mqtt-config-label">端口</text>
+          <text class="mqtt-config-value">{{editMeterFormData.mqttPort}}</text>
+        </view>
+        <view class="mqtt-config-row">
+          <text class="mqtt-config-label">SSL</text>
+          <text class="mqtt-config-value">关闭</text>
+        </view>
+        <view class="mqtt-config-row">
+          <text class="mqtt-config-label">Topic</text>
+          <text class="mqtt-config-value mqtt-topic" catchtap="copyText" data-text="{{editMeterFormData.mqttTopic}}">{{editMeterFormData.mqttTopic}}</text>
+        </view>
+        <text class="push-endpoint-tip">设备主动推送时使用此 MQTT 配置，后端会直接写入实体电表数据。</text>
       </view>
     </view>
 

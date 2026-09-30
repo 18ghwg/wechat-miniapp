@@ -13,6 +13,7 @@ Page({
     gridPassword: '',
     gridAccountName: '',
     gridBindLoading: false,
+    fromNewRegistration: false,
     // 通用 - 确保初始值不为null，避免渲染错误
     userInfo: {
       is_web_bound: false,
@@ -24,6 +25,10 @@ Page({
   },
 
   onLoad(options) {
+    this.setData({
+      fromNewRegistration: !!(options && options.source === 'new-user')
+    });
+
     // 根据URL参数设置默认标签页
     if (options && options.tab) {
       this.setData({ activeTab: options.tab });
@@ -211,7 +216,7 @@ Page({
         
         // 延迟跳转，让用户看到成功提示
         setTimeout(() => {
-          wx.navigateBack();
+          this.finishBindingFlow();
         }, 1500);
       }, 1000);
       return;
@@ -225,7 +230,7 @@ Page({
         
         // 延迟跳转，让用户看到成功提示
         setTimeout(() => {
-          wx.navigateBack();
+          this.finishBindingFlow();
         }, 1500);
       },
       (error) => {
@@ -233,6 +238,16 @@ Page({
         showError(error.message || '绑定失败');
       }
     );
+  },
+
+  finishBindingFlow() {
+    if (this.data.fromNewRegistration) {
+      wx.reLaunch({
+        url: '/pages/attendance/index'
+      });
+      return;
+    }
+    wx.navigateBack();
   },
 
   /**
@@ -614,8 +629,6 @@ Page({
     if (currentTestMode) {
       if (statusDetail.globalTestMode) {
         statusText += '(全局开关)';
-      } else if (statusDetail.wechatTestMode) {
-        statusText += '(微信一键登录)';
       }
     }
     
@@ -624,13 +637,8 @@ Page({
       content: `${statusText}\n\n是否${currentTestMode ? '关闭' : '开启'}测试模式？`,
       success: (res) => {
         if (res.confirm) {
-          if (currentTestMode && statusDetail.wechatTestMode && !statusDetail.globalTestMode) {
-            // 如果是微信一键登录的测试模式，只能关闭微信测试模式
-            wx.setStorageSync('isTestMode', false);
-          } else {
-            // 切换全局测试模式
-            testModeManager.setTestMode(!currentTestMode);
-          }
+          // 测试模式只能通过后端全局开关切换。
+          testModeManager.setTestMode(!currentTestMode);
           
           const newMode = testModeManager.isTestMode();
           console.log(`已切换到${newMode ? '测试' : '正常'}模式`);

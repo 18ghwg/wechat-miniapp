@@ -98,7 +98,7 @@ Component({
       });
     },
 
-    // 绘制圆�clip 路径（复用）
+    // 绘制圆形 clip 路径（复用）
     _clipRoundRect(ctx, w, h, r) {
       ctx.beginPath();
       ctx.moveTo(r, 0);
@@ -155,7 +155,7 @@ Component({
       ctx.restore();
     },
 
-    // 失败时在画布上叠加效�- 感叹号填充到缺口位置
+    // 失败时在画布上叠加效果 - 感叹号填充到缺口位置
     drawFailOverlay() {
       const ctx = this.data.bgCtx;
       if (!ctx) return;
@@ -213,7 +213,7 @@ Component({
       ctx.restore();
     },
 
-    // 成功时在画布上叠加效�- 勾号填充到缺口位置
+    // 成功时在画布上叠加效果 - 勾号填充到缺口位置
     drawSuccessOverlay() {
       const ctx = this.data.bgCtx;
       if (!ctx) return;
@@ -385,6 +385,7 @@ Component({
 
     onSliderTouchMove(e) {
       if (!this.data.dragging || !this.sliderTrackLeft) return;
+      if (!e || !Array.isArray(e.touches) || !e.touches[0]) return;
       const touchX = e.touches[0].pageX;
       let newX = touchX - this.sliderTrackLeft - this.sliderButtonWidth;
       if (newX < 0) newX = 0;

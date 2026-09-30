@@ -99,9 +99,18 @@ Page({
       const openid = wx.getStorageSync('openid') || '';
       
       // 检查是否是管理员
-      const isAdmin = userInfo.is_admin || 
-                     (userInfo.permissions ? userInfo.permissions.includes('admin') : false) ||
-                     userInfo.user_level === 'admin';
+      const isAdmin = !!(
+        userInfo.is_admin ||
+        userInfo.user_level === 'admin' ||
+        userInfo.web_user_level === 'admin' ||
+        (Array.isArray(userInfo.permissions) && userInfo.permissions.some(perm => {
+          if (typeof perm === 'string') {
+            return perm.toLowerCase() === 'admin';
+          }
+          const code = perm && (perm.code || perm.permission_code);
+          return code && String(code).toLowerCase() === 'admin';
+        }))
+      );
       
       this.setData({ 
         isAdmin,
@@ -344,8 +353,9 @@ Page({
    * 创建用户级别选择
    */
   onCreateUserLevelChange(e) {
-    const index = parseInt(e.detail.value);
+    const index = e && e.detail ? parseInt(e.detail.value) : NaN;
     const userLevel = this.data.userLevelOptions[index];
+    if (!userLevel) return;
     
     this.setData({
       'createForm.userLevelIndex': index,
@@ -480,8 +490,9 @@ Page({
    * 编辑用户级别选择
    */
   onEditUserLevelChange(e) {
-    const index = parseInt(e.detail.value);
+    const index = e && e.detail ? parseInt(e.detail.value) : NaN;
     const userLevel = this.data.userLevelOptions[index];
+    if (!userLevel) return;
     
     this.setData({
       'editForm.userLevelIndex': index,
