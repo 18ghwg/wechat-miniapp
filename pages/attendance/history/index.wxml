@@ -79,6 +79,36 @@
 
   </view>
 
+  <view class="salary-entry-card" wx:if="{{!isGuest}}">
+    <view class="salary-entry-top">
+      <view class="salary-entry-main">
+        <image class="salary-entry-icon" src="/assets/icons/dollar.png" mode="aspectFit" />
+        <view class="salary-entry-copy">
+          <text class="salary-entry-title">{{currentYear}}年{{currentMonth}}月工资条</text>
+          <text class="salary-entry-desc">查看工资明细，保存后写入考勤 Excel</text>
+        </view>
+      </view>
+      <button class="salary-entry-btn" bindtap="onOpenSalarySheet">查看 / 编辑</button>
+    </view>
+    <view class="salary-preview-panel">
+      <block wx:if="{{salaryOverview.hasData && !salaryOverview.loading}}">
+        <view class="salary-preview-total">
+          <text class="salary-preview-total-label">工资合计</text>
+          <text class="salary-preview-total-value">¥{{salaryOverview.totalSalary}}</text>
+        </view>
+        <view class="salary-preview-tags">
+          <text class="salary-preview-tag">底薪 ¥{{salaryOverview.baseSalary}}</text>
+          <text class="salary-preview-tag">加班费 ¥{{salaryOverview.overtimePay}}</text>
+          <text class="salary-preview-tag">出差补助 ¥{{salaryOverview.tripAllowance}}</text>
+          <text class="salary-preview-tag">餐补 ¥{{salaryOverview.mealAllowance}}</text>
+          <text class="salary-preview-tag" wx:if="{{salaryOverview.otherAllowance !== '0.00'}}">其他补贴 ¥{{salaryOverview.otherAllowance}}</text>
+        </view>
+      </block>
+      <text class="salary-preview-message" wx:else>{{salaryOverview.desc || '正在加载工资概览…'}}</text>
+    </view>
+    <button class="salary-records-link" bindtap="onOpenSalaryRecords">查看工资条生成记录 ›</button>
+  </view>
+
   <!-- 加载中 -->
   <view class="loading-wrap" wx:if="{{loading}}">
     <view class="loading-spinner"></view>
@@ -367,6 +397,104 @@
     </view>
     <view class="delete-result-confirm-btn" catchtap="onCloseDeleteResult">确 定</view>
   </view>
+</view>
+
+<!-- 工资条详情与编辑 -->
+<view class="salary-modal-mask" wx:if="{{showSalaryModal}}" bindtap="onCloseSalaryModal">
+  <scroll-view class="salary-modal" scroll-y enhanced catchtap="onStopPropagation">
+    <view class="salary-modal-header">
+      <view class="salary-entry-copy">
+        <text class="salary-modal-title">{{salaryModalTitle}}</text>
+        <text class="salary-modal-subtitle">{{salaryModalSubtitle}}</text>
+      </view>
+      <button class="salary-modal-close" bindtap="onCloseSalaryModal" aria-label="关闭工资条">×</button>
+    </view>
+    <view class="salary-lock-row" wx:if="{{salaryLockBadgeText}}">
+      <text class="salary-lock-badge salary-lock-badge-{{salaryLockBadgeType}}">{{salaryLockBadgeText}}</text>
+      <text class="salary-lock-text">{{salaryLockInfoText}}</text>
+    </view>
+    <view class="salary-alert-card" wx:if="{{salaryAlertText}}">
+      <text class="salary-alert-title">{{salaryAlertTitle}}</text>
+      <text class="salary-alert-text">{{salaryAlertText}}</text>
+      <view class="salary-alert-item" wx:for="{{salaryAlertItems}}" wx:key="key">
+        <text class="salary-alert-item-label">{{item.label}}</text>
+        <text class="salary-alert-item-desc">{{item.leftLabel}} {{item.leftValueText}} / {{item.rightLabel}} {{item.rightValueText}}</text>
+      </view>
+    </view>
+    <view class="salary-form-grid">
+      <view class="salary-form-item" wx:for="{{salaryFields}}" wx:key="key">
+        <view class="salary-form-label-row">
+          <text class="salary-form-label">{{item.label}}</text>
+          <button class="salary-info-btn" wx:if="{{item.showInfo}}" data-field="{{item.key}}" bindtap="onToggleSalaryFieldInfo" aria-label="{{item.label}}计算说明">?</button>
+        </view>
+        <view class="salary-input-wrap">
+          <input class="salary-input" wx:if="{{item.inputKind === 'editable'}}" type="digit" value="{{item.value}}" data-field="{{item.key}}" bindinput="onSalaryFieldChange" disabled="{{salarySaving}}" />
+          <text class="salary-input salary-input-readonly" wx:else>{{item.value}}</text>
+        </view>
+        <text class="salary-form-helper" wx:if="{{item.helper}}">{{item.helper}}</text>
+      </view>
+    </view>
+    <view class="salary-form-item salary-form-item-readonly">
+      <view class="salary-form-label-row">
+        <text class="salary-form-label">加班费合计</text>
+        <button class="salary-info-btn" data-field="overtime_pay" bindtap="onToggleSalaryFieldInfo">?</button>
+      </view>
+      <text class="salary-input salary-input-readonly">¥{{salaryForm.overtime_pay}}</text>
+    </view>
+    <view class="salary-total-card">
+      <text class="salary-total-label">工资合计</text>
+      <text class="salary-total-value">¥{{salaryForm.total_salary}}</text>
+    </view>
+    <button class="salary-save-btn" bindtap="onSaveSalarySheet" disabled="{{salarySaving}}" loading="{{salarySaving}}">{{salarySaving ? '正在保存…' : '保存工资条并生成 Excel'}}</button>
+    <text class="salary-lock-text">保存后锁定本月工资，自动任务不会覆盖手动确认的内容。</text>
+    <view class="bottom-spacer" />
+  </scroll-view>
+</view>
+
+<view class="salary-info-popup-mask" wx:if="{{showSalaryInfoPopup}}" bindtap="onCloseSalaryInfoPopup">
+  <scroll-view class="salary-info-popup" scroll-y enhanced catchtap="onStopPropagation">
+    <view class="salary-info-popup-header">
+      <text class="salary-info-popup-title">{{salaryInfoPopup.title}}</text>
+      <button class="salary-info-popup-close" bindtap="onCloseSalaryInfoPopup" aria-label="关闭计算说明">×</button>
+    </view>
+    <view class="salary-info-popup-body">
+      <text class="salary-info-line" wx:for="{{salaryInfoPopup.lines}}" wx:key="*this">{{item}}</text>
+      <view class="salary-calc-card" wx:if="{{salaryInfoPopup.field.hasCalculator}}">
+        <text class="salary-calc-tip">{{salaryInfoPopup.field.calcConfigUnitPriceText || salaryInfoPopup.field.calcUnitPriceText}}</text>
+        <view class="salary-calc-grid" wx:if="{{salaryInfoPopup.key === 'abroad_allowance' || salaryInfoPopup.key === 'domestic_allowance' || salaryInfoPopup.key === 'meal_allowance'}}">
+          <view class="salary-calc-field">
+            <text class="salary-calc-label">出差天数</text>
+            <input class="salary-calc-input" type="digit" value="{{salaryInfoPopup.field.calcDaysInput}}" data-field="{{salaryInfoPopup.key === 'meal_allowance' ? 'mealDaysInput' : salaryInfoPopup.field.calcDaysStateKey}}" bindinput="onSalaryCalcInputChange" />
+          </view>
+          <view class="salary-calc-field">
+            <text class="salary-calc-label">每日单价</text>
+            <input class="salary-calc-input" type="digit" value="{{salaryInfoPopup.field.calcUnitPriceInput}}" data-field="{{salaryInfoPopup.key === 'meal_allowance' ? 'mealUnitPriceInput' : salaryInfoPopup.field.calcUnitStateKey}}" bindinput="onSalaryCalcInputChange" />
+          </view>
+        </view>
+        <view class="salary-calc-grid" wx:elif="{{salaryInfoPopup.key === 'holiday_overtime_pay'}}">
+          <view class="salary-calc-field"><text class="salary-calc-label">加班天数</text><input class="salary-calc-input" type="digit" value="{{salaryInfoPopup.field.calcHolidayDayCountValue}}" data-field="holidayDayCountInput" bindinput="onSalaryCalcInputChange" /></view>
+          <view class="salary-calc-field"><text class="salary-calc-label">双倍小时</text><input class="salary-calc-input" type="digit" value="{{salaryInfoPopup.field.calcDoubleHoursValue}}" data-field="holidayDoubleHours" bindinput="onSalaryCalcInputChange" /></view>
+          <view class="salary-calc-field"><text class="salary-calc-label">三倍小时</text><input class="salary-calc-input" type="digit" value="{{salaryInfoPopup.field.calcTripleHoursValue}}" data-field="holidayTripleHours" bindinput="onSalaryCalcInputChange" /></view>
+        </view>
+        <view class="salary-calc-grid" wx:elif="{{salaryInfoPopup.key === 'weekend_overtime_pay'}}">
+          <view class="salary-calc-field"><text class="salary-calc-label">加班小时</text><input class="salary-calc-input" type="digit" value="{{salaryInfoPopup.field.calcHoursInput}}" data-field="weekendHoursInput" bindinput="onSalaryCalcInputChange" /></view>
+          <view class="salary-calc-field"><text class="salary-calc-label">加班天数</text><input class="salary-calc-input" type="digit" value="{{salaryInfoPopup.field.calcDayCountInput}}" data-field="weekendDayCountInput" bindinput="onSalaryCalcInputChange" /></view>
+          <view class="salary-calc-field"><text class="salary-calc-label">基数小时单价</text><input class="salary-calc-input" type="digit" value="{{salaryInfoPopup.field.calcUnitPriceInput}}" data-field="weekendUnitPriceInput" bindinput="onSalaryCalcInputChange" /></view>
+        </view>
+        <view class="salary-calc-grid" wx:elif="{{salaryInfoPopup.key === 'workday_overtime_pay'}}">
+          <view class="salary-calc-field"><text class="salary-calc-label">普通加班小时</text><input class="salary-calc-input" type="digit" value="{{salaryInfoPopup.field.calcEditableHoursValue}}" data-field="workdayHoursInput" bindinput="onSalaryCalcInputChange" /></view>
+          <view class="salary-calc-field"><text class="salary-calc-label">小时单价</text><input class="salary-calc-input" type="digit" value="{{salaryInfoPopup.field.calcUnitPriceInput}}" data-field="workdayUnitPriceInput" bindinput="onSalaryCalcInputChange" /></view>
+        </view>
+        <text class="salary-calc-preview">{{salaryInfoPopup.field.calcPreviewText}}</text>
+        <button class="salary-calc-action" wx:if="{{salaryInfoPopup.key === 'abroad_allowance'}}" data-type="abroad" bindtap="onApplyTripAllowanceCalc">应用计算</button>
+        <button class="salary-calc-action" wx:elif="{{salaryInfoPopup.key === 'domestic_allowance'}}" data-type="domestic" bindtap="onApplyTripAllowanceCalc">应用计算</button>
+        <button class="salary-calc-action" wx:elif="{{salaryInfoPopup.key === 'holiday_overtime_pay'}}" bindtap="onApplyHolidayOvertimeCalc">应用计算</button>
+        <button class="salary-calc-action" wx:elif="{{salaryInfoPopup.key === 'weekend_overtime_pay'}}" bindtap="onApplyWeekendCalc">应用计算</button>
+        <button class="salary-calc-action" wx:elif="{{salaryInfoPopup.key === 'workday_overtime_pay'}}" bindtap="onApplyWorkdayCalc">应用计算</button>
+        <button class="salary-calc-action" wx:elif="{{salaryInfoPopup.key === 'meal_allowance'}}" bindtap="onApplyMealAllowanceCalc">应用计算</button>
+      </view>
+    </view>
+  </scroll-view>
 </view>
 
 <t-toast id="t-toast" />

@@ -22,6 +22,7 @@ const SALARY_FIELD_CARD_CONFIG = [
   { key: 'workday_overtime_pay', label: '普通加班费', inputKind: 'derived', showInfo: true, calculator: 'workday' },
   { key: 'meal_allowance', label: '餐补', inputKind: 'editable', showInfo: true, calculator: 'meal' },
   { key: 'base_salary', label: '底薪', inputKind: 'editable', showInfo: true },
+  { key: 'other_allowance', label: '其他补贴', inputKind: 'readonly' },
   { key: 'compensatory_days', label: '调休天数', inputKind: 'editable' }
 ];
 
@@ -696,6 +697,7 @@ Page({
     // ⭐ 工资条编辑相关
     showSalaryModal: false,
     salarySaving: false,
+    salarySourceData: {},
     salaryContext: {
       name: '',
       year: '',
@@ -1113,6 +1115,7 @@ Page({
             loading: false
           });
           console.log('测试模式数据已设置到页面状态');
+          this.refreshSalaryOverview();
           
           if (wx.stopPullDownRefresh) {
             wx.stopPullDownRefresh();
@@ -1285,6 +1288,7 @@ Page({
       }
       
       this.setData(updateData);
+      this.refreshSalaryOverview();
       
     } catch (error) {
       // 移除console.error以避免触发全局错误恢复机制
@@ -1654,6 +1658,7 @@ Page({
       baseSalary: formatCurrency(salary.base_salary),
       overtimePay: formatCurrency(salary.overtime_pay),
       tripAllowance: formatCurrency(tripAllowance),
+      otherAllowance: formatCurrency(salary.other_allowance),
       mealAllowance: formatCurrency(salary.meal_allowance)
     };
   },
@@ -1737,6 +1742,11 @@ Page({
   // 关闭删除结果弹窗
   onCloseDeleteResult() {
     this.setData({ showDeleteResult: false });
+  },
+
+  onOpenSalaryRecords() {
+    if (mockData.showGuestModeTip('attendance')) return;
+    wx.navigateTo({ url: '/pages/attendance/salary-records/index' });
   },
 
   getSalaryTargetInfo() {
@@ -1829,7 +1839,7 @@ Page({
 
   calculateSalaryTotal(form = {}) {
     form = safeObject(form);
-    const total = ['abroad_allowance', 'domestic_allowance', 'overtime_pay', 'meal_allowance', 'base_salary']
+    const total = ['abroad_allowance', 'domestic_allowance', 'overtime_pay', 'meal_allowance', 'base_salary', 'other_allowance']
       .reduce((sum, key) => sum + (parseFloat(form[key]) || 0), 0);
     return total;
   },
@@ -1867,7 +1877,12 @@ Page({
 
   applySalaryDerivedFields(form = {}, overtimePayPerDay = 0, overtimePayPerHour = 0, domesticAllowancePerTripDay = 0) {
     const nextForm = Object.assign({}, safeObject(form));
-    nextForm.domestic_allowance = this.computeDomesticAllowance(nextForm, domesticAllowancePerTripDay).toFixed(2);
+    const previous = safeObject(this.data.salaryForm);
+    const context = safeObject(this.data.salaryContext);
+    const changed = key => toAmount(nextForm[key]) !== toAmount(previous[key]);
+    if (changed('domestic_business_days') || domesticAllowancePerTripDay !== context.domesticAllowancePerTripDay) {
+      nextForm.domestic_allowance = this.computeDomesticAllowance(nextForm, domesticAllowancePerTripDay).toFixed(2);
+    }
     const weekendCalc = calculateMultiplierOvertime(
       toAmount(nextForm.weekend_overtime_days),
       toAmount(nextForm.weekend_overtime_day_count) || inferOvertimeDayCount(nextForm.weekend_overtime_days),
@@ -1875,13 +1890,18 @@ Page({
       Number(overtimePayPerHour) || 0,
       2
     );
-    nextForm.weekend_base_hours = String(weekendCalc.baseHours);
-    nextForm.weekend_extra_hours = String(weekendCalc.extraHours);
-    nextForm.weekend_overtime_pay = weekendCalc.amount.toFixed(2);
-    nextForm.workday_overtime_pay = (toAmount(nextForm.workday_overtime_hours) * (Number(overtimePayPerHour) || 0)).toFixed(2);
+    if (changed('weekend_overtime_days') || changed('weekend_overtime_day_count') || overtimePayPerDay !== context.overtimePayPerDay || overtimePayPerHour !== context.overtimePayPerHour) {
+      nextForm.weekend_base_hours = String(weekendCalc.baseHours);
+      nextForm.weekend_extra_hours = String(weekendCalc.extraHours);
+      nextForm.weekend_overtime_pay = weekendCalc.amount.toFixed(2);
+    }
+    if (changed('workday_overtime_hours') || overtimePayPerHour !== context.overtimePayPerHour) {
+      nextForm.workday_overtime_pay = (toAmount(nextForm.workday_overtime_hours) * (Number(overtimePayPerHour) || 0)).toFixed(2);
+    }
     nextForm.overtime_days = String(toAmount(nextForm.weekend_overtime_days));
     nextForm.overtime_hours = String(toAmount(nextForm.workday_overtime_hours));
-    nextForm.overtime_pay = this.computeOvertimePay(nextForm, overtimePayPerDay, overtimePayPerHour).toFixed(2);
+    nextForm.overtime_pay = ['holiday_overtime_pay', 'weekend_overtime_pay', 'workday_overtime_pay']
+      .reduce((sum, key) => sum + toAmount(nextForm[key]), 0).toFixed(2);
     nextForm.total_salary = this.calculateSalaryTotal(nextForm).toFixed(2);
     return nextForm;
   },
@@ -1904,7 +1924,11 @@ Page({
     form.domestic_business_days = salary.domestic_business_days === undefined || salary.domestic_business_days === null ? '0' : String(salary.domestic_business_days);
     form.domestic_allowance = salary.domestic_allowance === undefined || salary.domestic_allowance === null ? '0' : String(salary.domestic_allowance);
     form.overtime_pay = salary.overtime_pay === undefined || salary.overtime_pay === null ? '0' : String(salary.overtime_pay);
-    return this.applySalaryDerivedFields(form, config.overtimePayPerDay, config.overtimePayPerHour, config.domesticAllowancePerTripDay);
+    form.weekend_overtime_pay = String(salary.weekend_overtime_pay ?? 0);
+    form.workday_overtime_pay = String(salary.workday_overtime_pay ?? 0);
+    form.other_allowance = String(salary.other_allowance ?? 0);
+    form.total_salary = formatCurrency(salary.total_salary ?? this.calculateSalaryTotal(form));
+    return form;
   },
 
   buildMockSalarySheet(name) {
@@ -2066,6 +2090,7 @@ Page({
       this.setData({
         showSalaryModal: true,
         salarySaving: false,
+        salarySourceData: salary,
         salaryContext,
         ...buildSalaryModalView(salaryContext),
         salaryForm: normalizedSalary,
@@ -2548,6 +2573,11 @@ Page({
     const nextForm = Object.assign({}, this.data.salaryForm, {
       [field]: value
     });
+    if (field === 'holiday_overtime_pay') {
+      nextForm.overtime_pay = ['holiday_overtime_pay', 'weekend_overtime_pay', 'workday_overtime_pay']
+        .reduce((sum, key) => sum + toAmount(nextForm[key]), 0).toFixed(2);
+    }
+    nextForm.total_salary = this.calculateSalaryTotal(nextForm).toFixed(2);
     this.setData(this.refreshSalaryEditor(nextForm));
     this.syncSalaryOverviewWithForm(this.data.salaryContext.name, nextForm);
   },
@@ -2581,13 +2611,11 @@ Page({
       return;
     }
 
-    const normalizedForm = this.applySalaryDerivedFields(
-      this.data.salaryForm,
-      this.data.salaryContext.overtimePayPerDay,
-      this.data.salaryContext.overtimePayPerHour,
-      this.data.salaryContext.domesticAllowancePerTripDay
-    );
-    const salaryPayload = {};
+    const normalizedForm = this.data.salaryForm;
+    const salaryPayload = Object.assign({}, this.data.salarySourceData, {
+      total_salary: Number(normalizedForm.total_salary),
+      other_allowance: Number(normalizedForm.other_allowance || 0)
+    });
     SALARY_NUMERIC_FIELDS.forEach((field) => {
       salaryPayload[field.key] = Number(normalizedForm[field.key] || 0);
     });

@@ -2,6 +2,7 @@ describe('attendance history salary sheet null response handling', () => {
   let pageConfig;
   let pageInstance;
   let getSalarySheetMock;
+  let saveSalarySheetMock;
   let wxMock;
 
   function createPageInstance(config) {
@@ -50,11 +51,13 @@ describe('attendance history salary sheet null response handling', () => {
         }
       }
     }));
+    saveSalarySheetMock = jest.fn().mockResolvedValue({ code: 200, data: {} });
 
     jest.doMock('../utils/api', () => ({
       API: {
         attendance: {
-          getSalarySheet: getSalarySheetMock
+          getSalarySheet: getSalarySheetMock,
+          saveSalarySheet: saveSalarySheetMock
         }
       },
       apiCall: jest.fn(),
@@ -83,6 +86,7 @@ describe('attendance history salary sheet null response handling', () => {
       setStorageSync: jest.fn(),
       stopPullDownRefresh: jest.fn(),
       navigateBack: jest.fn(),
+      navigateTo: jest.fn(),
       switchTab: jest.fn()
     };
 
@@ -132,6 +136,50 @@ describe('attendance history salary sheet null response handling', () => {
       calcDaysStateKey: 'domesticDaysInput'
     });
     expect(wxMock.hideLoading).toHaveBeenCalled();
+  });
+
+  test('refreshes the selected month salary overview after attendance finishes loading', async () => {
+    getSalarySheetMock.mockResolvedValueOnce({
+      code: 200,
+      data: { salary: { base_salary: 7500, total_salary: 10000, overtime_pay: 2500 } }
+    });
+    pageInstance.data.isAdmin = false;
+    pageInstance.data.realName = '孙乐';
+    pageInstance.handleAttendanceSuccess([]);
+    await Promise.resolve();
+    expect(getSalarySheetMock).toHaveBeenCalledWith({ name: '孙乐', year: 2026, month: 5 });
+    expect(pageInstance.data.salaryOverview).toMatchObject({ hasData: true, totalSalary: '10000.00' });
+  });
+
+  test('opens generated salary records from history', () => {
+    pageInstance.onOpenSalaryRecords();
+    expect(wxMock.navigateTo).toHaveBeenCalledWith({ url: '/pages/attendance/salary-records/index' });
+  });
+
+  test('preserves server amounts and custom allowances when opening and saving a salary', async () => {
+    getSalarySheetMock.mockResolvedValueOnce({
+      code: 200,
+      data: { name: '孙乐', year: 2026, month: 9, salary: {
+        base_salary: 7500, domestic_business_days: 29, domestic_allowance: 1800,
+        domestic_allowance_per_trip_day: 100, other_allowance: 1100,
+        holiday_overtime_pay: 813.9, weekend_overtime_days: 40,
+        weekend_overtime_pay: 1030, workday_overtime_hours: 33,
+        workday_overtime_pay: 739.2, overtime_pay: 2583.1,
+        overtime_pay_per_day: 15.3, overtime_pay_per_hour: 22.4,
+        total_salary: 12983.1, diy_rule_applied: true,
+        applied_rule_versions: [{ id: 5 }]
+      } }
+    });
+    await pageInstance.onOpenSalarySheet();
+    expect(pageInstance.data.salaryForm).toMatchObject({
+      domestic_allowance: '1800', other_allowance: '1100',
+      weekend_overtime_pay: '1030', total_salary: '12983.10'
+    });
+    await pageInstance.onSaveSalarySheet();
+    expect(saveSalarySheetMock).toHaveBeenCalledWith(expect.objectContaining({ salary: expect.objectContaining({
+      domestic_allowance: 1800, other_allowance: 1100, weekend_overtime_pay: 1030,
+      total_salary: 12983.1, diy_rule_applied: true, applied_rule_versions: [{ id: 5 }]
+    }) }));
   });
 
   test('opens salary modal with recalculation mismatch response shape', async () => {

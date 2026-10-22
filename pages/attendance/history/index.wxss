@@ -164,6 +164,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 20rpx;
+  flex-wrap: wrap;
 }
 
 .salary-entry-main {
@@ -210,6 +211,24 @@
   font-size: 24rpx;
   font-weight: 900;
   color: #5E4E3E;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.salary-records-link {
+  margin: 0;
+  padding: 12rpx 0;
+  background: transparent;
+  color: #5E4E3E;
+  font-size: 24rpx;
+  text-align: left;
+  line-height: 1.5;
+}
+
+.salary-entry-card button::after,
+.salary-modal-mask button::after,
+.salary-info-popup-mask button::after {
+  border: 0;
 }
 
 .salary-preview-panel {
@@ -230,6 +249,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 16rpx;
+  flex-wrap: wrap;
 }
 
 .salary-preview-total-label {
@@ -970,6 +990,9 @@
 }
 
 .salary-modal-close {
+  margin: 0;
+  padding: 0;
+  line-height: 1;
   width: 60rpx;
   height: 60rpx;
   display: flex;
@@ -995,6 +1018,8 @@
   border: 3rpx solid #E8DDCC;
   border-radius: 24rpx;
   padding: 20rpx;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .salary-form-item-display {
@@ -1017,6 +1042,8 @@
   font-size: 24rpx;
   font-weight: 900;
   color: #5E4E3E;
+  min-width: 0;
+  line-height: 1.5;
 }
 
 .salary-info-btn {
@@ -1029,6 +1056,11 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  font-size: 24rpx;
+  color: #8A5A12;
 }
 
 .salary-info-btn-active {
@@ -1132,6 +1164,9 @@
 }
 
 .salary-info-popup-close {
+  margin: 0;
+  padding: 0;
+  line-height: 1;
   width: 52rpx;
   height: 52rpx;
   flex-shrink: 0;
@@ -1286,6 +1321,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 20rpx;
+  flex-wrap: wrap;
 }
 
 .salary-total-label {
